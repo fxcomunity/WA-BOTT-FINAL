@@ -10,7 +10,7 @@ if (fs.existsSync(statsFile)) {
   try {
     statsData = JSON.parse(fs.readFileSync(statsFile, 'utf-8'));
   } catch (e) {
-    console.error("Gagal membaca data_stats.json:", e);
+    console.error("Gagal bos membaca data_stats.json:", e);
   }
 }
 
@@ -19,7 +19,7 @@ function saveStats() {
   try {
     fs.writeFileSync(statsFile, JSON.stringify(statsData, null, 2));
   } catch (e) {
-    console.error("Gagal menyimpan data_stats.json:", e);
+    console.error("Gagal bos menyimpan data_stats.json:", e);
   }
 }
 
@@ -50,7 +50,7 @@ module.exports = {
 
   // Mendapatkan statistik grup secara keseluruhan
   getGroupStats: (groupId) => {
-    if (!statsData[groupId]) return "⚠️ Belum ada statistik tercatat untuk grup ini.";
+    if (!statsData[groupId]) return "⚠️ Belom ada statistik tercatat untuk grup ini.";
     
     const totalMsg = statsData[groupId].totalMessages;
     const totalUsers = Object.keys(statsData[groupId].users).length;
@@ -70,14 +70,14 @@ module.exports = {
       }
     }
     
-    if (totalMsgUser === 0) return "⚠️ Kamu belum pernah mengirim pesan yang tercatat.";
+    if (totalMsgUser === 0) return "⚠️ Kamu belom pernah ngirim pesan yang tercatat.";
     
     return `👤 *STATISTIK KAMU*\n\n📱 Nomor: +${sender.split("@")[0]}\n💬 Total Pesan Terkirim: ${totalMsgUser}\n🏘️ Aktif di: ${activeGroups} Grup`;
   },
 
   // Mendapatkan daftar member paling aktif di grup (Top 10)
   getTopActive: (groupId) => {
-    if (!statsData[groupId]) return "⚠️ Belum ada statistik tercatat untuk grup ini.";
+    if (!statsData[groupId]) return "⚠️ Belom ada statistik tercatat untuk grup ini.";
     
     const users = statsData[groupId].users;
     
@@ -86,7 +86,7 @@ module.exports = {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
       
-    if (sortedUsers.length === 0) return "⚠️ Belum ada data member.";
+    if (sortedUsers.length === 0) return "⚠️ Belom ada data member.";
     
     let text = `🏆 *TOP 10 MEMBER TERAKTIF*\n\n`;
     sortedUsers.forEach((user, index) => {

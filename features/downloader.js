@@ -1,7 +1,7 @@
 const axios = require('axios');
 const utils = require('./utils');
 
-const devCaption = `╭━━• [ 📥 *DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Berhasil diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+const devCaption = `╭━━• [ 📥 *DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
 module.exports = {
   youtube: async (sock, msg, args) => { 
@@ -29,16 +29,16 @@ module.exports = {
       const videoUrl = data.url;
       const title = data.title || "YouTube Video";
       const fileSize = data.filesize || data.filesize_approx || 0;
-      const customCaption = `╭━━• [ 📥 *YOUTUBE DOWNLOADER* ] •━━╮\n┃\n┃ 🎬 *Judul:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Berhasil diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+      const customCaption = `╭━━• [ 📥 *YOUTUBE DOWNLOADER* ] •━━╮\n┃\n┃ 🎬 *Judul:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
       
       if (fileSize > 100 * 1024 * 1024) { // Lebih dari 100MB
         await progress.stop(false);
         return sock.sendMessage(groupId, { 
-          text: `❌ Video *${title}* terlalu raksasa (${Math.round(fileSize/1024/1024)}MB).\n\nSilakan unduh secara manual melalui link berikut:\n🔗 ${videoUrl}` 
+          text: `❌ Video *${title}* terlalu raksasa (${Math.round(fileSize/1024/1024)}MB).\n\nBisa unduh secara manual melalui link berikut:\n🔗 ${videoUrl}` 
         }, { quoted: msg });
       } else if (fileSize > 50 * 1024 * 1024) { // 50MB - 100MB (Kirim sebagai Dokumen)
         await progress.stop(true);
-        await sock.sendMessage(groupId, { text: `⚠️ Video *${title}* berukuran ${Math.round(fileSize/1024/1024)}MB. Karena melebihi 50MB, bot akan mengirimkannya dalam bentuk **Dokumen/File** agar tidak ditolak WhatsApp...` }, { quoted: msg });
+        await sock.sendMessage(groupId, { text: `⚠️ Video *${title}* berukuran ${Math.round(fileSize/1024/1024)}MB. Karena melebihi 50MB, bot akan ngirimkannya dalam bentuk **Dokumen/File** agar tidak ditolak WhatsApp...` }, { quoted: msg });
         await sock.sendMessage(groupId, { 
           document: { url: videoUrl }, 
           mimetype: 'video/mp4',
@@ -57,7 +57,7 @@ module.exports = {
     } catch (error) {
       await progress.stop(false);
       console.log("YouTube Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh video. Pastikan link valid atau server tidak diblokir YouTube." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos download video. Pastiin link valid atau server tidak diblokir YouTube." }, { quoted: msg });
     }
   },
   
@@ -88,12 +88,12 @@ module.exports = {
         await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
       } else {
         await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh video. Pastikan link publik!" }, { quoted: msg });
+        await sock.sendMessage(groupId, { text: "❌ Gagal bos download video. Pastiin link publik!" }, { quoted: msg });
       }
     } catch (error) {
       await progress.stop(false);
       console.log("TikTok Error:", error);
-      await sock.sendMessage(groupId, { text: "❌ Terjadi kesalahan pada server downloader." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Ada error njir pada server downloader." }, { quoted: msg });
     }
   },
   
@@ -150,12 +150,12 @@ module.exports = {
         await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
       } else {
         await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh postingan Instagram. (Video/Foto tidak ditemukan)" }, { quoted: msg });
+        await sock.sendMessage(groupId, { text: "❌ Gagal bos download postingan Instagram. (Video/Foto tidak ketemu)" }, { quoted: msg });
       }
     } catch (error) {
       await progress.stop(false);
       console.log("IG Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh Instagram. Pastikan link publik (tidak diprivate) atau coba beberapa saat lagi." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos download Instagram. Pastiin link publik (tidak diprivate) atau coba beberapa saat lagi." }, { quoted: msg });
     }
   },
   
@@ -191,12 +191,12 @@ module.exports = {
         await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
       } else {
         await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gambar tidak ditemukan." }, { quoted: msg });
+        await sock.sendMessage(groupId, { text: "❌ Gambar tidak ketemu." }, { quoted: msg });
       }
     } catch (error) {
       await progress.stop(false);
       console.log("Pinterest Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Terjadi kesalahan saat mencari gambar di Pinterest." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Ada error njir saat mencari gambar di Pinterest." }, { quoted: msg });
     }
   },
 
@@ -222,14 +222,14 @@ module.exports = {
       const data = JSON.parse(stdout);
       
       const videoUrl = data.url;
-      const customCaption = `╭━━• [ 📥 *FB DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Berhasil diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+      const customCaption = `╭━━• [ 📥 *FB DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
       
       await progress.stop(true);
       await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: customCaption }, { quoted: msg });
     } catch (error) {
       await progress.stop(false);
       console.log("FB Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh Facebook. Link salah, diprivat, atau diblokir." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos download Facebook. Link salah, diprivat, atau diblokir." }, { quoted: msg });
     }
   },
 
@@ -255,14 +255,14 @@ module.exports = {
       const data = JSON.parse(stdout);
       
       const videoUrl = data.url;
-      const customCaption = `╭━━• [ 📥 *X DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Berhasil diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+      const customCaption = `╭━━• [ 📥 *X DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
       
       await progress.stop(true);
       await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: customCaption }, { quoted: msg });
     } catch (error) {
       await progress.stop(false);
       console.log("Twitter Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Gagal mengunduh Twitter/X. Link salah, diprivat, atau diblokir." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos download Twitter/X. Link salah, diprivat, atau diblokir." }, { quoted: msg });
     }
   }
 };

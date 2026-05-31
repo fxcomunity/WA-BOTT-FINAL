@@ -7,7 +7,7 @@ module.exports = {
       const { data } = await axios.get(`https://wttr.in/${encodeURIComponent(kota)}?format=%l:+%C+%t+(Terasa+seperti+%f)+%w+%h`);
       return `🌤️ *INFO CUACA*\n\n${data.trim()}`;
     } catch (e) {
-      return "❌ Gagal mengambil data cuaca. Pastikan nama kota benar.";
+      return "❌ Gagal bos mengambil data cuaca. Pastiin nama kota benar.";
     }
   },
   
@@ -17,13 +17,13 @@ module.exports = {
       const code = mataUang.toUpperCase();
       const { data } = await axios.get(`https://api.exchangerate-api.com/v4/latest/${code}`);
       const idr = data.rates.IDR;
-      if (!idr) return `❌ Mata uang ${code} tidak ditemukan.`;
+      if (!idr) return `❌ Mata uang ${code} tidak ketemu.`;
       
       // Format number to Rupiah
       const formattedIdr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(idr);
       return `💱 *KURS MATA UANG*\n\n1 ${code} = ${formattedIdr}`;
     } catch (e) {
-      return "❌ Gagal mengambil data kurs. Gunakan kode valid (misal: USD, EUR, JPY).";
+      return "❌ Gagal bos mengambil data kurs. Gunakan kode valid (misal: USD, EUR, JPY).";
     }
   },
   
@@ -34,7 +34,7 @@ module.exports = {
     const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(text)}`;
     await sock.sendMessage(msg.key.remoteJid, {
       image: { url: apiUrl },
-      caption: `✅ *QR Code Berhasil Dibuat!*\n\nData: ${text}`
+      caption: `✅ *QR Code Sukses Dibuat!*\n\nData: ${text}`
     }, { quoted: msg });
   },
   
@@ -68,11 +68,11 @@ module.exports = {
       await sock.sendMessage(msg.key.remoteJid, { 
         audio: { url }, 
         mimetype: 'audio/mp4',
-        ptt: true // ptt: true akan mengirimnya sebagai Voice Note (VN)
+        ptt: true // ptt: true akan ngirimnya sebagai Voice Note (VN)
       }, { quoted: msg });
     } catch (e) {
-      console.error("Gagal mengirim TTS:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal memproses suara." }, { quoted: msg });
+      console.error("Gagal bos ngirim TTS:", e);
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos memproses suara." }, { quoted: msg });
     }
   },
   
@@ -85,7 +85,7 @@ module.exports = {
       const searchData = searchRes.data.data;
       
       if (!searchData || searchData.length === 0) {
-        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Kota "${kota}" tidak ditemukan.` }, { quoted: msg });
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Kota "${kota}" tidak ketemu.` }, { quoted: msg });
       }
       
       const idKota = searchData[0].id;
@@ -104,8 +104,8 @@ module.exports = {
       
       await sock.sendMessage(msg.key.remoteJid, { text: textMsg }, { quoted: msg });
     } catch (e) {
-      console.error("Gagal mendapatkan jadwal sholat:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal mengambil data jadwal sholat. Coba lagi nanti." }, { quoted: msg });
+      console.error("Gagal bos mendapatkan jadwal sholat:", e);
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos mengambil data jadwal sholat. Coba lagi nanti." }, { quoted: msg });
     }
   },
 
@@ -133,14 +133,14 @@ module.exports = {
       await sock.sendMessage(msg.key.remoteJid, { text: replyMsg }, { quoted: msg });
     } catch (e) {
       console.error("Translate error:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal menerjemahkan teks." }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos menerjemahkan teks." }, { quoted: msg });
     }
   },
 
   generateImage: async (sock, msg, prompt) => {
     if (!prompt) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Masukkan deskripsi gambar! Contoh: !imagine Kucing pakai kacamata hitam" }, { quoted: msg });
     
-    await sock.sendMessage(msg.key.remoteJid, { text: "⏳ *Sedang melukis gambar (AI)...* Mohon tunggu sebentar." }, { quoted: msg });
+    await sock.sendMessage(msg.key.remoteJid, { text: "⏳ *Sedang melukis gambar (AI)...* Tolong sabar bentar cuy." }, { quoted: msg });
     
     try {
       // Menggunakan endpoint dari siputzx atau endpoint free text2img lainnya
@@ -153,7 +153,7 @@ module.exports = {
       
     } catch (e) {
       console.error("Imagine error:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal membuat gambar dari AI. Coba lagi nanti." }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos bikin gambar dari AI. Coba lagi nanti." }, { quoted: msg });
     }
   },
 
@@ -188,7 +188,7 @@ module.exports = {
     return {
       stop: async (success = true) => {
         stopped = true;
-        let text = success ? `✅ *Selesai!*\n[██████████] 100%` : `❌ *Gagal!*\n[▒▒▒▒▒▒▒▒▒▒] ERROR`;
+        let text = success ? `✅ *Selesai!*\n[██████████] 100%` : `❌ *Gagal bos!*\n[▒▒▒▒▒▒▒▒▒▒] ERROR`;
         try {
           await sock.sendMessage(groupId, { text: `${textPrefix}\n\n${text}`, edit: sentMsg.key });
         } catch (e) {}

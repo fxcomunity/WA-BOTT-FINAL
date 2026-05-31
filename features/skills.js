@@ -18,7 +18,7 @@ async function listSkills(sock, msg, sender) {
   let text = `📜 *BUKU SKILL TAMBANG*\n\n`;
   text += `💧 Mana (MP): ${w.mp}/${w.maxMp}\n\n`;
 
-  // Skill yang sudah dipelajari
+  // Skill yang udah dipelajari
   text += `✅ *Skill Aktif (Dimiliki):*\n`;
   let hasLearned = false;
   for (const [skillId, skillState] of Object.entries(w.skills)) {
@@ -49,9 +49,9 @@ async function listSkills(sock, msg, sender) {
       }
     }
   }
-  if (!hasLearned) text += `_Belum ada skill yang dipelajari._\n`;
+  if (!hasLearned) text += `_Belom ada skill yang dipelajari._\n`;
 
-  // Skill yang bisa dipelajari (belum dimiliki)
+  // Skill yang bisa dipelajari (belom dimiliki)
   text += `\n🛒 *Bisa Dipelajari (!belajar nama_skill):*\n`;
   let canLearn = false;
   for (const s of skillsData.skills) {
@@ -212,7 +212,7 @@ async function useSkill(sock, msg, sender, args) {
   let replyText = `🪄 *Mengeluarkan Skill: ${s.name} (Lv.${currentLevel})*\n(-${lvlData.mpCost} MP)\n\n`;
 
   if (s.id === "deteksi_harta") {
-    // Di Level berapapun dapat instant artifact (Lv 5 ada buff, tapi buff belum diimplementasi detail)
+    // Di Level berapapun dapat instant artifact (Lv 5 ada buff, tapi buff belom diimplementasi detail)
     const artifact = rpgData.rollArtifact();
     w.inventory[artifact.id] = (w.inventory[artifact.id] || 0) + 1;
     let extraText = "Mata batinmu terbuka! Kamu mendeteksi energi artefak...\n";
@@ -243,7 +243,7 @@ async function useSkill(sock, msg, sender, args) {
 
     const isFail = Math.random() < failChance;
     if (isFail) {
-      replyText += `💥 *BOOOM!!!* Ledakan tak terkendali!\nPickaxe kamu sedikit rusak (tapi belum ada durability). `;
+      replyText += `💥 *BOOOM!!!* Ledakan tak terkendali!\nPickaxe kamu sedikit rusak (tapi belom ada durability). `;
     } else {
       replyText += `💥 *BOOOM!!!* Dinding tambang runtuh dengan sempurna!\nKamu memungut ${amount} Iron dan ${amount} Coal.`;
     }
@@ -270,7 +270,7 @@ async function useSkill(sock, msg, sender, args) {
     } else {
       w.mp += lvlData.mpCost;
       w.skills[s.id].lastUsed = 0;
-      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Gagal! Kamu butuh minimal ${ratio} Besi atau ${ratio} Batu Bara di tas.` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Gagal bos! Kamu butuh minimal ${ratio} Besi atau ${ratio} Batu Bara di tas.` }, { quoted: msg });
     }
 
     if (currentLevel >= 5 && Math.random() < 0.05) {
@@ -357,7 +357,7 @@ async function useSkill(sock, msg, sender, args) {
     if (currentLevel >= 5) qty = 2; // Selalu double
 
     w.inventory["mythical_ore"] = (w.inventory["mythical_ore"] || 0) + qty;
-    replyText += `☄️ Tanganmu memancarkan cahaya surgawi...\nBerhasil menciptakan ${qty} *Mythical Ore*!`;
+    replyText += `☄️ Tanganmu memancarkan cahaya surgawi...\nSukses menciptakan ${qty} *Mythical Ore*!`;
   }
   else if (s.type === "buff") {
     // Buff type skills

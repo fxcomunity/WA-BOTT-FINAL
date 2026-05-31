@@ -67,6 +67,22 @@ try {
   db.exec("ALTER TABLE users ADD COLUMN skills TEXT DEFAULT '{}';");
 } catch (e) {}
 
+try {
+  db.exec("ALTER TABLE users ADD COLUMN pickaxeDurability INTEGER DEFAULT 50;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN maxPickaxeDurability INTEGER DEFAULT 50;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN pancinganDurability INTEGER DEFAULT 50;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN maxPancinganDurability INTEGER DEFAULT 50;");
+} catch (e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS limits (
     id TEXT PRIMARY KEY,
@@ -110,7 +126,7 @@ function migrateEconomy() {
 
       db.transaction(() => {
         for (const [id, w] of Object.entries(data)) {
-          // Coba insert, kalau sudah ada update
+          // Coba insert, kalau udah ada update
           const info = insert.run(id, w.coins || 0, w.level || 1, w.xp || 0, w.streak || 0, w.lastDaily || 0, w.lastMancing || 0, w.lastBerburu || 0, w.lastNambang || 0, w.pickaxeLevel || 1);
           if (info.changes === 0) {
             update.run(w.coins || 0, w.level || 1, w.xp || 0, w.streak || 0, w.lastDaily || 0, w.lastMancing || 0, w.lastBerburu || 0, w.lastNambang || 0, w.pickaxeLevel || 1, id);
@@ -122,7 +138,7 @@ function migrateEconomy() {
       fs.renameSync(jsonPath, jsonPath + '.bak');
       console.log("[DB] Migrasi data economy berhasil! File asli diubah menjadi data_economy.json.bak");
     } catch (e) {
-      console.error("[DB] Gagal migrasi data economy:", e);
+      console.error("[DB] Gagal bos migrasi data economy:", e);
     }
   }
 }
@@ -153,7 +169,7 @@ function migrateLimits() {
       fs.renameSync(jsonPath, jsonPath + '.bak');
       console.log("[DB] Migrasi data limit berhasil!");
     } catch (e) {
-      console.error("[DB] Gagal migrasi data limit:", e);
+      console.error("[DB] Gagal bos migrasi data limit:", e);
     }
   }
 }
@@ -179,7 +195,7 @@ function migrateWarns() {
       fs.renameSync(jsonPath, jsonPath + '.bak');
       console.log("[DB] Migrasi data warn berhasil!");
     } catch (e) {
-      console.error("[DB] Gagal migrasi data warn:", e);
+      console.error("[DB] Gagal bos migrasi data warn:", e);
     }
   }
 }

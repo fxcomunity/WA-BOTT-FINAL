@@ -28,14 +28,14 @@ module.exports = {
   'statistics.js': `
 module.exports = {
   track: (groupId, sender) => {},
-  getGroupStats: (groupId) => { return "⚠️ Statistik grup belum tersedia."; },
-  getUserStats: (sender) => { return "⚠️ Statistik kamu belum tersedia."; },
-  getTopActive: (groupId) => { return "⚠️ Top aktif belum tersedia."; }
+  getGroupStats: (groupId) => { return "⚠️ Statistik grup belom tersedia."; },
+  getUserStats: (sender) => { return "⚠️ Statistik kamu belom tersedia."; },
+  getTopActive: (groupId) => { return "⚠️ Top aktif belom tersedia."; }
 };
 `,
   'aiChatbot.js': `
 module.exports = {
-  ask: async (question) => { return "⚠️ Fitur AI sedang dalam masa uji coba (belum tersedia)."; }
+  ask: async (question) => { return "⚠️ Fitur AI sedang dalam masa uji coba (belom tersedia)."; }
 };
 `,
   'utils.js': `

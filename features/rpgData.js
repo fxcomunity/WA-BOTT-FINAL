@@ -104,7 +104,7 @@ const artifacts = [
   // UNCOMMON
   { id: "lonceng_batu", name: "Lonceng Batu Berdenging Hening", tier: 2, type: "consumable", price: 50, action: "buff", buff: "monster_repel", duration: 5 },
   { id: "mata_kucing", name: "Mata Kucing Beku", tier: 2, type: "consumable", price: 60, action: "buff", buff: "mine_speed", duration: 10 },
-  { id: "pahat_ganda", name: "Pahat Bermata Ganda", tier: 2, type: "consumable", price: 70, action: "buff", buff: "yield_plus_1", duration: 30 },
+  { id: "pahat_glu", name: "Pahat Bermata Glu", tier: 2, type: "consumable", price: 70, action: "buff", buff: "yield_plus_1", duration: 30 },
   { id: "tulang_naga_kerdil", name: "Tulang Naga Kerdil", tier: 2, type: "consumable", price: 80, action: "buff", buff: "damage_plus_5", duration: 5 },
   { id: "lampu_kristal", name: "Lampu Isi Ulang Kristal", tier: 2, type: "consumable", price: 90, action: "buff", buff: "rare_chance_15", duration: 10 },
 

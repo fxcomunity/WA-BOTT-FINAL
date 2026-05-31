@@ -19,7 +19,7 @@ module.exports = {
       const bg = encodeURIComponent("https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1000&q=80");
       const url = `https://api.popcat.xyz/welcomecard?background=${bg}&text1=${userName}&text2=Welcome+to+${groupName}&text3=Member+${memberCount}&avatar=${encAvatar}`;
 
-      const textMsg = `🎉 *WELCOME!* 🎉\nHalo @${jid.split("@")[0]}, selamat datang di *${meta.subject}*!\n\nKetik !help untuk melihat daftar perintah bot.\nPatuhi peraturan grup ya! 🙏`;
+      const textMsg = `🎉 *WAH ADA ORANG BARU NONGOL!* 🎉\nWoi @${jid.split("@")[0]}, met dateng di klung *${meta.subject}*!\n\nKetik !menu buat liat fitur bot.\nJangan rusuh lu dimari, ntar kena kick! 🙏`;
 
       try {
         await sock.sendMessage(groupId, {
@@ -38,7 +38,7 @@ module.exports = {
     const meta = await sock.groupMetadata(groupId);
     for (const jid of participants) {
       await sock.sendMessage(groupId, {
-        text: `👋 Sampai jumpa @${jid.split("@")[0]}, terima kasih sudah bergabung di *${meta.subject}*!`,
+        text: `👋 Yaelah si @${jid.split("@")[0]} minggat, males banget kali yak di *${meta.subject}*. Babay beban!`,
         mentions: [jid],
       });
     }

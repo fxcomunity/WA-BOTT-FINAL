@@ -22,7 +22,7 @@ module.exports = {
     
     // Cek juga regex murni whatsapp invite jika tidak ada di atas
     if (!found) {
-      // Pastikan bukan link yang di-whitelist
+      // Pastiin bukan link yang di-whitelist
       const isAllowedConfig = config.allowedLinks.some(a => text.includes(a));
       if (!isAllowedConfig && this.hasWAInvite(text)) {
         found = true;

@@ -1,5 +1,5 @@
-# 🤖 GrupBot OP v3.0.0
-WhatsApp Group Bot — Baileys Edition
+# 🤖 JackBOT v3.0.0 (Baileys Edition)
+WhatsApp Group Bot dengan fitur Mega RPG, Gacha, AI Chatbot, Downloader, dan bahasa full Gen-Z!
 
 ---
 
@@ -12,119 +12,132 @@ cd wa-bot
 # 2. Install dependencies
 npm install
 
-# 3. Isi nomor owner di config.js
+# 3. Buat file config.js (Copy dari Dummy Config di bawah)
 nano config.js   # atau buka pakai VS Code
 
 # 4. Jalankan bot
 npm start
 ```
 
-Scan QR Code yang muncul di terminal pakai WhatsApp kamu.
+Scan QR Code yang muncul di terminal pakai aplikasi WhatsApp kamu.
 
 ---
 
-## ⚙️ Konfigurasi (config.js)
+## ⚙️ Dummy Config (config.js)
+Buat file `config.js` di folder utama dan copy kode di bawah ini. Ganti nomor owner dengan nomor kamu yang asli.
 
-```js
-owners: [
-  "628123XXXXXXX",   // ganti dengan nomor asli
-  "628589XXXXXXX",
-  ...
-]
+```javascript
+// ============================================
+// config.js — Konfigurasi Dummy JackBOT
+// ============================================
+// PENTING: Isi nomor owner di bawah ini
+// Format: kode negara + nomor TANPA +, spasi, atau strip
+// Contoh: +62 812-3738-XXXX => "628123738XXXX"
+
+require('dotenv').config();
+
+module.exports = {
+  owners: [
+    "628123456789", // Ganti pake nomor WA lu bos
+  ],
+
+  // === PENGATURAN BOT ===
+  prefix: "!",
+  botName: "JackBOT",
+  botVersion: "3.0.0",
+
+  // === MODERASI ===
+  maxWarn: 3,           // warn ke-berapa langsung kick
+  floodLimit: 5,        // maks pesan per 10 detik
+  muteDuration: 10,     // menit mute otomatis saat kena anti-spam
+  slowModeDelay: 30,    // detik antar pesan saat slow mode aktif
+  autoDeleteOldMsg: false, 
+
+  // === FITUR ON/OFF ===
+  features: {
+    antiSpam: true,
+    antiLink: true,
+    antiForward: true,
+    antiInviteLink: true,
+    antiFakeNumber: false,
+    antiNSFW: false,
+    antiKataKasar: false,
+    antiMedia: false,
+    welcome: true,
+    goodbye: true,
+    leaderboard: true,
+    economy: true,
+    games: true,
+    scheduler: true,
+    aiChatbot: true,
+    downloader: true,
+    statistics: true,
+  },
+
+  // === EKONOMI ===
+  dailyCoins: 50,
+  quizReward: 10,
+  activeReward: 1,      
+
+  // === AI CHATBOT ===
+  aiTrigger: ["bot,", "bot:", "!tanya"],
+  aiModel: "claude-sonnet-4-20250514", 
+
+  apiKeys: {
+    gemini: "API_KEY_GEMINI_LU",
+    openai: "API_KEY_OPENAI_LU",
+    deepseek: "API_KEY_DEEPSEEK_LU",
+    mistral: "API_KEY_MISTRAL_LU"
+  },
+
+  // === KATA KASAR ===
+  badWords: ["anjing", "bangsat", "brengsek"],
+  allowedLinks: ["chat.whatsapp.com/GrupLu"],
+};
 ```
 
-Format nomor: **kode negara + nomor, tanpa + spasi atau strip**
-- `+62 812-XXXX` → `"6281XXXXXXX"`
-- `+60 11-XXXX`  → `"6011XXXXXXX"`
-
 ---
 
-## 📊 Fitur Limit
+## 🌟 Daftar Fitur Super Lengkap
 
-| Command | Fungsi |
-|---|---|
-| `!limit` | Cek nama WA, status DNA, dan sisa limit kamu |
-| `!limitall` | (Admin) Lihat semua user + status DNA |
-| `!resetlimit @user` | (Admin) Reset limit user |
-| `!setlimit @user download 10` | (Admin) Set limit custom |
+### 🎭 Full Gen-Z Language / Gaya Tongkrongan
+Semua bahasa error, info, dan respon bot udah dikonversi 100% jadi bahasa Gen-Z yang *friendly* dan asik. Nggak ada lagi bahasa kaku kaya robot!
 
-### Status DNA:
-- 🟢 **Aktif** — limit masih banyak
-- 🟡 **Hampir Habis** — limit >60% terpakai
-- 🔴 **Habis** — limit 0, tunggu reset 24 jam
+### ⚔️ Mega RPG System & Economy
+- **`!mancing`, `!nambang`, `!berburu`**: Kegiatan RPG dengan tier monster & rarity item (Common sampe Mythic). Punya sistem Durabilitas Alat!
+- **`!gacha`**: Ngocok dadu ala mesin slot buat dapet hadiah random (Zonk, Uang Kaget, Item, sampe Buku Enchant Legend).
+- **`!shop` / `!beli`**: Beli Role VIP, Alat Nambang (Besi, Emas, Berlian, Mythic), Pancingan, Stamina, Potion, dll.
+- **Enchanting System**: Beli/Dapat drop buku Enchant (`!info enchant`). Tersedia Mending, Unbreaking, Efficiency, Fortune, Lure, dan Haste! Pasang pake `!pakai enchant [nama_buku] [alat]`.
+- **`!inv` / `!inventory`**: Liat sisa durabilitas alat, level, dan barang di dalem tas lu.
+- **`!sell` / `!use` / `!pakai`**: Jual barang atau konsumsi item buff/stamina.
+- **`!daily`, `!saldo`, `!transfer`, `!lb`**: Manajemen koin grup.
 
----
-
-## 🔒 Fitur Lock Grup (Owner Only)
-
-| Command | Fungsi |
-|---|---|
-| `!lock` | Kunci grup (hanya admin bisa kirim) |
-| `!lock 30m` | Kunci selama 30 menit, lalu buka otomatis |
-| `!lock 2h` | Kunci selama 2 jam |
-| `!unlock` | Buka kunci grup |
-
----
-
-## 🌟 Fitur Utama
-
-Bot ini dilengkapi dengan ratusan fitur menarik dan interaktif, termasuk dukungan tombol **Quick Reply** (Balasan Cepat Interaktif) untuk mempermudah pengguna.
-
-### ⚔️ Mega RPG System
-- **`!mancing` & `!nambang`**: Sistem gacha item (Ikan & Ore) dengan sistem rarity Tier (Common, Uncommon, Rare, Epic, Mythic, Legendary, Mythos).
-- **`!shop` / `!beli`**: Beli perlengkapan (Pancingan, Pickaxe), enchant (Fortune/Lure), dan Stamina (Kecil/Sedang/Besar).
-- **`!inv` / `!inventory`**: Lihat status item, level, dan rarity item di dalam tas kamu.
-- **`!sell` / `!sell all`**: Jual hasil tangkapan dengan harga dinamis berdasarkan rarity.
-- **`!use` / `!pakai`**: Gunakan item stamina untuk mengurangi cooldown gacha RPG.
+### 📚 Skill System
+- **`!skills`, `!belajar`, `!levelup`**: Sistem *skill tree* (Mining, Fishing, Combat) yang ngasih lu pasif buff. 
 
 ### 🛡️ Group Security & Moderation
-- **Anti-Link**: Otomatis hapus pesan dan kick member yang mengirim link grup/terlarang (kecuali admin).
-- **Anti-Delete**: Jika ada pesan yang dihapus/ditarik, bot akan otomatis "menyelamatkan" pesan tersebut dan mengirimkannya (Forward) ke nomor Developer, lengkap dengan detail *Siapa yang menarik pesan* dan *Dari Grup Mana*.
-- **Anti-Spam**: Mencegah member melakukan spam pesan beruntun.
-- **Warn System**: `!warn`, `!resetwarn`, `!kick`, `!mute`, `!unmute` untuk manajemen grup.
-- **Welcome/Goodbye Message**: Otomatis menyapa member baru / yang keluar grup.
+- **Anti-Link & Anti-Spam**: Tendang tukang spam dan tukang share link otomatis.
+- **Anti-Delete**: Ketahuan kalo ada yang narik chat. Bakal dikirim ulang sama bot.
+- **Anti-ViewOnce**: Bongkar foto/video yang dikirim mode "Sekali Lihat".
+- **Moderation Tools**: `!promote`, `!demote`, `!kick`, `!kickall`, `!warn`, `!mute`, `!unmute`, `!lock`, `!unlock`.
 
-### ⚡ Mode Khusus
-- **Self Mode / Public Mode**: `!self` (bot hanya merespon perintah Owner) dan `!public` (bot merespon semua member).
+### 📥 Sosial Media Downloader
+- Download kilat pake: `!yt` (YouTube), `!tt` (TikTok), `!ig` (Instagram), `!fb` (Facebook), `!tw` / `!x` (Twitter), `!pin` (Pinterest).
 
-### 📥 Downloader & Media
-- Fitur download lengkap dari YouTube (`!yt`), TikTok (`!tt`), Instagram (`!ig`).
-- Pembuatan dan pencarian Spotify (`!spotifyplay`, `!spotifysearch`).
-- Sticker Maker (`!sticker` / `!s`) dengan meta data.
-- Pinterest, Google Image, TTS (Text-to-Speech), dan Translate.
+### 🤖 AI Chatbot & Tools Pintar
+- **`!brat`**: Bikin stiker ala Brat aesthetic.
+- **`!ai`, `!tanya`**: Integrasi AI untuk jawabin pertanyaan.
+- **`!imagine`**: Bikin gambar AI.
+- **`!translate`, `!tts`, `!cuaca`, `!kurs`, `!jadwalsholat`**: Tools serbaguna.
+- **`!spotifyplay`, `!spotifysearch`**: Cari lagu Spotify langsung di WA.
 
-### 🤖 AI Chatbot
-- Chat otomatis menggunakan AI yang pintar untuk merespon dan berbincang dengan member grup (`!brat`, `!jawab`, dll).
+### 🎮 Mini Games Asik
+- `!kuis`, `!tebak`, `!jawab`, `!rate`, `!jodoh`, `!cekkhodam`.
+- `!poll`, `!endpoll` buat voting.
+- `!menfess` buat kirim pesan rahasia lewat bot.
 
----
-
-## 📁 Struktur File
-
-```
-wa-bot/
-├── index.js              ← Bot utama
-├── config.js             ← Konfigurasi & nomor owner
-├── package.json
-└── features/
-    ├── limitSystem.js    ← Sistem limit per user
-    ├── lockGroup.js      ← Lock/unlock grup
-    ├── antiSpam.js       ← Anti spam & flood
-    ├── antiLink.js       ← Anti link
-    ├── warnSystem.js     ← Sistem warn & kick
-    ├── welcome.js        ← Welcome/goodbye
-    ├── economy.js        ← Sistem koin & level
-    ├── games.js          ← Kuis, tebak angka, dll
-    ├── downloader.js     ← YT, TikTok, IG downloader
-    ├── scheduler.js      ← Pesan terjadwal
-    ├── statistics.js     ← Statistik grup
-    ├── aiChatbot.js      ← AI chatbot
-    └── utils.js          ← Cuaca, kurs, QR, dll
-```
+### 🎶 Audio & Sticker Creator
+- **`!sticker` / `!s`**: Bikin stiker foto/video.
+- **Audio Effects**: Reply VN dengan efek `!bass`, `!blown`, `!deep`, `!earrape`, `!fast`, `!nightcore`, `!reverse`, `!robot`, `!squirrel`.
 
 ---
-
-## ⚠️ Penting
-
-- Jangan upload `config.js` ke GitHub (ada nomor owner)
-- Tambahkan `config.js` dan `auth_info/` ke `.gitignore`
-- Bot pakai akun WA tersendiri, bukan self-bot

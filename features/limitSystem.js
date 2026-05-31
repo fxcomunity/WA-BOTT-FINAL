@@ -31,7 +31,7 @@ function getLimit(sender) {
   }
 
   let changed = false;
-  // Auto reset kalau sudah lewat 1 hari
+  // Auto reset kalau udah lewat 1 hari
   if (now > row.dl_reset) { row.dl_used = 0; row.dl_reset = now + ONE_DAY; changed = true; }
   if (now > row.ai_reset) { row.ai_used = 0; row.ai_reset = now + ONE_DAY; changed = true; }
   if (now > row.kuis_reset) { row.kuis_used = 0; row.kuis_reset = now + ONE_DAY; changed = true; }
@@ -146,37 +146,37 @@ module.exports = {
 
     const text = `
 ══════════════════╝
-Halo, ${name}! 👋
+Hellow, ${name}! 👋
 
 ┃ ${ucapan},
 ┃ Hari/Tanggal : ${strHariTanggal}
 ┃ Jam                : ${strJam}
-┃ Selamat datang di pusat kendali bot.
-═══════ User ══════════════
+┃ Met nongkrong di markas bot.
+═══════ Info Lu ══════════════
 👤 Nama: ${name}
-🔰 Pangkat: ${rank}
-${isLid ? `🆔 Nomor LID: +${no}` : `📱 Nomor WA Asli: +${no}`}
+🔰 Kasta: ${rank}
+${isLid ? `🆔 ID Gaib: +${no}` : `📱 No Asli: +${no}`}
 💬 Status WA: ${statusWA}
-🌟 Status Premium: ${isOwner ? "♾️ Bebas Hambatan (Unlimited)" : d.status}
+🌟 Tipe Akun: ${isOwner ? "♾️ Bebas Hambatan (VIP Jalur Dalem)" : d.status}
 
 ━━━━━━━━━━━━━━━━━━━━
-📥 *Download*
+📥 *Tukang Sedot (DL)*
    ${isOwner ? "████████ ∞/∞" : `${barLimit(d.download.used, d.download.max)} ${d.download.used}/${d.download.max}`}
    ⏱ Reset: ${isOwner ? "-" : sisaJam(d.download.resetAt)}
 
-🤖 *Tanya AI*
+🤖 *Ngobrol AI*
    ${isOwner ? "████████ ∞/∞" : `${barLimit(d.ai.used, d.ai.max)} ${d.ai.used}/${d.ai.max}`}
    ⏱ Reset: ${isOwner ? "-" : sisaJam(d.ai.resetAt)}
 
-🎮 *Game/Kuis*
+🎮 *Mabar / Kuis*
    ${isOwner ? "████████ ∞/∞" : `${barLimit(d.kuis.used, d.kuis.max)} ${d.kuis.used}/${d.kuis.max}`}
    ⏱ Reset: ${isOwner ? "-" : sisaJam(d.kuis.resetAt)}
 
-🖼️ *Sticker*
+🖼️ *Pabrik Sticker*
    ${isOwner ? "████████ ∞/∞" : `${barLimit(d.sticker.used, d.sticker.max)} ${d.sticker.used}/${d.sticker.max}`}
    ⏱ Reset: ${isOwner ? "-" : sisaJam(d.sticker.resetAt)}
 ━━━━━━━━━━━━━━━━━━━━
-💡 Limit reset otomatis tiap 24 jam
+💡 Limit balik full tiap 24 jam ye.
     `.trim();
 
     return sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
@@ -199,14 +199,14 @@ ${isLid ? `🆔 Nomor LID: +${no}` : `📱 Nomor WA Asli: +${no}`}
   // Admin: reset semua limit
   resetAll(sock, msg) {
     db.prepare('UPDATE limits SET dl_used = 0, ai_used = 0, kuis_used = 0, st_used = 0').run();
-    return sock.sendMessage(msg.key.remoteJid, { text: "✅ Berhasil me-reset semua limit user ke 0!" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "✅ Tsaahh! Semua limit rakjel udah gue reset jadi 0 lagi!" }, { quoted: msg });
   },
 
   // Admin: lihat semua user + status DNA
   async showAllLimits(sock, msg) {
     const all = db.prepare('SELECT * FROM limits').all();
     if (all.length === 0)
-      return sock.sendMessage(msg.key.remoteJid, { text: "Belum ada data limit." }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: "Kosong melompong njir, belom ada data limit." }, { quoted: msg });
 
     const rows = all.map(row => {
       const d = getLimit(row.id);
@@ -218,7 +218,7 @@ ${isLid ? `🆔 Nomor LID: +${no}` : `📱 Nomor WA Asli: +${no}`}
     });
 
     return sock.sendMessage(msg.key.remoteJid, {
-      text: `📋 *Semua User & Status Limit*\n\n${rows.join("\n\n")}`,
+      text: `📋 *Daftar Dosa Limit Orang-orang*\n\n${rows.join("\n\n")}`,
     }, { quoted: msg });
   },
 

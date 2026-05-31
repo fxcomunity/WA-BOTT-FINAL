@@ -30,7 +30,7 @@ module.exports = {
         return;
       }
 
-      await sock.sendMessage(groupId, { text: "⏳ Sedang membuat stiker..." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "⏳ Sedang bikin stiker..." }, { quoted: msg });
 
       // Download buffer
       const buffer = await downloadMediaMessage(
@@ -52,7 +52,7 @@ module.exports = {
       ffmpeg(tmpIn)
         .on('error', async (err) => {
           console.error(err);
-          await sock.sendMessage(groupId, { text: "❌ Gagal membuat stiker!" }, { quoted: msg });
+          await sock.sendMessage(groupId, { text: "❌ Gagal bos bikin stiker!" }, { quoted: msg });
           fs.unlinkSync(tmpIn);
         })
         .on('end', async () => {
@@ -78,7 +78,7 @@ module.exports = {
 
     } catch (err) {
       console.error(err);
-      await sock.sendMessage(groupId, { text: "❌ Terjadi kesalahan saat memproses gambar." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Ada error njir saat memproses gambar." }, { quoted: msg });
     }
   },
 
@@ -100,7 +100,7 @@ module.exports = {
       ffmpeg(tmpIn)
         .on('error', async (err) => {
           console.error(err);
-          await sock.sendMessage(groupId, { text: "❌ Gagal buat stiker brat ngab!" }, { quoted: msg });
+          await sock.sendMessage(groupId, { text: "❌ Gagal bos buat stiker brat ngab!" }, { quoted: msg });
           try { fs.unlinkSync(tmpIn); } catch (e) {}
         })
         .on('end', async () => {
@@ -134,7 +134,7 @@ module.exports = {
         return sock.sendMessage(groupId, { text: "❌ Balas stiker yang ingin diubah menjadi gambar dengan !toimg" }, { quoted: msg });
       }
 
-      await sock.sendMessage(groupId, { text: "⏳ Sedang memproses stiker menjadi gambar..." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "⏳ Lagi diproses nih stiker menjadi gambar..." }, { quoted: msg });
 
       const targetMessage = {
         key: {
@@ -159,7 +159,7 @@ module.exports = {
       ffmpeg(tmpIn)
         .on('error', async (err) => {
           console.error(err);
-          await sock.sendMessage(groupId, { text: "❌ Gagal mengonversi stiker ke gambar! Pastikan itu stiker statis, bukan animasi." }, { quoted: msg });
+          await sock.sendMessage(groupId, { text: "❌ Gagal bos mengonversi stiker ke gambar! Pastiin itu stiker statis, bukan animasi." }, { quoted: msg });
           try { fs.unlinkSync(tmpIn); } catch(e){}
         })
         .on('end', async () => {
@@ -171,7 +171,7 @@ module.exports = {
 
     } catch (err) {
       console.error("toimg error:", err);
-      await sock.sendMessage(groupId, { text: "❌ Terjadi kesalahan saat memproses gambar." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Ada error njir saat memproses gambar." }, { quoted: msg });
     }
   }
 };

@@ -80,7 +80,7 @@ module.exports = {
     let komen = "";
     if (persen > 80) komen = "Anjay mabar! Buruan ke KUA ngab, gass! 💍";
     else if (persen > 50) komen = "Boleh lah, pepet terus mumpung dia lengah! 🔥";
-    else if (persen > 20) komen = "Yaelah sadar diri wir, lu jauh di bawah standar dia. 😅";
+    else if (persen > 20) komen = "Yaelah sadar diri wir, lu jauh di bawah stlur dia. 😅";
     else komen = "Mundur wir! Muka lu kayak keset welcome, jangan ngimpi! 💔";
     
     const textMsg = `╭━━• [ 💘 *CEK JODOH* ] •━━╮\n┃\n┃ 👩‍❤️‍👨 @${u1} & @${u2}\n┃ 📊 *Kecocokan:* ${persen}%\n┃ 💬 *Catatan:* ${komen}\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
@@ -100,7 +100,7 @@ module.exports = {
   },
   sendMenfess: async (sock, msg, sender, args) => {
     const raw = args.join(" ");
-    if (!raw.includes("|")) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format salah! Gunakan: !menfess nomor_tujuan | pesan\nContoh: !menfess 628123456789 | Hai sayang" }, { quoted: msg });
+    if (!raw.includes("|")) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format salah njir! Pake: !menfess nomor_tujuan | pesan\nContoh: !menfess 628123456789 | Woi nyet balikin duit gue" }, { quoted: msg });
     
     let [target, ...pesanArr] = raw.split("|");
     target = target.trim().replace(/[^0-9]/g, "");
@@ -109,17 +109,17 @@ module.exports = {
     if (!target || !pesan) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Nomor atau pesannya mana ngab?" }, { quoted: msg });
     
     // Validasi nomor (biasanya nomor WA minimal 10 digit)
-    if (target.length < 10) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Nomor tujuannya ga valid!" }, { quoted: msg });
+    if (target.length < 10) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Nomor tujuannya kaga bener njir!" }, { quoted: msg });
     
     const targetJid = target + "@s.whatsapp.net";
-    const menfessMsg = `╭━━• [ 💌 *MENFESS MASUK* ] •━━╮\n┃\n┃ Seseorang mengirimkan pesan rahasia untukmu:\n┃ \n┃ 💬 "${pesan}"\n┃ \n╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n_Pesan ini dikirim secara anonim melalui JackBOT._`;
+    const menfessMsg = `╭━━• [ 💌 *SURAT KALENG MASUK* ] •━━╮\n┃\n┃ Eh ada yg nitip pesen rahasia nih buat lu:\n┃ \n┃ 💬 "${pesan}"\n┃ \n╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n_Pesan ini dikirim anonim dari JackBOT. Jgn nanya ini sapa, gue jg kaga bakal ngasi tau._`;
     
     try {
       await sock.sendMessage(targetJid, { text: menfessMsg });
-      await sock.sendMessage(msg.key.remoteJid, { text: `✅ Menfess berhasil dikirim secara anonim ke ${target}!` }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: `✅ Sip ngab! Surat kaleng udah nyampe ke ${target} diem-diem bae.` }, { quoted: msg });
     } catch (e) {
-      console.error("Gagal mengirim menfess:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal mengirim menfess. Pastikan nomor target sudah terdaftar di WhatsApp dan bot tidak diblokir." }, { quoted: msg });
+      console.error("Gagal bos ngirim menfess:", e);
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos ngirim menfess njir. Pastiin nomornya beneran pake WA, bukan nomor dukun." }, { quoted: msg });
     }
   },
   imagine: async (sock, msg, prompt) => {
@@ -138,7 +138,7 @@ module.exports = {
       }, { quoted: msg });
     } catch (e) {
       console.log("Imagine error:", e);
-      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal menggambar. API sedang bermasalah atau gambar dilarang." }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: "❌ Gagal bos ngegambar njir. Server lagi ampas ato lu nyari gambar yg dilarang agama." }, { quoted: msg });
     }
   }
 };

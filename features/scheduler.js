@@ -20,7 +20,7 @@ module.exports = {
         
         await sock.sendMessage(ownerId, { text: msgText });
       } catch (e) {
-        console.error("Gagal mengirim laporan harian:", e);
+        console.error("Gagal bos ngirim laporan harian:", e);
       }
     });
 

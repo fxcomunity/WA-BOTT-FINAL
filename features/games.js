@@ -12,14 +12,14 @@ const quizQuestions = [
 module.exports = {
   createPoll: async (sock, groupId, args) => {
     if (!args || args.length === 0) {
-      return sock.sendMessage(groupId, { text: "❌ Format salah!\nContoh: !poll Mau makan apa? | Nasi Goreng | Mie Ayam" });
+      return sock.sendMessage(groupId, { text: "❌ Format lu berantakan ngab!\nContoh: !poll Mabar jam brapa? | Jam 7 | Jam 8" });
     }
     const text = args.join(" ");
     const split = text.split("|").map(s => s.trim()).filter(s => s);
     
     // WhatsApp butuh minimal 2 opsi untuk sebuah polling
     if (split.length < 3) {
-      return sock.sendMessage(groupId, { text: "❌ Minimal harus ada *2 Opsi* untuk membuat polling!\nContoh: !poll Pertanyaan | Opsi 1 | Opsi 2" });
+      return sock.sendMessage(groupId, { text: "❌ Minimal 2 opsi lah bambang! Kalo 1 doang namanya bukan milih!\nContoh: !poll Pertanyaan | Opsi 1 | Opsi 2" });
     }
 
     const pollName = split[0];
@@ -35,13 +35,13 @@ module.exports = {
       });
     } catch (e) {
       console.log("Error createPoll:", e);
-      await sock.sendMessage(groupId, { text: "❌ Gagal membuat polling. Pastikan format benar." });
+      await sock.sendMessage(groupId, { text: "❌ Waduh gagal bikin polling njir, coba cek lagi formatnya." });
     }
   },
   endPoll: async (sock, groupId, msg) => {
     const context = msg.message?.extendedTextMessage?.contextInfo;
     if (!context || !context.quotedMessage) {
-      return sock.sendMessage(groupId, { text: "❌ Balas (quote) pesan polling yang ingin ditutup dengan command !endpoll" });
+      return sock.sendMessage(groupId, { text: "❌ Quote dulu pesannya ngab! Reply polling yang mau ditutup pake !endpoll" });
     }
 
     const isFromMe = context.participant === sock.user.id.split(":")[0] + "@s.whatsapp.net" || context.participant === sock.user.id;
@@ -55,60 +55,60 @@ module.exports = {
           participant: context.participant 
         } 
       });
-      await sock.sendMessage(groupId, { text: "✅ Polling berhasil ditutup (pesan dihapus)." });
+      await sock.sendMessage(groupId, { text: "✅ Polling kelar! Pesan udah gue hapus bos." });
     } catch (e) {
       console.log("Error endPoll:", e);
-      await sock.sendMessage(groupId, { text: "❌ Gagal menutup polling. Pastikan pesan tersebut adalah polling dari bot." });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos nutup polling njir. Lu yakin itu polling dari gue?" });
     }
   },
 
   startQuiz: async (sock, msg, groupId) => { 
     if (activeGames.has(groupId)) {
-      return sock.sendMessage(groupId, { text: "⚠️ Masih ada game yang sedang berjalan di grup ini! Jawab dulu atau tunggu selesai." }, { quoted: msg });
+      return sock.sendMessage(groupId, { text: "⚠️ Woy selesain dulu game yang lagi jalan! Sabar napa." }, { quoted: msg });
     }
     
     const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
     activeGames.set(groupId, { type: "kuis", answer: q.a.toLowerCase() });
 
     await sock.sendMessage(groupId, { 
-      text: `🎮 *KUIS DIMULAI!*\n\n📝 *Soal:* ${q.q}\n\nKetik *!jawab [jawabanmu]* untuk menjawab!` 
+      text: `🎮 *KUIS DIMULAI NJIR!*\n\n📝 *Soal:* ${q.q}\n\nKetik *!jawab [jawabanlu]* cepetan!` 
     }, { quoted: msg });
   },
 
   tebaknomor: async (sock, msg, groupId, sender) => { 
     if (activeGames.has(groupId)) {
-      return sock.sendMessage(groupId, { text: "⚠️ Masih ada game yang sedang berjalan di grup ini! Jawab dulu atau tunggu selesai." }, { quoted: msg });
+      return sock.sendMessage(groupId, { text: "⚠️ Woy selesain dulu game yang lagi jalan! Sabar napa." }, { quoted: msg });
     }
 
     const number = Math.floor(Math.random() * 100) + 1; // 1-100
     activeGames.set(groupId, { type: "tebak", answer: number.toString(), attempts: 0 });
 
     await sock.sendMessage(groupId, { 
-      text: `🎮 *TEBAK NOMOR DIMULAI!*\n\nSaya telah memikirkan sebuah angka dari *1 sampai 100*.\nKetik *!jawab [angka]* untuk menebak!` 
+      text: `🎮 *TEBAK NOMOR COK!*\n\nGue lagi mikirin angka dari *1 ampe 100*.\nKetik *!jawab [angka]*! Siapa cepat dia dapat!` 
     }, { quoted: msg });
   },
 
   jawab: async (sock, msg, groupId, sender, args) => {
     if (!activeGames.has(groupId)) {
-      return sock.sendMessage(groupId, { text: "⚠️ Tidak ada game yang sedang berjalan di grup ini." }, { quoted: msg });
+      return sock.sendMessage(groupId, { text: "⚠️ Kaga ada game yang jalan kocak, mau jawab apaan lu." }, { quoted: msg });
     }
 
     const game = activeGames.get(groupId);
     const answer = args.join(" ").toLowerCase();
 
     if (!answer) {
-      return sock.sendMessage(groupId, { text: "❌ Masukkan jawabanmu! Contoh: !jawab 50" }, { quoted: msg });
+      return sock.sendMessage(groupId, { text: "❌ Jawaban lu mana njir? Contoh: !jawab 50" }, { quoted: msg });
     }
 
     if (game.type === "kuis") {
       if (answer === game.answer) {
         activeGames.delete(groupId);
         return sock.sendMessage(groupId, { 
-          text: `🎉 *BENAR!* @${sender.split("@")[0]} berhasil menjawab kuis!\n\nJawaban: *${game.answer}*`,
+          text: `🎉 *BENER ANJAY!* @${sender.split("@")[0]} pinter bet dah!\n\nJawaban: *${game.answer}*`,
           mentions: [sender]
         }, { quoted: msg });
       } else {
-        return sock.sendMessage(groupId, { text: "❌ Salah! Coba lagi." }, { quoted: msg });
+        return sock.sendMessage(groupId, { text: "❌ Salah kocak! Mikir lagi awkwokwok." }, { quoted: msg });
       }
     } 
     
@@ -117,18 +117,18 @@ module.exports = {
       const guess = parseInt(answer);
       const target = parseInt(game.answer);
 
-      if (isNaN(guess)) return sock.sendMessage(groupId, { text: "❌ Masukkan tebakan berupa angka!" }, { quoted: msg });
+      if (isNaN(guess)) return sock.sendMessage(groupId, { text: "❌ Pake angka bambang, bukan huruf!" }, { quoted: msg });
 
       if (guess === target) {
         activeGames.delete(groupId);
         return sock.sendMessage(groupId, { 
-          text: `🎉 *TEBAKAN BENAR!*\n\n@${sender.split("@")[0]} berhasil menebak angka *${target}* dalam ${game.attempts} percobaan!`,
+          text: `🎉 *JACKPOT!* Tebakan lu bener!\n\n@${sender.split("@")[0]} nebak angka *${target}* setelah ${game.attempts} kali ngide!`,
           mentions: [sender]
         }, { quoted: msg });
       } else if (guess < target) {
-        return sock.sendMessage(groupId, { text: `📈 Angka terlalu KECIL! Coba lagi. (Percobaan ke-${game.attempts})` }, { quoted: msg });
+        return sock.sendMessage(groupId, { text: `📈 Kurang gede bang! Naikin lagi angkanya. (Niat ke-${game.attempts})` }, { quoted: msg });
       } else {
-        return sock.sendMessage(groupId, { text: `📉 Angka terlalu BESAR! Coba lagi. (Percobaan ke-${game.attempts})` }, { quoted: msg });
+        return sock.sendMessage(groupId, { text: `📉 Kegedean njir! Turunin dikit. (Niat ke-${game.attempts})` }, { quoted: msg });
       }
     }
   }

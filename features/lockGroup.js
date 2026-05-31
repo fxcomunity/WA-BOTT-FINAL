@@ -5,11 +5,10 @@ const lockTimers = {};
 module.exports = {
   async lock(sock, groupId) {
     await sock.groupSettingUpdate(groupId, "announcement");
-    return `╭━━• [ 🔒 *GRUP DIKUNCI* ] •━━╮
+    return `╭━━• [ 🔒 *GRUP DIGEMBOK* ] •━━╮
 ┃
-┃ Grup telah ditutup!
-┃ Hanya Admin yang dapat
-┃ mengirim pesan sekarang.
+┃ Berisik bet lu pada, grup gue gembok!
+┃ Skrg cuma Admin yg bisa ngoceh.
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
   },
@@ -22,7 +21,7 @@ module.exports = {
 
     if (timeStr) {
       const match = timeStr.match(/^(\d{1,2})[.:](\d{2})/);
-      if (!match) return "❌ Format jam salah! Gunakan format 24 jam. Contoh: !unlock 06.00";
+      if (!match) return "❌ Format jam salah njir! Pake format 24 jam. Contoh: !unlock 06.00";
       
       let targetHour = parseInt(match[1]);
       let targetMinute = parseInt(match[2]);
@@ -35,7 +34,7 @@ module.exports = {
       let targetDate = new Date(wibNow);
       targetDate.setHours(targetHour, targetMinute, 0, 0);
       
-      // Jika jam yang dituju sudah lewat hari ini, jadwalkan untuk besok
+      // Jika jam yang dituju udah lewat hari ini, jadwalkan untuk besok
       if (targetDate.getTime() <= wibNow.getTime()) {
         targetDate.setDate(targetDate.getDate() + 1);
       }
@@ -45,7 +44,7 @@ module.exports = {
       lockTimers[groupId] = setTimeout(async () => {
         try {
           await sock.groupSettingUpdate(groupId, "not_announcement");
-          await sock.sendMessage(groupId, { text: `╭━━• [ 🔓 *GRUP DIBUKA* ] •━━╮\n┃\n┃ Sesuai jadwal, grup sekarang\n┃ dibuka secara otomatis!\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯` });
+          await sock.sendMessage(groupId, { text: `╭━━• [ 🔓 *GRUP DIBUKA* ] •━━╮\n┃\n┃ Sesuai jadwal bos, grup udah\n┃ gue buka otomatis. Bisa bacot!\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯` });
         } catch (err) {}
       }, delay);
 
@@ -54,10 +53,10 @@ module.exports = {
       const witaH = String((targetHour + 1) % 24).padStart(2, "0");
       const witH = String((targetHour + 2) % 24).padStart(2, "0");
 
-      return `╭━━• [ ⏳ *JADWAL BUKA GRUP* ] •━━╮
+      return `╭━━• [ ⏳ *JADWAL BUKA GEMBOK* ] •━━╮
 ┃
-┃ ✅ *Sip!* Grup akan otomatis
-┃ dibuka pada jam:
+┃ ✅ *Sip santuy!* Grup bakal otomatis
+┃ dibuka pas jam:
 ┃
 ┣━━ 🕛 *${hh}:${mm} WIB*
 ┣━━ 🕐 *${witaH}:${mm} WITA*
@@ -69,9 +68,8 @@ module.exports = {
     await sock.groupSettingUpdate(groupId, "not_announcement");
     return `╭━━• [ 🔓 *GRUP DIBUKA* ] •━━╮
 ┃
-┃ Grup telah dibuka kembali!
-┃ Semua member kini dapat
-┃ mengirim pesan.
+┃ Gembok udah gue copot njir!
+┃ Skrg lu semua udah bebas bacot lagi.
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
   },

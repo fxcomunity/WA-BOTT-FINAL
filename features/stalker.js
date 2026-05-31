@@ -5,7 +5,7 @@ const { reply } = require('./utils');
 
 module.exports = {
   igStalk: async (sock, msg, username) => {
-    if (!username) return reply(sock, msg, "⚠️ Penggunaan: !igstalk [username]");
+    if (!username) return reply(sock, msg, "⚠️ Pake format yg bener njir: !igstalk [username]");
     try {
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "🔍", key: msg.key } });
       // Gunakan API publik widipe
@@ -24,12 +24,12 @@ module.exports = {
                    
       await sock.sendMessage(msg.key.remoteJid, { image: { url: data.profile_pic }, caption: text }, { quoted: msg });
     } catch (e) {
-      await reply(sock, msg, "❌ Username tidak ditemukan atau API sedang gangguan.");
+      await reply(sock, msg, "❌ Username IG kaga ketemu ato server API lagi ampas.");
     }
   },
 
   ttStalk: async (sock, msg, username) => {
-    if (!username) return reply(sock, msg, "⚠️ Penggunaan: !ttstalk [username]");
+    if (!username) return reply(sock, msg, "⚠️ Pake format yg bener njir: !ttstalk [username]");
     try {
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "🔍", key: msg.key } });
       const res = await axios.get(`https://widipe.com/tiktokstalk?user=${username}`);
@@ -47,12 +47,12 @@ module.exports = {
                    
       await sock.sendMessage(msg.key.remoteJid, { image: { url: data.profile_pic }, caption: text }, { quoted: msg });
     } catch (e) {
-      await reply(sock, msg, "❌ Username tidak ditemukan atau API sedang gangguan.");
+      await reply(sock, msg, "❌ Username TikTok kaga ketemu ato server API lagi ampas.");
     }
   },
 
   ghStalk: async (sock, msg, username) => {
-    if (!username) return reply(sock, msg, "⚠️ Penggunaan: !ghstalk [username]");
+    if (!username) return reply(sock, msg, "⚠️ Pake format yg bener njir: !ghstalk [username]");
     try {
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "🔍", key: msg.key } });
       const res = await axios.get(`https://api.github.com/users/${username}`);
@@ -71,7 +71,7 @@ module.exports = {
                    
       await sock.sendMessage(msg.key.remoteJid, { image: { url: data.avatar_url }, caption: text }, { quoted: msg });
     } catch (e) {
-      await reply(sock, msg, "❌ Username tidak ditemukan atau API sedang gangguan.");
+      await reply(sock, msg, "❌ Username GitHub kaga ketemu ato server API lagi ampas.");
     }
   }
 };

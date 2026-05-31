@@ -18,7 +18,7 @@ module.exports = {
 
       if (!data.status) {
         await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
-        return sock.sendMessage(msg.key.remoteJid, { text: '❌ Lagu tidak ditemukan di Spotify' }, { quoted: msg });
+        return sock.sendMessage(msg.key.remoteJid, { text: '❌ Lagu tidak ketemu di Spotify' }, { quoted: msg });
       }
 
       let v = data.result;
@@ -61,7 +61,7 @@ module.exports = {
     } catch (e) {
       console.error(e);
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
-      await sock.sendMessage(msg.key.remoteJid, { text: '❌ Gagal mengambil lagu dari API' }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: '❌ Gagal bos mengambil lagu dari API' }, { quoted: msg });
     }
   },
 
@@ -77,7 +77,7 @@ module.exports = {
 
       if (!data.status || !data.result.length) {
         await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
-        return sock.sendMessage(msg.key.remoteJid, { text: '❌ Lagu tidak ditemukan' }, { quoted: msg });
+        return sock.sendMessage(msg.key.remoteJid, { text: '❌ Lagu tidak ketemu' }, { quoted: msg });
       }
 
       let result = data.result.slice(0, 10);
@@ -108,7 +108,7 @@ module.exports = {
     } catch (e) {
       console.log(e);
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
-      await sock.sendMessage(msg.key.remoteJid, { text: '❌ Terjadi kesalahan saat mencari lagu (API Error)' }, { quoted: msg });
+      await sock.sendMessage(msg.key.remoteJid, { text: '❌ Ada error njir saat mencari lagu (API Error)' }, { quoted: msg });
     }
   }
 };

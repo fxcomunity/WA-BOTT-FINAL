@@ -31,7 +31,7 @@ module.exports = {
     try {
       const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       
-      // Pastikan yang di-reply adalah audio atau vn
+      // Pastiin yang di-reply adalah audio atau vn
       if (!quotedMsg || (!quotedMsg.audioMessage && !quotedMsg.documentMessage?.mimetype?.includes('audio'))) {
         return sock.sendMessage(groupId, { text: `❌ Balas sebuah pesan suara/audio dengan command !${effectName}` }, { quoted: msg });
       }
@@ -58,7 +58,7 @@ module.exports = {
       ffmpeg(tmpIn)
         .on('error', async (err) => {
           console.error(`Error ffmpeg ${effectName}:`, err);
-          await sock.sendMessage(groupId, { text: "❌ Gagal memproses audio. File mungkin rusak atau format tidak didukung." }, { quoted: msg });
+          await sock.sendMessage(groupId, { text: "❌ Gagal bos memproses audio. File mungkin rusak atau format tidak didukung." }, { quoted: msg });
           try { fs.unlinkSync(tmpIn); } catch(e){}
         })
         .on('end', async () => {
@@ -82,7 +82,7 @@ module.exports = {
 
     } catch (err) {
       console.error(`audioEffects ${effectName} error:`, err);
-      await sock.sendMessage(groupId, { text: `❌ Terjadi kesalahan saat memproses audio: ${err.message}\n\n${err.stack}` }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: `❌ Ada error njir saat memproses audio: ${err.message}\n\n${err.stack}` }, { quoted: msg });
     }
   }
 };

@@ -78,10 +78,10 @@ module.exports = {
     }
 
     if (!keys.gemini && !keys.openai && !keys.deepseek && !keys.mistral) {
-      return "⚠️ Kunci API belum diisi di file .env! Bot tidak bisa memproses balasan AI.";
+      return "⚠️ Kunci API belom diisi di file .env! Bot tidak bisa memproses balasan AI.";
     }
 
     console.error("AI Fallback Exhausted Errors:", errors);
-    return "Maaf, semua server AI sedang sibuk atau mencapai limit saat ini. Coba tanyakan lagi nanti ya! 😢";
+    return "Sori, semua server AI sedang sibuk atau mencapai limit saat ini. Coba tanyakan lagi nanti ya! 😢";
   }
 };
