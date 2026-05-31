@@ -30,6 +30,43 @@ const shop = [
 
 const itemsData = require('./itemsData');
 
+function getDurabilityForLevel(lv) {
+  if (lv === 1) return 50;
+  if (lv === 2) return 100;
+  if (lv === 3) return 200;
+  if (lv === 4) return 400;
+  if (lv === 5) return 800;
+  return 1500;
+}
+
+function normalizeDurability(w) {
+  if (!w.enchants) w.enchants = {};
+
+  if (w.enchants.pickaxeDurability !== undefined) {
+    w.pickaxeDurability = w.enchants.pickaxeDurability;
+    w.maxPickaxeDurability = w.enchants.maxPickaxeDurability;
+    delete w.enchants.pickaxeDurability;
+    delete w.enchants.maxPickaxeDurability;
+  }
+  if (w.enchants.pancinganDurability !== undefined) {
+    w.pancinganDurability = w.enchants.pancinganDurability;
+    w.maxPancinganDurability = w.enchants.maxPancinganDurability;
+    delete w.enchants.pancinganDurability;
+    delete w.enchants.maxPancinganDurability;
+  }
+
+  const pickLv = w.pickaxeLevel || 1;
+  const pancingLv = w.pancinganLevel || 1;
+
+  if (w.pickaxeDurability == null) w.pickaxeDurability = getDurabilityForLevel(pickLv);
+  if (w.maxPickaxeDurability == null) w.maxPickaxeDurability = getDurabilityForLevel(pickLv);
+  if (w.pancinganDurability == null) w.pancinganDurability = getDurabilityForLevel(pancingLv);
+  if (w.maxPancinganDurability == null) w.maxPancinganDurability = getDurabilityForLevel(pancingLv);
+
+  w.pickaxeDurability = Math.max(0, Math.min(Number(w.pickaxeDurability) || 0, Number(w.maxPickaxeDurability) || 0));
+  w.pancinganDurability = Math.max(0, Math.min(Number(w.pancinganDurability) || 0, Number(w.maxPancinganDurability) || 0));
+}
+
 function getWallet(sender) {
   let w = db.prepare('SELECT * FROM users WHERE id = ?').get(sender);
   if (!w) {
@@ -65,38 +102,8 @@ function getWallet(sender) {
   if (w.mp === undefined) w.mp = 50;
   if (w.maxMp === undefined) w.maxMp = 50;
 
-  function getDurabilityForLevel(lv) {
-    if (lv === 1) return 50;
-    if (lv === 2) return 100;
-    if (lv === 3) return 200;
-    if (lv === 4) return 400;
-    if (lv === 5) return 800;
-    return 1500;
-  }
+  normalizeDurability(w);
 
-  // Handle migration from enchants JSON to columns
-  if (w.enchants.pickaxeDurability !== undefined) {
-    w.pickaxeDurability = w.enchants.pickaxeDurability;
-    w.maxPickaxeDurability = w.enchants.maxPickaxeDurability;
-    delete w.enchants.pickaxeDurability;
-    delete w.enchants.maxPickaxeDurability;
-  }
-  if (w.enchants.pancinganDurability !== undefined) {
-    w.pancinganDurability = w.enchants.pancinganDurability;
-    w.maxPancinganDurability = w.enchants.maxPancinganDurability;
-    delete w.enchants.pancinganDurability;
-    delete w.enchants.maxPancinganDurability;
-  }
-
-  if (w.pickaxeDurability === undefined || w.pickaxeDurability === null) {
-    w.pickaxeDurability = getDurabilityForLevel(w.pickaxeLevel);
-    w.maxPickaxeDurability = getDurabilityForLevel(w.pickaxeLevel);
-  }
-  if (w.pancinganDurability === undefined || w.pancinganDurability === null) {
-    w.pancinganDurability = getDurabilityForLevel(w.pancinganLevel);
-    w.maxPancinganDurability = getDurabilityForLevel(w.pancinganLevel);
-  }
-  
   // Set owner ke unlimited (999999999)
   const no = sender.split("@")[0];
   if (config.owners.includes(no)) {
@@ -115,6 +122,7 @@ function getWallet(sender) {
 }
 
 function saveWallet(sender, w) {
+  normalizeDurability(w);
   const invStr = JSON.stringify(w.inventory || {});
   const enchStr = JSON.stringify(w.enchants || {});
   const buffsStr = JSON.stringify(w.buffs || {});

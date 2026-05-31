@@ -7,6 +7,42 @@
 
 require('dotenv').config();
 
+const PLACEHOLDER_KEY_PATTERNS = [
+  /^API_KEY_/i,
+  /^your_/i,
+  /_LU$/i,
+  /^REPLACE/i,
+  /^xxx+$/i,
+  /^dummy/i,
+  /^paste_/i,
+];
+
+function isValidApiKey(key) {
+  if (!key || typeof key !== "string") return false;
+  const trimmed = key.trim();
+  if (trimmed.length < 10) return false;
+  return !PLACEHOLDER_KEY_PATTERNS.some(p => p.test(trimmed));
+}
+
+function sanitizeApiKeys(raw) {
+  const result = {};
+  for (const [name, key] of Object.entries(raw)) {
+    result[name] = isValidApiKey(key) ? key.trim() : null;
+  }
+  return result;
+}
+
+const apiKeys = sanitizeApiKeys({
+  gemini: process.env.GEMINI_API_KEY,
+  openai: process.env.OPENAI_API_KEY,
+  deepseek: process.env.DEEPSEEK_API_KEY,
+  mistral: process.env.MISTRAL_API_KEY,
+});
+
+function hasValidApiKeys() {
+  return Object.values(apiKeys).some(Boolean);
+}
+
 module.exports = {
   owners: [
     "62895404147521", // Owner tunggal
@@ -20,7 +56,8 @@ module.exports = {
   botVersion: "3.0.0",
 
   // === MODERASI ===
-  maxWarn: 3,           // warn ke-berapa langsung kick
+  maxWarn: 3,           // warn ke-berapa langsung kick (!warn manual)
+  antiLinkMaxStrike: 3, // pelanggaran link terpisah dari warn manual
   floodLimit: 5,        // maks pesan per 10 detik
   muteDuration: 10,     // menit mute otomatis saat kena anti-spam
   slowModeDelay: 30,    // detik antar pesan saat slow mode aktif
@@ -56,12 +93,10 @@ module.exports = {
   aiTrigger: ["bot,", "bot:", "!tanya"],
   aiModel: "claude-sonnet-4-20250514", // ganti jika perlu
 
-  apiKeys: {
-    gemini: process.env.GEMINI_API_KEY,
-    openai: process.env.OPENAI_API_KEY,
-    deepseek: process.env.DEEPSEEK_API_KEY,
-    mistral: process.env.MISTRAL_API_KEY
-  },
+  apiKeys,
+
+  isValidApiKey,
+  hasValidApiKeys,
 
   // === KATA KASAR (tambah sesuai kebutuhan) ===
   badWords: ["anjing", "bangsat", "brengsek", "bajingan"],

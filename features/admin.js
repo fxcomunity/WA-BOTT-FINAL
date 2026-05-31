@@ -1,7 +1,8 @@
 // features/admin.js — Admin Tools OP
 
 const config = require("../config");
-const { reply } = require("./utils");
+const utils = require("./utils");
+const { reply } = utils;
 
 module.exports = {
   promote: async (sock, msg, groupId, targetJid) => {
@@ -94,18 +95,19 @@ module.exports = {
       }
 
       // Download the image buffer
-      const buffer = await downloadMediaMessage(
-        targetMessage,
-        'buffer',
-        {},
-        {
-          logger: console,
-          reuploadRequest: sock.updateMediaMessage
-        }
+      const buffer = await utils.retry(() =>
+        downloadMediaMessage(
+          targetMessage,
+          'buffer',
+          {},
+          {
+            logger: console,
+            reuploadRequest: sock.updateMediaMessage
+          }
+        )
       );
 
-      // Update the group profile picture
-      await sock.updateProfilePicture(groupId, buffer);
+      await utils.retry(() => sock.updateProfilePicture(groupId, buffer), 2, 2000);
       await reply(sock, msg, `✅ PP grup berhasil diganti bos! Cakep dah.`);
     } catch (e) {
       console.error("setPp error:", e);

@@ -77,8 +77,8 @@ module.exports = {
       }
     }
 
-    if (!keys.gemini && !keys.openai && !keys.deepseek && !keys.mistral) {
-      return "⚠️ Kunci API belom diisi di file .env! Bot tidak bisa memproses balasan AI.";
+    if (!config.hasValidApiKeys()) {
+      return "⚠️ Kunci API belom diisi di file .env! Bot tidak bisa memproses balasan AI.\n\nIsi minimal satu key: GEMINI_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY, atau MISTRAL_API_KEY";
     }
 
     console.error("AI Fallback Exhausted Errors:", errors);

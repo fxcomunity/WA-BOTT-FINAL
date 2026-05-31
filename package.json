@@ -12,7 +12,7 @@
     "@distube/ytdl-core": "^4.16.12",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@hapi/boom": "^10.0.1",
-    "atexovi-baileys": "^7.5.6",
+    "atexovi-baileys": "7.5.6",
     "axios": "^1.6.0",
     "better-sqlite3": "^12.10.0",
     "btch-downloader": "^6.0.32",

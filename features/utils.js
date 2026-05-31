@@ -200,4 +200,17 @@ module.exports = {
     return sock.sendMessage(msg.key.remoteJid, { text, mentions }, { quoted: msg });
   },
 
+  retry: async (fn, retries = 3, delayMs = 1500) => {
+    let lastError;
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await fn();
+      } catch (e) {
+        lastError = e;
+        if (i < retries - 1) await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+      }
+    }
+    throw lastError;
+  },
+
 };

@@ -10,11 +10,13 @@ const fs = require('fs');
 const config = require("./config");
 
 function validateConfig() {
-  if (config.features.aiChatbot) {
-    const { gemini, openai, deepseek, mistral } = config.apiKeys || {};
-    if (!gemini && !openai && !deepseek && !mistral) {
-      console.warn("⚠️ [CONFIG] aiChatbot aktif tapi tidak ada API key di .env — fitur AI tidak akan berjalan.");
-    }
+  if (config.features.aiChatbot && !config.hasValidApiKeys()) {
+    console.warn("⚠️ [CONFIG] aiChatbot dinonaktifkan — tidak ada API key valid di .env");
+    console.warn("   Isi GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY / MISTRAL_API_KEY di file .env");
+    config.features.aiChatbot = false;
+  } else if (config.features.aiChatbot) {
+    const active = Object.entries(config.apiKeys).filter(([, v]) => v).map(([k]) => k);
+    console.log(`✅ [CONFIG] AI chatbot aktif — provider: ${active.join(", ")}`);
   }
 }
 validateConfig();
@@ -24,7 +26,7 @@ const processedMessages = new Set();
 
 // Import semua fitur
 const antiSpam    = require("./features/antiSpam");
-const antiLink    = require("./features/antiLink");
+const moderation  = require("./features/moderation");
 const admin       = require("./features/admin");
 const stalker     = require("./features/stalker");
 const welcome     = require("./features/welcome");
@@ -165,7 +167,7 @@ async function startBot() {
       const shouldReconnect =
         new Boom(lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log("❌ Koneksi terputus. Reconnect:", shouldReconnect);
-      if (shouldReconnect) startBot();
+      if (shouldReconnect) setTimeout(() => startBot(), 5000);
     } else if (connection === "open") {
       console.log("✅ JackBOT berhasil terhubung!");
       scheduler.start(sock);
@@ -407,14 +409,14 @@ async function startBot() {
     // ANTI LINK (Warn dulu, kick setelah maxWarn)
     // ============================================
     if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && !isCmd) {
-      if (antiLink.hasLink(body)) {
+      if (moderation.hasBlockedLink(body)) {
         try {
           const botId = jidNormalizedUser(sock.user.id);
           const botIsAdmin = await isAdmin(sock, groupId, botId);
 
           if (botIsAdmin) {
             await sock.sendMessage(groupId, { delete: msg.key }).catch(e => console.log("Gagal bos hapus pesan link:", e));
-            await warnSystem.autoWarn(sock, groupId, sender, "Nyebar Link Haram");
+            await moderation.handleLinkViolation(sock, groupId, sender);
           } else {
             await reply(sock, msg, `⚠️ Woi @${sender.split("@")[0]} nyebar link njir! Admin asli tolong kick nih bocah (Gue belom diangkat admin soalnya)!`);
           }
