@@ -406,17 +406,23 @@ async function startBot() {
 
 
     // ============================================
-    // ANTI LINK (Warn dulu, kick setelah maxWarn)
+    // ANTI LINK — promo/invite = kick langsung, sosial/lain = warn dulu
     // ============================================
     if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && !isCmd) {
-      if (moderation.hasBlockedLink(body)) {
+      const violation = moderation.analyzeViolation(body);
+      if (violation.action !== "none") {
         try {
           const botId = jidNormalizedUser(sock.user.id);
           const botIsAdmin = await isAdmin(sock, groupId, botId);
 
           if (botIsAdmin) {
             await sock.sendMessage(groupId, { delete: msg.key }).catch(e => console.log("Gagal bos hapus pesan link:", e));
-            await moderation.handleLinkViolation(sock, groupId, sender);
+
+            if (violation.action === "kick") {
+              await moderation.handlePromoKick(sock, groupId, sender, violation.reason);
+            } else {
+              await moderation.handleLinkViolation(sock, groupId, sender, violation.reason);
+            }
           } else {
             await reply(sock, msg, `⚠️ Woi @${sender.split("@")[0]} nyebar link njir! Admin asli tolong kick nih bocah (Gue belom diangkat admin soalnya)!`);
           }

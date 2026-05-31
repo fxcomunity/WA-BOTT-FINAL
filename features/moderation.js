@@ -1,4 +1,4 @@
-// features/moderation.js — Anti-link & pelanggaran moderasi otomatis
+// features/moderation.js — Anti-link: promo kick langsung, sosial/lain warn dulu
 
 const config = require("../config");
 const db = require("../database/db");
@@ -17,8 +17,12 @@ function formatTimestamp() {
 }
 
 module.exports = {
+  analyzeViolation(text) {
+    return antiLink.classifyText(text);
+  },
+
   hasBlockedLink(text) {
-    return antiLink.hasLink(text);
+    return antiLink.classifyText(text).action !== "none";
   },
 
   getLinkStrikes(sender) {
@@ -29,7 +33,27 @@ module.exports = {
     db.prepare("DELETE FROM link_strikes WHERE id = ?").run(sender);
   },
 
-  async handleLinkViolation(sock, groupId, sender) {
+  async handlePromoKick(sock, groupId, sender, reason = "Nyebar link promosi / invite grup") {
+    await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e =>
+      console.log("Gagal kick promo-link:", e)
+    );
+    db.prepare("DELETE FROM link_strikes WHERE id = ?").run(sender);
+
+    const strDate = formatTimestamp();
+    const tag = `@${sender.split("@")[0]}`;
+
+    const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (PROMOSI) ] •━━╮
+┃
+┃ 👤 *Target:* ${tag}
+┃ 📝 *Pelanggaran:* ${reason}
+┃ ⏰ *Waktu Eksekusi:* ${strDate}
+┃ 💀 *Hukuman:* Kick langsung (zero tolerance)
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+    return sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
+  },
+
+  async handleLinkViolation(sock, groupId, sender, reason = "Nyebar link") {
     const max = config.antiLinkMaxStrike ?? config.maxWarn;
     let count = this.getLinkStrikes(sender);
     count++;
@@ -47,19 +71,20 @@ module.exports = {
       const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (ANTI-LINK) ] •━━╮
 ┃
 ┃ 👤 *Target:* ${tag}
-┃ 📝 *Alasan:* Nyebar link haram (${max}x pelanggaran)
+┃ 📝 *Alasan:* ${reason} (${max}x peringatan)
 ┃ ⏰ *Waktu Eksekusi:* ${strDate}
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
       return sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
     }
 
-    const warnMsg = `╭━━• [ 🔗 *PELANGGARAN LINK* (${count}/${max}) ] •━━╮
+    const icon = reason.includes("media sosial") ? "📱" : "🔗";
+    const warnMsg = `╭━━• [ ${icon} *PERINGATAN LINK* (${count}/${max}) ] •━━╮
 ┃
 ┃ 👤 *Target:* ${tag}
-┃ 📝 *Pelanggaran:* Nyebar link haram
+┃ 📝 *Pelanggaran:* ${reason}
 ┃ ⏰ *Waktu:* ${strDate}
-┃ ⚠️ *Sisa toleransi link:* ${max - count} kali lagi
+┃ ⚠️ *Sisa toleransi:* ${max - count} kali lagi sebelum kick
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
     return sock.sendMessage(groupId, { text: warnMsg, mentions: [sender] });
