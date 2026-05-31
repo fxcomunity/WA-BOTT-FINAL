@@ -477,6 +477,17 @@ async function startBot() {
     // ============================================
     if (!isCmd) return;
 
+    // --- GLOBAL COOLDOWN SYSTEM UNTUK SEMUA FITUR (30 DETIK PER USER) ---
+    if (!ownerCheck) {
+      if (!global.cmdCooldown) global.cmdCooldown = {};
+      const now = Date.now();
+      if (global.cmdCooldown[sender] && now - global.cmdCooldown[sender] < 30000) {
+        const sisaWaktu = Math.ceil((30000 - (now - global.cmdCooldown[sender])) / 1000);
+        return reply(sock, msg, `⏳ Sabar ngab! Tunggu *${sisaWaktu} detik* lagi buat pake fitur bot.`);
+      }
+      global.cmdCooldown[sender] = now;
+    }
+
     // Otomatis berikan reaksi 🕒 saat sebuah command tereksekusi
     await sock.sendMessage(groupId, { react: { text: "🕒", key: msg.key } });
 
@@ -700,16 +711,6 @@ async function startBot() {
       // ---------- SEMUA MEMBER ----------
       case "help":
       case "menu": {
-        // --- COOLDOWN SYSTEM UNTUK !MENU (30 DETIK PER USER) ---
-        if (!global.menuCooldown) global.menuCooldown = {};
-        const now = Date.now();
-        if (global.menuCooldown[sender] && now - global.menuCooldown[sender] < 30000) {
-          const sisaWaktu = Math.ceil((30000 - (now - global.menuCooldown[sender])) / 1000);
-          return reply(sock, msg, `⏳ Jangan spam ngab! Tunggu *${sisaWaktu} detik* lagi buat buka menu.`);
-        }
-        global.menuCooldown[sender] = now;
-        // --------------------------------------------------------
-
         const name = msg.pushName || sender.split("@")[0];
         
         const dNow = new Date();
