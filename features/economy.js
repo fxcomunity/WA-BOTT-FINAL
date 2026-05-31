@@ -17,7 +17,9 @@ const shop = [
   { id: 12, name: "Buku Lure (Pancingan)", price: 25000, desc: "Peluang ikan langka lebih besar", type: "enchant", enchantKey: "lure" },
   { id: 13, name: "Stamina Kecil (5 Menit)", price: 500, desc: "Reset CD Mancing/Nambang 5 Menit", type: "item", itemKey: "stamina_kecil" },
   { id: 14, name: "Stamina Sedang (10 Menit)", price: 900, desc: "Reset CD Mancing/Nambang 10 Menit", type: "item", itemKey: "stamina_sedang" },
-  { id: 15, name: "Stamina Besar (20 Menit)", price: 1500, desc: "Reset CD Mancing/Nambang 20 Menit", type: "item", itemKey: "stamina_besar" }
+  { id: 15, name: "Stamina Besar (20 Menit)", price: 1500, desc: "Reset CD Mancing/Nambang 20 Menit", type: "item", itemKey: "stamina_besar" },
+  { id: 16, name: "Potion Kecil", price: 200, desc: "Memulihkan 30 HP saat Combat", type: "item", itemKey: "potion_kecil" },
+  { id: 17, name: "Potion Besar", price: 500, desc: "Memulihkan 100 HP saat Combat", type: "item", itemKey: "potion_besar" }
 ];
 
 const itemsData = require('./itemsData');
@@ -29,18 +31,26 @@ function getWallet(sender) {
       id: sender,
       coins: 0, level: 1, xp: 0, streak: 0, lastDaily: 0,
       lastMancing: 0, lastBerburu: 0, lastNambang: 0, pickaxeLevel: 1, pancinganLevel: 1,
-      inventory: '{}', enchants: '{}'
+      inventory: '{}', enchants: '{}',
+      hp: 100, maxHp: 100, buffs: '{}', combat: '{}'
     };
     db.prepare(`
-      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants);
+      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat);
   }
   
   try { w.inventory = typeof w.inventory === 'string' ? JSON.parse(w.inventory) : w.inventory; } catch(e) { w.inventory = {}; }
   try { w.enchants = typeof w.enchants === 'string' ? JSON.parse(w.enchants) : w.enchants; } catch(e) { w.enchants = {}; }
+  try { w.buffs = typeof w.buffs === 'string' ? JSON.parse(w.buffs) : w.buffs; } catch(e) { w.buffs = {}; }
+  try { w.combat = typeof w.combat === 'string' ? JSON.parse(w.combat) : w.combat; } catch(e) { w.combat = {}; }
+  
   if (!w.inventory) w.inventory = {};
   if (!w.enchants) w.enchants = {};
+  if (!w.buffs) w.buffs = {};
+  if (!w.combat) w.combat = {};
+  if (w.hp === undefined) w.hp = 100;
+  if (w.maxHp === undefined) w.maxHp = 100;
   
   // Set owner ke unlimited (999999999)
   const no = sender.split("@")[0];
@@ -50,6 +60,8 @@ function getWallet(sender) {
     w.xp = 999999999;
     w.pickaxeLevel = 999;
     w.pancinganLevel = 999;
+    w.hp = 999999;
+    w.maxHp = 999999;
   }
   
   return w;
@@ -58,11 +70,13 @@ function getWallet(sender) {
 function saveWallet(sender, w) {
   const invStr = JSON.stringify(w.inventory || {});
   const enchStr = JSON.stringify(w.enchants || {});
+  const buffsStr = JSON.stringify(w.buffs || {});
+  const combatStr = JSON.stringify(w.combat || {});
   db.prepare(`
     UPDATE users 
-    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?
+    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?
     WHERE id = ?
-  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, sender);
+  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, sender);
 }
 
 function levelUp(wallet) {
@@ -236,6 +250,8 @@ module.exports = {
   // =====================================
   async mancing(sock, msg, sender) {
     const w = getWallet(sender);
+    if (w.combat && w.combat.active) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu tidak bisa melakukan ini saat sedang diserang monster! Ketik !serang atau !lari" }, { quoted: msg });
+    
     const now = Date.now();
     const cooldown = 5 * 60000; // 5 menit
     if (now - w.lastMancing < cooldown) {
@@ -279,6 +295,8 @@ module.exports = {
 
   async berburu(sock, msg, sender) {
     const w = getWallet(sender);
+    if (w.combat && w.combat.active) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu tidak bisa melakukan ini saat sedang diserang monster! Ketik !serang atau !lari" }, { quoted: msg });
+    
     const now = Date.now();
     const cooldown = 10 * 60000; // 10 menit
     if (now - w.lastBerburu < cooldown) {
@@ -311,6 +329,8 @@ module.exports = {
 
   async nambang(sock, msg, sender) {
     const w = getWallet(sender);
+    if (w.combat && w.combat.active) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu tidak bisa menambang saat sedang diserang monster! Ketik !serang atau !lari" }, { quoted: msg });
+    
     const now = Date.now();
     const cooldown = 5 * 60000; // 5 menit
     if (now - w.lastNambang < cooldown) {
@@ -319,6 +339,24 @@ module.exports = {
     }
     
     w.lastNambang = now;
+    
+    // Mata Air Keabadian Leluhur Buff
+    if (w.buffs["mata_air_leluhur"]) {
+      w.hp = Math.min(w.maxHp, w.hp + 10);
+    }
+    
+    // Encounter Check (30% except if repel active)
+    let encounterRate = 0.30;
+    if (w.buffs["monster_repel"] && w.buffs["monster_repel"].expiresAt > now) {
+      encounterRate = 0; // Monster Repel is active
+    }
+    
+    if (Math.random() < encounterRate) {
+      saveWallet(sender, w); // Save CD
+      const combat = require('./combat');
+      return combat.triggerEncounter(sock, msg, sender, w);
+    }
+
     const gacha = Math.random();
     if (gacha < 0.15) {
       saveWallet(sender, w);
@@ -326,9 +364,18 @@ module.exports = {
     }
 
     const isFortune = w.enchants["fortune"];
+    const rpgData = require('./rpgData');
     const result = itemsData.rollItem('mining', w.pickaxeLevel, isFortune);
     const item = result.item;
     const tier = result.tierData;
+    
+    // Check Artifact Drop (Only if they actually got ore)
+    let artifactText = "";
+    if (Math.random() < 0.20) { // 20% chance to drop artifact instead of/with ore
+      const artifact = rpgData.rollArtifact();
+      w.inventory[artifact.id] = (w.inventory[artifact.id] || 0) + 1;
+      artifactText = `\n🎁 *BONUS ARTEFAK!*\nKamu menemukan: *${artifact.name}* (${rpgData.artifactTiers[artifact.tier].name})`;
+    }
     
     let namaPickaxe = "Batu (Lv.1)";
     if (w.pickaxeLevel == 2) namaPickaxe = "Besi (Lv.2)";
@@ -342,7 +389,7 @@ module.exports = {
     levelUp(w);
     saveWallet(sender, w);
 
-    const text = `⛏️ Selesai menambang dengan *${namaPickaxe}*!\n\n💎 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}\n\n_(Cek tas dengan !inv)_`;
+    const text = `⛏️ Selesai menambang dengan *${namaPickaxe}*!\n\n💎 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${artifactText}\n\n_(Cek tas dengan !inv)_`;
     
     // Notif jika Epic ke atas
     if (item.tier >= 4) {
@@ -354,7 +401,15 @@ module.exports = {
 
   async inventory(sock, msg, sender) {
     const w = getWallet(sender);
-    let text = `🎒 *INVENTORY KAMU*\n\n`;
+    
+    // Status HP & Darah
+    let text = `❤️ *STATUS KAMU*\n`;
+    text += `▪️ Darah (HP): ${w.hp} / ${w.maxHp}\n`;
+    if (w.combat && w.combat.active) {
+      text += `⚠️ *SEDANG BERTARUNG MELAWAN: ${w.combat.monster}*\n`;
+    }
+    text += `\n🎒 *INVENTORY KAMU*\n\n`;
+    
     let isEmpty = true;
     for (const [itemId, amount] of Object.entries(w.inventory)) {
       if (amount > 0) {
@@ -370,11 +425,22 @@ module.exports = {
     }
     if (isEmpty) text += `_Tas kamu kosong melompong._\n`;
     
-    text += `\n✨ *ENCHANTMENTS*\n`;
+    text += `\n✨ *ENCHANTMENTS & BUFFS*\n`;
     let hasEnchant = false;
     if (w.enchants["fortune"]) { text += `▪️ Fortune (Pickaxe)\n`; hasEnchant = true; }
     if (w.enchants["lure"]) { text += `▪️ Lure (Pancingan)\n`; hasEnchant = true; }
-    if (!hasEnchant) text += `_Belum ada buku enchant._\n`;
+    
+    // Tampilkan Buff jika ada
+    const now = Date.now();
+    for (const [buffId, buffData] of Object.entries(w.buffs)) {
+      if (buffData.expiresAt > now) {
+        const sisaMenit = Math.ceil((buffData.expiresAt - now) / 60000);
+        text += `▪️ [BUFF] ${buffData.name} (${sisaMenit} menit)\n`;
+        hasEnchant = true;
+      }
+    }
+
+    if (!hasEnchant) text += `_Belum ada buku enchant atau buff aktif._\n`;
 
     text += `\n💡 _Gunakan !sell [nama_item] [jumlah] untuk menjual barang_\n_Contoh: !sell ikan_mas 5 atau !sell all_`;
     return sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
@@ -444,13 +510,59 @@ module.exports = {
       w.lastNambang = Math.max(0, w.lastNambang - (10 * 60000));
       saveWallet(sender, w);
       return sock.sendMessage(msg.key.remoteJid, { text: `⚡ Menggunakan *Stamina Sedang*!\nCooldown Mancing dan Nambang dikurangi 10 menit.\n(Sisa stamina_sedang kamu: ${w.inventory[itemName]})` }, { quoted: msg });
-    } else if (itemName === "stamina_besar") {
+    } else if (itemName === "potion_besar") {
+      if (w.hp >= w.maxHp) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Darah kamu masih penuh!` }, { quoted: msg });
       w.inventory[itemName] -= 1;
-      w.lastMancing = Math.max(0, w.lastMancing - (20 * 60000));
-      w.lastNambang = Math.max(0, w.lastNambang - (20 * 60000));
+      w.hp = Math.min(w.maxHp, w.hp + 100);
       saveWallet(sender, w);
-      return sock.sendMessage(msg.key.remoteJid, { text: `⚡ Menggunakan *Stamina Besar*!\nCooldown Mancing dan Nambang dikurangi 20 menit.\n(Sisa stamina_besar kamu: ${w.inventory[itemName]})` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `🧪 Menggunakan *Potion Besar*!\nDarah dipulihkan 100 HP.\n❤️ Darah Sekarang: ${w.hp}/${w.maxHp}` }, { quoted: msg });
     } else {
+      // Check if it's an artifact that can be used
+      const rpgData = require('./rpgData');
+      const artifact = rpgData.artifacts.find(a => a.id === itemName);
+      if (artifact && artifact.action === "buff") {
+        w.inventory[itemName] -= 1;
+        const durationMs = artifact.duration * 60000;
+        w.buffs[artifact.buff] = {
+          name: artifact.name,
+          expiresAt: Date.now() + durationMs
+        };
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `🌟 Menggunakan *${artifact.name}*!\nBuff [${artifact.buff}] aktif selama ${artifact.duration} menit.` }, { quoted: msg });
+      } else if (artifact && artifact.action === "heal") {
+        if (w.hp >= w.maxHp) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Darah kamu masih penuh!` }, { quoted: msg });
+        w.inventory[itemName] -= 1;
+        w.hp = Math.min(w.maxHp, w.hp + artifact.amount);
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `✨ Menggunakan *${artifact.name}*!\nDarah dipulihkan ${artifact.amount} HP.\n❤️ Darah Sekarang: ${w.hp}/${w.maxHp}` }, { quoted: msg });
+      } else if (artifact && artifact.action === "instant_ore") {
+        w.inventory[itemName] -= 1;
+        w.inventory["gold"] = (w.inventory["gold"] || 0) + artifact.amount;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `✨ Menggunakan *${artifact.name}*!\nTanah bergetar dan menghasilkan ${artifact.amount} Gold ore secara instan.` }, { quoted: msg });
+      } else if (artifact && artifact.action === "instant_epic") {
+        w.inventory[itemName] -= 1;
+        w.hp = 1; // Pingsan
+        w.inventory["diamond"] = (w.inventory["diamond"] || 0) + artifact.amount;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `🔔 Lonceng berbunyi! Tambang runtuh!\nKamu mendapatkan ${artifact.amount} Diamond, namun darahmu tersisa 1 HP akibat tertimpa batu.` }, { quoted: msg });
+      } else if (artifact && artifact.action === "instant_massive") {
+        w.inventory[itemName] -= 1;
+        w.inventory["coal"] = (w.inventory["coal"] || 0) + artifact.amount;
+        w.inventory["iron"] = (w.inventory["iron"] || 0) + artifact.amount;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `📖 Membaca *${artifact.name}*...\nSebuah Golem Purba muncul dan menggali ${artifact.amount} coal & iron secara instan ke tasmu!` }, { quoted: msg });
+      } else if (artifact && artifact.action === "reset_cd") {
+        w.inventory[itemName] -= 1;
+        w.lastNambang = 0;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `⏳ Waktu berputar mundur! Cooldown nambang kamu telah di-reset.` }, { quoted: msg });
+      } else if (artifact && artifact.action === "heal_status") {
+        w.inventory[itemName] -= 1;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `☁️ Menggunakan *${artifact.name}*!\nSemua efek racun dan status buruk telah dihilangkan.` }, { quoted: msg });
+      }
+      
       return sock.sendMessage(msg.key.remoteJid, { text: `❌ Item ${itemName} tidak bisa dipakai secara langsung.` }, { quoted: msg });
     }
   },

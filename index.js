@@ -326,8 +326,8 @@ async function startBot() {
         "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "self", "on", "public",
         "afk", "sticker", "s", "info", "daily", "saldo", "transfer", "shop", "beli", "leaderboard",
         "lb", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping",
-        "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot",
-        "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
+        "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "beli",
+        "serang", "lari", "potion", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
         "yt", "tt", "ig", "limit", "ceklimit", "limitall", "resetlimit", "setlimit", "status",
         "jodoh", "cekkhodam", "bisakah", "brat", "pin", "gambar", "pinterest",
         "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps",
@@ -871,7 +871,7 @@ async function startBot() {
 ┃ 🏷️ *Nomor:* ${stTarget.split("@")[0]}
 ┃ 🎖️ *Role:* ${stRole}
 ┃ ⏳ *Lama Bergabung:* Sejak awal (Data tidak direkam)
-┃ 
+┃  
 ┣━━ [ 💰 DOMPET & LEVEL ]
 ┃ 🪙 *Koin:* ${stWallet.coins}
 ┃ 📈 *Level:* ${stWallet.level}
@@ -903,6 +903,22 @@ async function startBot() {
 
       case "beli":
         await economy.beli(sock, msg, sender, args);
+        break;
+
+      // =====================================
+      // RPG COMBAT
+      // =====================================
+      case "serang":
+        const combatSerang = require('./features/combat');
+        await combatSerang.serang(sock, msg, sender);
+        break;
+      case "lari":
+        const combatLari = require('./features/combat');
+        await combatLari.lari(sock, msg, sender);
+        break;
+      case "potion":
+        const combatPotion = require('./features/combat');
+        await combatPotion.usePotion(sock, msg, sender);
         break;
 
       case "leaderboard":

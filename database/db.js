@@ -39,6 +39,22 @@ try {
   db.exec("ALTER TABLE users ADD COLUMN enchants TEXT DEFAULT '{}';");
 } catch (e) {}
 
+try {
+  db.exec("ALTER TABLE users ADD COLUMN hp INTEGER DEFAULT 100;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN maxHp INTEGER DEFAULT 100;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN buffs TEXT DEFAULT '{}';");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN combat TEXT DEFAULT '{}';");
+} catch (e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS limits (
     id TEXT PRIMARY KEY,
