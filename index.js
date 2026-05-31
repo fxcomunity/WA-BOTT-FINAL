@@ -327,7 +327,7 @@ async function startBot() {
         "afk", "sticker", "s", "info", "daily", "saldo", "transfer", "shop", "beli", "leaderboard",
         "lb", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping",
         "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "beli",
-        "serang", "lari", "potion", "skills", "skill", "belajar", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
+        "serang", "lari", "potion", "skills", "skill", "belajar", "levelup", "upgrade", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
         "yt", "tt", "ig", "limit", "ceklimit", "limitall", "resetlimit", "setlimit", "status",
         "jodoh", "cekkhodam", "bisakah", "brat", "pin", "gambar", "pinterest",
         "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps",
@@ -987,6 +987,11 @@ async function startBot() {
       case "skill":
         const skillsUse = require('./features/skills');
         await skillsUse.useSkill(sock, msg, sender, args);
+        break;
+      case "levelup":
+      case "upgrade":
+        const skillsLevelup = require('./features/skills');
+        await skillsLevelup.levelupSkill(sock, msg, sender, args);
         break;
 
       case "leaderboard":
