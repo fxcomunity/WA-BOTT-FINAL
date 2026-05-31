@@ -852,6 +852,29 @@ async function startBot() {
       case "info":
         if (args.length > 0) {
            const query = args.join(" ").toLowerCase();
+           
+           if (query === "rpg" || query === "panduan") {
+             let guide = `📖 *PANDUAN LENGKAP ECONOMY RPG* 📖\n\n`;
+             guide += `⛏️ *CARA BERMAIN*\n`;
+             guide += `• *Gold & Ore*: Gunakan \`!nambang\` setiap beberapa menit untuk mencari batuan. Jual ore dengan \`!sell [nama]\` untuk mendapatkan Gold.\n`;
+             guide += `• *Bahan Lain*: Gunakan \`!mancing\` dan \`!berburu\` untuk variasi material.\n\n`;
+             guide += `❤️ *HP & MP (DARAH & MANA)*\n`;
+             guide += `• *HP*: Berkurang saat diserang monster. Pulihkan dengan beli Potion di \`!shop\` lalu \`!pakai potion_kecil\`. Otomatis pulih 10/nambang jika ada buff mata air.\n`;
+             guide += `• *MP*: Energi untuk menggunakan skill sihir. Otomatis terisi 5 poin setiap kali \`!nambang\`, atau pulih instan dengan *Mana Potion*.\n\n`;
+             guide += `👹 *MONSTER & BOSS*\n`;
+             guide += `Saat nambang, kamu bisa diserang monster secara acak.\n`;
+             guide += `• Ketik \`!serang\` untuk melawan dan mendapat hadiah gold/material.\n`;
+             guide += `• Ketik \`!lari\` jika HP kamu krisis.\n`;
+             guide += `• *Boss* (Mythos) sangat kuat tapi memberi *Mythical Ore*.\n\n`;
+             guide += `🧙‍♂️ *MAGIC SKILLS & UPGRADE*\n`;
+             guide += `• *Melihat Skill*: Ketik \`!skills\` untuk melihat syarat belajar setiap jurus.\n`;
+             guide += `• *Mempelajari*: Ketik \`!belajar [nama_skill]\` (contoh: !belajar deteksi harta).\n`;
+             guide += `• *Mengupgrade*: Ketik \`!levelup [nama_skill]\` untuk menaikkan level (Max Lv.5) agar MP cost turun dan efek mematikan.\n`;
+             guide += `• *Menggunakan*: Ketik \`!skill [nama_skill]\`.\n\n`;
+             guide += `💡 *TIPS*: Ketik \`!info [nama monster/artefak]\` untuk melihat detail darah, ability, atau efek artefak.`;
+             return reply(sock, msg, guide);
+           }
+
            const rpgData = require('./features/rpgData');
            
            // search monster
@@ -902,7 +925,7 @@ async function startBot() {
            }
            
            const groupInfo = await sock.groupMetadata(groupId);
-           await reply(sock, msg, `📋 *Info Grup*\nNama: ${groupInfo.subject}\nMember: ${groupInfo.participants.length}\nDeskripsi: ${groupInfo.desc || "-"}`);
+           await reply(sock, msg, `📋 *Info Grup*\nNama: ${groupInfo.subject}\nMember: ${groupInfo.participants.length}\nDeskripsi: ${groupInfo.desc || "-"}\n\n_Ketik *!info rpg* untuk panduan lengkap bermain RPG tambang._`);
         }
         break;
 
@@ -1688,8 +1711,10 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 ┃    ↳ Minum ramuan pemulih HP
 ┃ ➯ !lari
 ┃    ↳ Mencoba kabur dari pertarungan
-┃ ➯ !info
-┃    ↳ Melihat daftar monster & artefak
+┃ ➯ !info rpg
+┃    ↳ 📖 Membaca panduan lengkap RPG
+┃ ➯ !info [nama_monster]
+┃    ↳ Mengecek darah & ability monster
 ╰━━━━━━━━━━━━━━━━━━━╯`;
   }
   
