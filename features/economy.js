@@ -19,7 +19,9 @@ const shop = [
   { id: 14, name: "Stamina Sedang (10 Menit)", price: 900, desc: "Reset CD Mancing/Nambang 10 Menit", type: "item", itemKey: "stamina_sedang" },
   { id: 15, name: "Stamina Besar (20 Menit)", price: 1500, desc: "Reset CD Mancing/Nambang 20 Menit", type: "item", itemKey: "stamina_besar" },
   { id: 16, name: "Potion Kecil", price: 200, desc: "Memulihkan 30 HP saat Combat", type: "item", itemKey: "potion_kecil" },
-  { id: 17, name: "Potion Besar", price: 500, desc: "Memulihkan 100 HP saat Combat", type: "item", itemKey: "potion_besar" }
+  { id: 17, name: "Potion Besar", price: 500, desc: "Memulihkan 100 HP saat Combat", type: "item", itemKey: "potion_besar" },
+  { id: 18, name: "Mana Potion Kecil", price: 200, desc: "Memulihkan 30 MP", type: "item", itemKey: "mana_potion_kecil" },
+  { id: 19, name: "Mana Potion Besar", price: 500, desc: "Memulihkan 100 MP", type: "item", itemKey: "mana_potion_besar" }
 ];
 
 const itemsData = require('./itemsData');
@@ -32,25 +34,30 @@ function getWallet(sender) {
       coins: 0, level: 1, xp: 0, streak: 0, lastDaily: 0,
       lastMancing: 0, lastBerburu: 0, lastNambang: 0, pickaxeLevel: 1, pancinganLevel: 1,
       inventory: '{}', enchants: '{}',
-      hp: 100, maxHp: 100, buffs: '{}', combat: '{}'
+      hp: 100, maxHp: 100, buffs: '{}', combat: '{}',
+      mp: 50, maxMp: 50, skills: '{}'
     };
     db.prepare(`
-      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat);
+      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat, mp, maxMp, skills)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat, w.mp, w.maxMp, w.skills);
   }
   
   try { w.inventory = typeof w.inventory === 'string' ? JSON.parse(w.inventory) : w.inventory; } catch(e) { w.inventory = {}; }
   try { w.enchants = typeof w.enchants === 'string' ? JSON.parse(w.enchants) : w.enchants; } catch(e) { w.enchants = {}; }
   try { w.buffs = typeof w.buffs === 'string' ? JSON.parse(w.buffs) : w.buffs; } catch(e) { w.buffs = {}; }
   try { w.combat = typeof w.combat === 'string' ? JSON.parse(w.combat) : w.combat; } catch(e) { w.combat = {}; }
+  try { w.skills = typeof w.skills === 'string' ? JSON.parse(w.skills) : w.skills; } catch(e) { w.skills = {}; }
   
   if (!w.inventory) w.inventory = {};
   if (!w.enchants) w.enchants = {};
   if (!w.buffs) w.buffs = {};
   if (!w.combat) w.combat = {};
+  if (!w.skills) w.skills = {};
   if (w.hp === undefined) w.hp = 100;
   if (w.maxHp === undefined) w.maxHp = 100;
+  if (w.mp === undefined) w.mp = 50;
+  if (w.maxMp === undefined) w.maxMp = 50;
   
   // Set owner ke unlimited (999999999)
   const no = sender.split("@")[0];
@@ -62,6 +69,8 @@ function getWallet(sender) {
     w.pancinganLevel = 999;
     w.hp = 999999;
     w.maxHp = 999999;
+    w.mp = 999999;
+    w.maxMp = 999999;
   }
   
   return w;
@@ -72,11 +81,12 @@ function saveWallet(sender, w) {
   const enchStr = JSON.stringify(w.enchants || {});
   const buffsStr = JSON.stringify(w.buffs || {});
   const combatStr = JSON.stringify(w.combat || {});
+  const skillsStr = JSON.stringify(w.skills || {});
   db.prepare(`
     UPDATE users 
-    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?
+    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?, mp = ?, maxMp = ?, skills = ?
     WHERE id = ?
-  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, sender);
+  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, w.mp || 50, w.maxMp || 50, skillsStr, sender);
 }
 
 function levelUp(wallet) {
@@ -340,7 +350,8 @@ module.exports = {
     
     w.lastNambang = now;
     
-    // Mata Air Keabadian Leluhur Buff
+    // Regenerasi MP & HP (Mata Air Buff)
+    w.mp = Math.min(w.maxMp, w.mp + 5); // Regenerasi 5 MP tiap kali nambang
     if (w.buffs["mata_air_leluhur"]) {
       w.hp = Math.min(w.maxHp, w.hp + 10);
     }
@@ -405,6 +416,7 @@ module.exports = {
     // Status HP & Darah
     let text = `❤️ *STATUS KAMU*\n`;
     text += `▪️ Darah (HP): ${w.hp} / ${w.maxHp}\n`;
+    text += `▪️ Mana (MP): ${w.mp} / ${w.maxMp}\n`;
     if (w.combat && w.combat.active) {
       text += `⚠️ *SEDANG BERTARUNG MELAWAN: ${w.combat.monster}*\n`;
     }
@@ -516,6 +528,18 @@ module.exports = {
       w.hp = Math.min(w.maxHp, w.hp + 100);
       saveWallet(sender, w);
       return sock.sendMessage(msg.key.remoteJid, { text: `🧪 Menggunakan *Potion Besar*!\nDarah dipulihkan 100 HP.\n❤️ Darah Sekarang: ${w.hp}/${w.maxHp}` }, { quoted: msg });
+    } else if (itemName === "mana_potion_kecil") {
+      if (w.mp >= w.maxMp) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Mana (MP) kamu masih penuh!` }, { quoted: msg });
+      w.inventory[itemName] -= 1;
+      w.mp = Math.min(w.maxMp, w.mp + 30);
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `💧 Menggunakan *Mana Potion Kecil*!\nMana dipulihkan 30 MP.\n💧 Mana Sekarang: ${w.mp}/${w.maxMp}` }, { quoted: msg });
+    } else if (itemName === "mana_potion_besar") {
+      if (w.mp >= w.maxMp) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Mana (MP) kamu masih penuh!` }, { quoted: msg });
+      w.inventory[itemName] -= 1;
+      w.mp = Math.min(w.maxMp, w.mp + 100);
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `💧 Menggunakan *Mana Potion Besar*!\nMana dipulihkan 100 MP.\n💧 Mana Sekarang: ${w.mp}/${w.maxMp}` }, { quoted: msg });
     } else {
       // Check if it's an artifact that can be used
       const rpgData = require('./rpgData');

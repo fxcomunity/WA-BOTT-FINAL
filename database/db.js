@@ -55,6 +55,18 @@ try {
   db.exec("ALTER TABLE users ADD COLUMN combat TEXT DEFAULT '{}';");
 } catch (e) {}
 
+try {
+  db.exec("ALTER TABLE users ADD COLUMN mp INTEGER DEFAULT 50;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN maxMp INTEGER DEFAULT 50;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN skills TEXT DEFAULT '{}';");
+} catch (e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS limits (
     id TEXT PRIMARY KEY,

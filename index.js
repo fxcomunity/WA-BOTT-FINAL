@@ -327,7 +327,7 @@ async function startBot() {
         "afk", "sticker", "s", "info", "daily", "saldo", "transfer", "shop", "beli", "leaderboard",
         "lb", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping",
         "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "beli",
-        "serang", "lari", "potion", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
+        "serang", "lari", "potion", "skills", "skill", "belajar", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
         "yt", "tt", "ig", "limit", "ceklimit", "limitall", "resetlimit", "setlimit", "status",
         "jodoh", "cekkhodam", "bisakah", "brat", "pin", "gambar", "pinterest",
         "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps",
@@ -971,6 +971,22 @@ async function startBot() {
       case "potion":
         const combatPotion = require('./features/combat');
         await combatPotion.usePotion(sock, msg, sender);
+        break;
+
+      // =====================================
+      // RPG SKILLS & MAGIC
+      // =====================================
+      case "skills":
+        const skillsFeature = require('./features/skills');
+        await skillsFeature.listSkills(sock, msg, sender);
+        break;
+      case "belajar":
+        const skillsBelajar = require('./features/skills');
+        await skillsBelajar.belajar(sock, msg, sender, args);
+        break;
+      case "skill":
+        const skillsUse = require('./features/skills');
+        await skillsUse.useSkill(sock, msg, sender, args);
         break;
 
       case "leaderboard":
