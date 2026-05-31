@@ -40,12 +40,13 @@ function getLimit(sender) {
   if (changed) saveLimit(sender, row);
 
   // Reconstruct nested object format for compatibility with rest of code
+  // Use custom max from DB if set (> 0), otherwise use DEFAULT_LIMIT
   return {
     name: row.name,
-    download: { used: row.dl_used, max: DEFAULT_LIMIT.download, resetAt: row.dl_reset },
-    ai:       { used: row.ai_used, max: DEFAULT_LIMIT.ai,       resetAt: row.ai_reset },
-    kuis:     { used: row.kuis_used, max: DEFAULT_LIMIT.kuis,     resetAt: row.kuis_reset },
-    sticker:  { used: row.st_used, max: DEFAULT_LIMIT.sticker,  resetAt: row.st_reset },
+    download: { used: row.dl_used, max: (row.dl_max && row.dl_max > 0) ? row.dl_max : DEFAULT_LIMIT.download, resetAt: row.dl_reset },
+    ai:       { used: row.ai_used, max: (row.ai_max && row.ai_max > 0) ? row.ai_max : DEFAULT_LIMIT.ai,       resetAt: row.ai_reset },
+    kuis:     { used: row.kuis_used, max: (row.kuis_max && row.kuis_max > 0) ? row.kuis_max : DEFAULT_LIMIT.kuis,     resetAt: row.kuis_reset },
+    sticker:  { used: row.st_used, max: (row.st_max && row.st_max > 0) ? row.st_max : DEFAULT_LIMIT.sticker,  resetAt: row.st_reset },
     status:   "🟢 Aktif"
   };
 }
@@ -62,9 +63,15 @@ function saveLimit(sender, d) {
   const st_used = d.sticker ? d.sticker.used : d.st_used;
   const st_reset = d.sticker ? d.sticker.resetAt : d.st_reset;
 
+  // Custom max values (0 = use default)
+  const dl_max = d.download ? (d.download.max !== DEFAULT_LIMIT.download ? d.download.max : 0) : (d.dl_max || 0);
+  const ai_max = d.ai ? (d.ai.max !== DEFAULT_LIMIT.ai ? d.ai.max : 0) : (d.ai_max || 0);
+  const kuis_max = d.kuis ? (d.kuis.max !== DEFAULT_LIMIT.kuis ? d.kuis.max : 0) : (d.kuis_max || 0);
+  const st_max = d.sticker ? (d.sticker.max !== DEFAULT_LIMIT.sticker ? d.sticker.max : 0) : (d.st_max || 0);
+
   db.prepare(`
-    UPDATE limits SET name = ?, dl_used = ?, dl_reset = ?, ai_used = ?, ai_reset = ?, kuis_used = ?, kuis_reset = ?, st_used = ?, st_reset = ? WHERE id = ?
-  `).run(name, dl_used, dl_reset, ai_used, ai_reset, kuis_used, kuis_reset, st_used, st_reset, sender);
+    UPDATE limits SET name = ?, dl_used = ?, dl_reset = ?, ai_used = ?, ai_reset = ?, kuis_used = ?, kuis_reset = ?, st_used = ?, st_reset = ?, dl_max = ?, ai_max = ?, kuis_max = ?, st_max = ? WHERE id = ?
+  `).run(name, dl_used, dl_reset, ai_used, ai_reset, kuis_used, kuis_reset, st_used, st_reset, dl_max, ai_max, kuis_max, st_max, sender);
 }
 
 function sisaJam(resetAt) {

@@ -107,16 +107,19 @@ async function serang(sock, msg, sender) {
     }
   }
 
-  // Update DB using our direct query since saveWallet in economy requires require() loop mapping if we aren't careful
+  // Update DB — save ALL fields that could change during combat
   const invStr = JSON.stringify(w.inventory || {});
   const enchStr = JSON.stringify(w.enchants || {});
   const buffsStr = JSON.stringify(w.buffs || {});
   const combatStr = JSON.stringify(w.combat || {});
+  const skillsStr = JSON.stringify(w.skills || {});
   db.prepare(`
     UPDATE users 
-    SET coins = ?, hp = ?, inventory = ?, buffs = ?, combat = ?
+    SET coins = ?, hp = ?, xp = ?, level = ?, inventory = ?, enchants = ?, buffs = ?, combat = ?, skills = ?,
+        pickaxeDurability = ?, maxPickaxeDurability = ?, pancinganDurability = ?, maxPancinganDurability = ?
     WHERE id = ?
-  `).run(w.coins, w.hp, invStr, buffsStr, combatStr, sender);
+  `).run(w.coins, w.hp, w.xp, w.level, invStr, enchStr, buffsStr, combatStr, skillsStr,
+    w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, sender);
 
   return sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
 }

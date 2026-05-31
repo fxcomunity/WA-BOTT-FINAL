@@ -108,6 +108,12 @@ db.exec(`
   );
 `);
 
+// Add custom max columns to limits table for !setlimit persistence
+try { db.exec("ALTER TABLE limits ADD COLUMN dl_max INTEGER DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE limits ADD COLUMN ai_max INTEGER DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE limits ADD COLUMN kuis_max INTEGER DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE limits ADD COLUMN st_max INTEGER DEFAULT 0;"); } catch (e) {}
+
 // ==========================================
 // 2. MIGRASI OTOMATIS DARI JSON (SEKALI SAJA)
 // ==========================================

@@ -53,7 +53,8 @@ module.exports = {
         .on('error', async (err) => {
           console.error(err);
           await sock.sendMessage(groupId, { text: "❌ Gagal bos bikin stiker!" }, { quoted: msg });
-          fs.unlinkSync(tmpIn);
+          try { fs.unlinkSync(tmpIn); } catch (e) {}
+          try { fs.unlinkSync(tmpOut); } catch (e) {}
         })
         .on('end', async () => {
           const webpBuffer = fs.readFileSync(tmpOut);
