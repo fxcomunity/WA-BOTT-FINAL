@@ -100,6 +100,8 @@ function levelUp(wallet) {
 }
 
 module.exports = {
+  getWallet,
+  saveWallet,
   getRawWallet(sender) {
     return getWallet(sender);
   },
