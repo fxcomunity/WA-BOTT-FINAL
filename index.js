@@ -33,6 +33,7 @@ const sticker     = require("./features/sticker");
 const afk         = require("./features/afk");
 const fun         = require("./features/fun");
 const audioEffects = require("./features/audioEffects");
+const plugins     = require("./features/plugins");
 
 // ============================================
 // FUNGSI CEK ADMIN (DENGAN CACHE ANTI TIMEOUT)
@@ -483,7 +484,7 @@ async function startBot() {
 
       // ---------- OWNER ONLY ----------
       case "self":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
         isSelfMode = true;
         saveSettings();
         await reply(sock, msg, "🔇 *Mode SELF Aktif!*\nBot sekarang cuma akan merespon perintah dari Owner. (Tersimpan permanen)");
@@ -491,26 +492,26 @@ async function startBot() {
 
       case "on":
       case "public":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
         isSelfMode = false;
         saveSettings();
         await reply(sock, msg, "🔊 *Mode PUBLIC Aktif!*\nBot sekarang kembali melayani semua member grup. (Tersimpan permanen)");
         break;
 
       case "lock":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Yeee lu bukan admin, gabisa ngunci grup bos!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Yeee lu bukan mentri, gabisa ngunci grup bos!");
         const resLock = await lockGroup.lock(sock, groupId);
         await reply(sock, msg, resLock);
         break;
 
       case "unlock":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Yeee lu bukan admin, gabisa buka grup bos!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Yeee lu bukan mentri, gabisa buka grup bos!");
         const resUnlock = await lockGroup.unlock(sock, groupId, args[0]);
         await reply(sock, msg, resUnlock);
         break;
 
       case "shutdown":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
         await reply(sock, msg, "👋 Bot dimatikan. Sampai jumpa!");
         process.exit(0);
 
@@ -547,7 +548,7 @@ async function startBot() {
         break;
 
       case "setowner":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
         // Tambah owner baru sementara (runtime only)
         const newOwner = args[0]?.replace(/[^0-9]/g, "");
         if (newOwner) config.owners.push(newOwner);
@@ -556,7 +557,7 @@ async function startBot() {
 
       // ---------- ADMIN & OWNER ----------
       case "add":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const addTarget = args[0]?.replace(/[^0-9]/g, "");
         if (!addTarget) return reply(sock, msg, "❌ Masukkan nomor yang mau ditambah! Contoh: !add 6281234567890");
         
@@ -576,12 +577,12 @@ async function startBot() {
         break;
 
       case "warn":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await warnSystem.warn(sock, msg, groupId, sender, args);
         break;
 
       case "kick":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const kickTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (!kickTarget) return reply(sock, msg, "❌ Tag siapa yang mau dikick! Contoh: !kick @user alasan");
         
@@ -602,7 +603,7 @@ async function startBot() {
         break;
 
       case "mute":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const muteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (!muteTarget) return reply(sock, msg, "❌ Tag siapa yang mau dimute! Contoh: !mute @user 10");
         
@@ -623,7 +624,7 @@ async function startBot() {
         break;
 
       case "unmute":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const unmuteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (unmuteTarget) {
           antiSpam.unmute(unmuteTarget);
@@ -633,7 +634,7 @@ async function startBot() {
 
       case "del":
       case "delete":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const quotedMsgForDel = msg.message?.extendedTextMessage?.contextInfo;
         if (!quotedMsgForDel?.stanzaId) return reply(sock, msg, "❌ Balas pesan yang ingin dihapus dengan !del");
         
@@ -656,7 +657,7 @@ async function startBot() {
         break;
 
       case "resetwarn":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const resetTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (resetTarget) {
 
@@ -666,12 +667,12 @@ async function startBot() {
         break;
 
       case "warnlist":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await reply(sock, msg, warnSystem.getWarnList());
         break;
 
       case "tagall":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const meta = await sock.groupMetadata(groupId);
         const mentions = meta.participants.map(p => p.id);
         const tagText = args.join(" ") || "📢 Perhatian semua member!";
@@ -680,25 +681,35 @@ async function startBot() {
         break;
 
       case "slowmode":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const delay = parseInt(args[0]) || 30;
         antiSpam.setSlowMode(delay);
         await reply(sock, msg, `⏱️ Slow mode aktif: ${delay} detik antar pesan.`);
         break;
 
       case "poll":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await games.createPoll(sock, groupId, args);
         break;
 
       case "endpoll":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await games.endPoll(sock, groupId, msg);
         break;
 
       // ---------- SEMUA MEMBER ----------
       case "help":
-      case "menu":
+      case "menu": {
+        // --- COOLDOWN SYSTEM UNTUK !MENU (30 DETIK PER USER) ---
+        if (!global.menuCooldown) global.menuCooldown = {};
+        const now = Date.now();
+        if (global.menuCooldown[sender] && now - global.menuCooldown[sender] < 30000) {
+          const sisaWaktu = Math.ceil((30000 - (now - global.menuCooldown[sender])) / 1000);
+          return reply(sock, msg, `⏳ Jangan spam ngab! Tunggu *${sisaWaktu} detik* lagi buat buka menu.`);
+        }
+        global.menuCooldown[sender] = now;
+        // --------------------------------------------------------
+
         const name = msg.pushName || sender.split("@")[0];
         
         const dNow = new Date();
@@ -713,24 +724,24 @@ async function startBot() {
         const strHariTanggal = `${hariArr[dNow.getDay()]}, ${dNow.getDate()} ${bulanArr[dNow.getMonth()]} ${dNow.getFullYear()}`;
         const strJam = dNow.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') + " WIB";
 
-        const helpMsg = `╭━━• [ 🤖 *JackBOT* ] •━━╮
-┃
-┃ Yow kak *${name}*, ${ucapan}! 👋
-┃ Met nongkrong bareng asisten lu.
-┃
-┣━━• [ 📅 *INFO* ] •━━
-┃ 📆 Hari     : ${strHariTanggal}
-┃ 🕒 Waktu    : ${strJam}
-┃
-┣━━• [ 🌐 *KOMUNITAS SEPANG* ] •━━
-┃ ➯ https://github.com/fxcomunity
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯
-✨ *Pencet tombol "Pilih Kategori" di bawah buat cek fitur kece dari JackBOT!* 👇`;
+        const helpMsg = `*✦ ──『 🤖 JACKBOT V3.0 』── ✦*
+
+👋 Yow kak *${name}*, ${ucapan}!
+🔥 Met nongkrong bareng asisten ter-OP se-WA.
+
+┌──❖ *T O D A Y*
+│ 📆 Date : ${strHariTanggal}
+│ 🕒 Time : ${strJam}
+└───────────────┈ ⳹
+
+┌──❖ *C O M M U N I T Y*
+│ ➯ github.com/fxcomunity
+└───────────────┈ ⳹
+
+👇 *Klik menu di bawah buat eksplor fitur mematikan dari JackBOT!* 👇`;
+        
         try {
-          await sock.sendMessage(msg.key.remoteJid, {
-            image: { url: "https://i.ibb.co.com/BKNmDQf9/images.jpg" },
-            caption: helpMsg,
+          const menuPayload = {
             footer: "JackBOT v3.0.0",
             interactiveButtons: [
               {
@@ -741,30 +752,48 @@ async function startBot() {
                     {
                       title: "Kategori Menu",
                       rows: [
-                        { title: "Menu Khusus Owner", description: "Perintah khusus owner bot", id: "btn_owner" },
-                        { title: "Menu Admin Grup", description: "Perintah khusus admin grup", id: "btn_admin" },
-                        { title: "Menu Member Utama", description: "Perintah umum untuk semua member", id: "btn_member" },
+                        { title: "Menu Khusus Presiden", description: "Perintah khusus presiden bot", id: "btn_owner" },
+                        { title: "Menu Mentri Grup", description: "Perintah khusus mentri grup", id: "btn_admin" },
+                        { title: "Menu Rakyat Utama", description: "Perintah umum untuk semua rakyat", id: "btn_member" },
                         { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
                         { title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
                         { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
                         { title: "Developer Info", description: "Informasi website & developer", id: "btn_dev" },
                         { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
-                        { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" }
+                        { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
+                        { title: "Menu Plugin Tools", description: "Daftar semua plugin bot", id: "btn_plugin" }
                       ]
                     }
                   ]
                 })
               }
             ]
-          }, { });
+          };
+
+          // Cek kalo owner naruh file video/gambar lokal
+          if (fs.existsSync('./assets/public/menu.mp4')) {
+            menuPayload.video = fs.readFileSync('./assets/public/menu.mp4');
+            menuPayload.caption = helpMsg;
+            menuPayload.gifPlayback = true; // Auto muter kaya GIF
+          } else if (fs.existsSync('./assets/public/menu.jpg')) {
+            menuPayload.image = fs.readFileSync('./assets/public/menu.jpg');
+            menuPayload.caption = helpMsg;
+          } else {
+            // Kalo gaada file, pke text aja biar kenceng
+            menuPayload.text = helpMsg;
+          }
+
+          await sock.sendMessage(msg.key.remoteJid, menuPayload, { quoted: msg });
         } catch(e) {
-          console.log("Error sending menu:", e);
-          await sock.sendMessage(msg.key.remoteJid, { text: helpMsg });
+          console.log("Error sending interactive menu:", e);
+          await sock.sendMessage(msg.key.remoteJid, { text: helpMsg }, { quoted: msg });
         }
         break;
+      }
 
+      case "6":
       case "btn_owner": {
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Owner yang bisa liat detail menu ini!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa liat detail menu ini!");
         const txt = getHelpText(ownerCheck, adminCheck, "owner") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
@@ -772,7 +801,7 @@ async function startBot() {
 
       case "1":
       case "btn_admin": {
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Cuma admin yg bisa liat ini bos!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Cuma Mentri yg bisa liat ini bos!");
         const txt = getHelpText(ownerCheck, adminCheck, "admin") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
@@ -825,6 +854,11 @@ async function startBot() {
       case "menu_6": {
         const txt = getHelpText(ownerCheck, adminCheck, "voice") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        break;
+      }
+
+      case "btn_plugin": {
+        await plugins.listPlugins(sock, msg);
         break;
       }
 
@@ -1149,26 +1183,26 @@ async function startBot() {
 
       case "kickall":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         if (!ownerCheck) return reply(sock, msg, "⚠️ Fitur super berbahaya ini dibatasi cuma untuk Owner bot!"); // Biar aman
         await admin.kickall(sock, msg, groupId, sender);
         break;
 
       case "setname":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await admin.setName(sock, msg, groupId, args.join(" "));
         break;
 
       case "setdesc":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await admin.setDesc(sock, msg, groupId, args.join(" "));
         break;
 
       case "setpp":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await admin.setPp(sock, msg, groupId, downloadMediaMessage);
         break;
 
@@ -1407,7 +1441,7 @@ Selamat bersenang-senang! 🎉`;
         break;
 
       case "rvo":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner yang bisa pake fitur ini!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa pake fitur ini!");
         try {
           const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
           if (!quotedMsg) {
@@ -1460,7 +1494,7 @@ Selamat bersenang-senang! 🎉`;
         break;
 
       case "sw":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma owner yang bisa pake fitur ini!");
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa pake fitur ini!");
         try {
           const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
           
@@ -1524,12 +1558,12 @@ Selamat bersenang-senang! 🎉`;
         break;
 
       case "limitall":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         await limitSystem.showAllLimits(sock, msg);
         break;
 
       case "resetlimit":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const rlTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (rlTarget) {
           limitSystem.resetLimit(rlTarget);
@@ -1538,7 +1572,7 @@ Selamat bersenang-senang! 🎉`;
         break;
 
       case "setlimit":
-        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan admin grup cuy, diem aja!");
+        if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const slTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         const slType   = args[1]; // download/ai/kuis/sticker
         const slMax    = parseInt(args[2]);
@@ -1548,6 +1582,29 @@ Selamat bersenang-senang! 🎉`;
         } else {
           await reply(sock, msg, "Format: !setlimit @user [download/ai/kuis/sticker] [jumlah]");
         }
+        break;
+
+      case "plugins":
+        await plugins.listPlugins(sock, msg);
+        break;
+
+      case "fakeff":
+        if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
+        await plugins.fakeff(sock, msg, args.join(" "));
+        break;
+
+      case "kompres":
+      case "kompress":
+      case "compress":
+        if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
+        await plugins.kompres(sock, msg);
+        break;
+
+      case "hd":
+      case "remini":
+      case "enhancer":
+        if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
+        await plugins.enhancer(sock, msg);
         break;
 
       default:
@@ -1565,279 +1622,282 @@ Selamat bersenang-senang! 🎉`;
 // ============================================
 function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
   if (kategori === "admin") {
-    let text = `╭━━• [ 🛡️ *MENU ADMIN* ] •━━╮
-┃ ➯ !add [nomor]
-┃    ↳ Masukin nomor orang ke grup
-┃ ➯ !kick @user [alasan]
-┃    ↳ Tendang beban grup
-┃ ➯ !warn @user [alasan]
-┃    ↳ SP1 buat member bandel
-┃ ➯ !mute @user [mnt]
-┃    ↳ Bikin member kicep/bisu
-┃ ➯ !unmute @user
-┃    ↳ Buka segel bisu
-┃ ➯ !del
-┃    ↳ Hapus chat ampas (reply)
-┃ ➯ !resetwarn @user
-┃    ↳ Ampunin 1 dosa member
-┃ ➯ !warnlist
-┃    ↳ List orang-orang bandel
-┃ ➯ !lock
-┃    ↳ Gembok grup (admin doang yg ngoceh)
-┃ ➯ !unlock [jam]
-┃    ↳ Buka gembok grup (Contoh: !unlock 06.00)
-┃ ➯ !tagall [pesan]
-┃    ↳ Bangunin semua orang
-┃ ➯ !slowmode [detik]
-┃    ↳ Bikin ngetik jadi lelet
-┃ ➯ !poll "tanya" op1|op2
-┃    ↳ Bikin voting
-┃ ➯ !endpoll
-┃    ↳ Kelarin voting
-┃ 
-┃ ┣━━ [ 👑 FITUR ADMIN OP ]
-┃ ➯ !setname [teks]
-┃    ↳ Ubah nama grup
-┃ ➯ !setdesc [teks]
-┃    ↳ Ubah deskripsi grup
-┃ ➯ !setpp
-┃    ↳ Ganti foto profil grup (reply)
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    let text = `*✦ ──『 🛡️ MENU MENTRI 』── ✦*
+
+┌──❖ *M O D E R A S I*
+│ ⚡ *!add* [nomor]
+│    ↳ Tarik nyawa baru ke grup
+│ ⚡ *!kick* @user
+│    ↳ Tendang beban grup
+│ ⚡ *!warn* @user
+│    ↳ SP1 buat rakyat bandel
+│ ⚡ *!mute* @user [mnt]
+│    ↳ Bikin rakyat kicep/bisu
+│ ⚡ *!unmute* @user
+│    ↳ Buka segel bisu
+│ ⚡ *!del*
+│    ↳ Hapus chat ampas (reply)
+│ ⚡ *!resetwarn* @user
+│    ↳ Ampunin 1 dosa rakyat
+│ ⚡ *!warnlist*
+│    ↳ List orang-orang bandel
+│ ⚡ *!lock*
+│    ↳ Gembok grup
+│ ⚡ *!unlock* [jam]
+│    ↳ Buka gembok grup (Contoh: 06.00)
+│ ⚡ *!tagall* [pesan]
+│    ↳ Bangunin semua orang
+│ ⚡ *!slowmode* [detik]
+│    ↳ Bikin ngetik jadi lelet
+│ ⚡ *!poll* "tanya" op1|op2
+│    ↳ Bikin voting
+│ ⚡ *!endpoll*
+│    ↳ Kelarin voting
+└───────────────┈ ⳹
+
+┌──❖ *O V E R P O W E R*
+│ ⚡ *!setname* [teks]
+│    ↳ Ubah nama grup
+│ ⚡ *!setdesc* [teks]
+│    ↳ Ubah deskripsi grup
+│ ⚡ *!setpp*
+│    ↳ Ganti foto profil grup (reply)
+└───────────────┈ ⳹`;
     return text;
   }
 
   if (kategori === "owner") {
-    if (!isOwner) return "❌ Dih sapa lu? Cuma Owner yg bisa pake ini!";
-    return `╭━━• [ 👑 *MENU OWNER* ] •━━╮
-┃ ➯ !lock [durasi]
-┃    ↳ Gembok grup
-┃ ➯ !unlock
-┃    ↳ Buka gembok grup
-┃ ➯ !shutdown
-┃    ↳ Matiin bot paksa njir
-┃ ➯ !setowner @user
-┃    ↳ Tambah bekingan owner
-┃ ➯ !limitall
-┃    ↳ Cek sisa limit semua user
-┃ ➯ !resetlimit @user
-┃    ↳ Reset limit miskiner
-┃ ➯ !setlimit @user [jenis]
-┃    ↳ Seting limit sesuka hati
-┃ ➯ !sw
-┃    ↳ Nyolong Status WA
-┃ ➯ !rvo
-┃    ↳ Buka rahasia View Once (gabisa sembunyi lu)
-┃ ➯ !promote [@tag]
-┃    ↳ Angkat derajat jadi admin
-┃ ➯ !demote [@tag]
-┃    ↳ Turunin pangkat admin jadi jongos
-┃ ➯ !kickall
-┃    ↳ ⚠️ Kiamat grup (Kick semua)
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    if (!isOwner) return "❌ Dih sapa lu? Cuma Presiden yg bisa pake ini!";
+    return `*✦ ──『 👑 MENU PRESIDEN 』── ✦*
+
+┌──❖ *O V E R R I D E*
+│ ⚡ *!lock* [durasi]
+│    ↳ Gembok grup
+│ ⚡ *!unlock*
+│    ↳ Buka gembok grup
+│ ⚡ *!shutdown*
+│    ↳ Matiin bot paksa njir
+│ ⚡ *!setowner* @user
+│    ↳ Tambah bekingan presiden
+│ ⚡ *!limitall*
+│    ↳ Cek sisa limit semua user
+│ ⚡ *!resetlimit* @user
+│    ↳ Reset limit miskiner
+│ ⚡ *!setlimit* @user [jenis]
+│    ↳ Seting limit sesuka hati
+│ ⚡ *!sw*
+│    ↳ Nyolong Status WA
+│ ⚡ *!rvo*
+│    ↳ Buka rahasia View Once
+│ ⚡ *!promote* [@tag]
+│    ↳ Angkat derajat jadi mentri
+│ ⚡ *!demote* [@tag]
+│    ↳ Turunin pangkat mentri jadi jongos
+│ ⚡ *!kickall*
+│    ↳ ⚠️ Kiamat grup (Kick semua)
+└───────────────┈ ⳹`;
   }
   
   if (kategori === "member") {
-    return `╭━━• [ 👤 *MENU RAKYAT JELATA* ] •━━╮
-┃ 
-┃ ➯ !status [@user]
-┃    ↳ Cek profil & KTP lu
-┃ ➯ !s / !sticker
-┃    ↳ Bikin stiker (biar kaga garing)
-┃ ➯ !brat [teks]
-┃    ↳ Bikin stiker gaya album BRAT
-┃ ➯ !afk [alasan]
-┃    ↳ Pasang status sibuk/molor
-┃ ➯ bot, [tanya]
-┃    ↳ Ngobrol random sama AI (gue)
-┃ 
-┣━━ [ 💰 DUIT & LIMIT ]
-┃ ➯ !limit
-┃    ↳ Cek sisa limit lu (awas abis)
-┃ ➯ !daily
-┃    ↳ Klaim jatah preman harian
-┃ ➯ !saldo
-┃    ↳ Cek duit & level lu
-┃ ➯ !transfer @user jml
-┃    ↳ Sedekah koin ke temen
-┃ ➯ !shop
-┃    ↳ Buka pasar malem (toko)
-┃ ➯ !leaderboard
-┃    ↳ Liat siapa yg paling kaya
-┃ ➯ !tutor
-┃    ↳ Baca panduan, biar ga nanya mulu
-┃ 
-┣━━ [ 📈 STATISTIK KEPOS ]
-┃ ➯ !stats
-┃    ↳ Lihat ringkasan data grup
-┃ ➯ !mystats
-┃    ↳ Liat ringkasan dosa lu
-┃ ➯ !topaktif
-┃    ↳ Daftar orang paling bacot di grup
-┃ 
-┣━━ [ 🛠️ TOOL GABUT & STALKER ]
-┃ ➯ !imagine [deskripsi]
-┃    ↳ Bikin gambar pake AI
-┃ ➯ !cuaca [kota]
-┃    ↳ Cek pawang hujan daerah lu
-┃ ➯ !kurs [uang]
-┃    ↳ Cek konversi duit
-┃ ➯ !qr [teks]
-┃    ↳ Bikin barcode QR
-┃ ➯ !remind [wkt] [pesan]
-┃    ↳ Alarm biar lu ga lupa
-┃ ➯ !igstalk [username]
-┃    ↳ Intip IG orang diem-diem
-┃ ➯ !ttstalk [username]
-┃    ↳ Kepoin TikTok orang
-┃ ➯ !ghstalk [username]
-┃    ↳ Intip GitHub sepuh
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 👤 MENU RAKYAT 』── ✦*
+
+┌──❖ *U T I L I T Y*
+│ ⚡ *!status* [@user]
+│    ↳ Cek profil & KTP lu
+│ ⚡ *!s / !sticker*
+│    ↳ Bikin stiker keren
+│ ⚡ *!brat* [teks]
+│    ↳ Bikin stiker gaya album BRAT
+│ ⚡ *!afk* [alasan]
+│    ↳ Pasang status sibuk/molor
+│ ⚡ *bot, [tanya]*
+│    ↳ Ngobrol random sama AI (gue)
+└───────────────┈ ⳹
+
+┌──❖ *E C O N O M Y*
+│ ⚡ *!limit*
+│    ↳ Cek sisa limit lu (awas abis)
+│ ⚡ *!daily*
+│    ↳ Klaim jatah preman harian
+│ ⚡ *!saldo*
+│    ↳ Cek duit & level lu
+│ ⚡ *!transfer* @user jml
+│    ↳ Sedekah koin ke temen
+│ ⚡ *!shop*
+│    ↳ Buka pasar malem (toko)
+│ ⚡ *!leaderboard*
+│    ↳ Liat siapa yg paling kaya
+│ ⚡ *!tutor*
+│    ↳ Baca panduan, biar ga nanya mulu
+└───────────────┈ ⳹
+
+┌──❖ *S T A T S*
+│ ⚡ *!stats*
+│    ↳ Lihat ringkasan data grup
+│ ⚡ *!mystats*
+│    ↳ Liat ringkasan dosa lu
+│ ⚡ *!topaktif*
+│    ↳ Daftar orang paling bacot di grup
+└───────────────┈ ⳹
+
+┌──❖ *S T A L K E R*
+│ ⚡ *!imagine* [deskripsi]
+│    ↳ Bikin gambar pake AI
+│ ⚡ *!cuaca* [kota]
+│    ↳ Cek pawang hujan daerah lu
+│ ⚡ *!kurs* [uang]
+│    ↳ Cek konversi duit
+│ ⚡ *!qr* [teks]
+│    ↳ Bikin barcode QR
+│ ⚡ *!remind* [wkt] [pesan]
+│    ↳ Alarm biar lu ga lupa
+│ ⚡ *!igstalk* [username]
+│    ↳ Intip IG orang diem-diem
+│ ⚡ *!ttstalk* [username]
+│    ↳ Kepoin TikTok orang
+│ ⚡ *!ghstalk* [username]
+│    ↳ Intip GitHub sepuh
+└───────────────┈ ⳹`;
   }
   
   if (kategori === "game") {
-    return `╭━━• [ 🎮 *GAME & FUN* ] •━━╮
-┃ 
-┣━━ [ 🎯 PERMAINAN KUIS ]
-┃ ➯ !kuis
-┃    ↳ Main tebak pengetahuan
-┃ ➯ !tebak
-┃    ↳ Main tebak angka rahasia
-┃ ➯ !jawab [angka]
-┃    ↳ Menjawab tebakan angka
-┃ 
-┣━━ [ 🎭 FUN & HIBURAN ]
-┃ ➯ !cekkhodam [nama]
-┃    ↳ Cek khodam pendampingmu
-┃ ➯ !jodoh @user1 @user2
-┃    ↳ Cek kecocokan jodoh
-┃ ➯ !ping
-┃    ↳ Cek kecepatan respon bot
-┃ ➯ !quotes
-┃    ↳ Minta kata mutiara/motivasi
-┃ ➯ !fakta
-┃    ↳ Baca fakta unik dunia
-┃ ➯ !apakah [tanya]
-┃    ↳ Ramalan jawaban Ya/Tidak
-┃ ➯ !bisakah [tanya]
-┃    ↳ Prediksi Bisa/Tidak
-┃ ➯ !kapankah [tanya]
-┃    ↳ Prediksi waktu kejadian
-┃ ➯ !rate [nama]
-┃    ↳ Cek persentase skor
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 🎮 GAME & FUN 』── ✦*
+
+┌──❖ *P E R M A I N A N*
+│ ⚡ *!kuis*
+│    ↳ Main tebak pengetahuan
+│ ⚡ *!tebak*
+│    ↳ Main tebak angka rahasia
+│ ⚡ *!jawab* [angka]
+│    ↳ Menjawab tebakan angka
+└───────────────┈ ⳹
+
+┌──❖ *H I B U R A N*
+│ ⚡ *!cekkhodam* [nama]
+│    ↳ Cek khodam pendampingmu
+│ ⚡ *!jodoh* @user1 @user2
+│    ↳ Cek kecocokan jodoh
+│ ⚡ *!ping*
+│    ↳ Cek kecepatan respon bot
+│ ⚡ *!quotes*
+│    ↳ Minta kata mutiara/motivasi
+│ ⚡ *!fakta*
+│    ↳ Baca fakta unik dunia
+│ ⚡ *!apakah* [tanya]
+│    ↳ Ramalan jawaban Ya/Tidak
+│ ⚡ *!bisakah* [tanya]
+│    ↳ Prediksi Bisa/Tidak
+│ ⚡ *!kapankah* [tanya]
+│    ↳ Prediksi waktu kejadian
+│ ⚡ *!rate* [nama]
+│    ↳ Cek persentase skor
+└───────────────┈ ⳹`;
   }
   if (kategori === "rpg") {
-    return `╭━━• [ ⚔️ *ECONOMY & RPG* ] •━━╮
-┃ 
-┣━━ [ ⛏️ KERJA KERAS BAGAI QUDA ]
-┃ ➯ !nambang
-┃    ↳ Mulung batu & material 
-┃ ➯ !mancing
-┃    ↳ Mancing mania mantap
-┃ ➯ !berburu
-┃    ↳ Berburu hewan di utan
-┃ 
-┣━━ [ 💰 DUIT & BARANG ]
-┃ ➯ !inv / !inventory
-┃    ↳ Ngintip isi tas & status darah
-┃ ➯ !saldo
-┃    ↳ Liat harta & level lu
-┃ ➯ !shop
-┃    ↳ Buka pasar malem
-┃ ➯ !beli [id]
-┃    ↳ Check out barang / potion
-┃ ➯ !sell / !jual [nama_item] [jumlah]
-┃    ↳ Ngejual rongsokan hasil mulung
-┃ ➯ !pakai [nama_item]
-┃    ↳ Nenggak potion / pake item
-┃ 
-┣━━ [ 🧙‍♂️ MAGIC BIAR OP ]
-┃ ➯ !skills
-┃    ↳ Liat daftar skill sihir
-┃ ➯ !belajar [nama_skill]
-┃    ↳ Belajar jurus baru (modal dikit)
-┃ ➯ !levelup [nama_skill]
-┃    ↳ Upgrade skill biar makin gacor
-┃ ➯ !skill [nama_skill]
-┃    ↳ Pamer ngeluarin jurus
-┃ 
-┣━━ [ ⚔️ GELUT SYSTEM ]
-┃ ➯ !serang
-┃    ↳ Gebuk monster pas nambang
-┃ ➯ !potion
-┃    ↳ Minum ramuan pas sekarat
-┃ ➯ !lari
-┃    ↳ Kabur njir daripada mati
-┃ ➯ !info rpg
-┃    ↳ 📖 Baca panduan lengkap buat noob
-┃ ➯ !info [nama_monster]
-┃    ↳ Kepoin stat & drop monster
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 ⚔️ ECONOMY & RPG 』── ✦*
+
+┌──❖ *G R I N D I N G*
+│ ⚡ *!nambang*
+│    ↳ Mulung batu & material 
+│ ⚡ *!mancing*
+│    ↳ Mancing mania mantap
+│ ⚡ *!berburu*
+│    ↳ Berburu hewan di utan
+└───────────────┈ ⳹
+
+┌──❖ *I N V E N T O R Y*
+│ ⚡ *!inv / !inventory*
+│    ↳ Ngintip isi tas & status darah
+│ ⚡ *!saldo*
+│    ↳ Liat harta & level lu
+│ ⚡ *!shop*
+│    ↳ Buka pasar malem
+│ ⚡ *!beli* [id]
+│    ↳ Check out barang / potion
+│ ⚡ *!sell / !jual* [item] [jml]
+│    ↳ Ngejual rongsokan hasil mulung
+│ ⚡ *!pakai* [nama_item]
+│    ↳ Nenggak potion / pake item
+└───────────────┈ ⳹
+
+┌──❖ *M A G I C  S K I L L S*
+│ ⚡ *!skills*
+│    ↳ Liat daftar skill sihir
+│ ⚡ *!belajar* [nama_skill]
+│    ↳ Belajar jurus baru (modal dikit)
+│ ⚡ *!levelup* [nama_skill]
+│    ↳ Upgrade skill biar makin gacor
+│ ⚡ *!skill* [nama_skill]
+│    ↳ Pamer ngeluarin jurus
+└───────────────┈ ⳹
+
+┌──❖ *C O M B A T*
+│ ⚡ *!serang*
+│    ↳ Gebuk monster pas nambang
+│ ⚡ *!potion*
+│    ↳ Minum ramuan pas sekarat
+│ ⚡ *!lari*
+│    ↳ Kabur njir daripada mati
+│ ⚡ *!info* rpg
+│    ↳ 📖 Baca panduan lengkap buat noob
+│ ⚡ *!info* [nama_monster]
+│    ↳ Kepoin stat & drop monster
+└───────────────┈ ⳹`;
   }
   
   if (kategori === "downloader") {
-    return `╭━━• [ 📥 *TUKANG SEDOT* ] •━━╮
-┃ 
-┃ ➯ Auto-Downloader
-┃    ↳ Kirim link TikTok/IG, ntar langsung gue sedot
-┃ ➯ !yt [link] [resolusi]
-┃    ↳ Colong video/audio YouTube
-┃ ➯ !tt [link]
-┃    ↳ Sedot TikTok (Tanpa Watermark njir)
-┃ ➯ !ig [link]
-┃    ↳ Sedot konten IG
-┃ ➯ !fb [link]
-┃    ↳ Sedot video FB (kalo masih ada yg pake)
-┃ ➯ !tw / !x [link]
-┃    ↳ Sedot video Twitter/X
-┃ ➯ !pin [kata kunci]
-┃    ↳ Nyari asupan Pinterest (dikirim ke DM/Japri)
-╰━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 📥 TUKANG SEDOT 』── ✦*
+
+┌──❖ *D O W N L O A D E R*
+│ ⚡ *Auto-Downloader*
+│    ↳ Kirim link TikTok/IG, otomatis sedot!
+│ ⚡ *!yt* [link] [resolusi]
+│    ↳ Colong video/audio YouTube
+│ ⚡ *!tt* [link]
+│    ↳ Sedot TikTok (Tanpa Watermark)
+│ ⚡ *!ig* [link]
+│    ↳ Sedot konten IG
+│ ⚡ *!fb* [link]
+│    ↳ Sedot video FB
+│ ⚡ *!tw / !x* [link]
+│    ↳ Sedot video Twitter/X
+│ ⚡ *!pin* [kata kunci]
+│    ↳ Nyari asupan Pinterest (dikirim ke DM)
+└───────────────┈ ⳹`;
   }
   if (kategori === "spotify") {
-    return `╭━━• [ 🎵 *ANAK INDIE (SPOTIFY)* ] •━━╮
-┃ 
-┃ ➯ !spotifyplay [judul lagu]
-┃    ↳ Langsung sedot MP3 lagu kesukaan lu
-┃      (Contoh: !spplay Payung Teduh)
-┃ 
-┃ ➯ !spotifysearch [judul]
-┃    ↳ Nyari list lagu di Spotify
-┃      (Contoh: !spotifys Hindia)
-┃ 
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 🎵 ANAK INDIE (SPOTIFY) 』── ✦*
+
+┌──❖ *M U S I C*
+│ ⚡ *!spotifyplay* [judul]
+│    ↳ Langsung sedot MP3 lagu kesukaan lu
+│      (Contoh: !spplay Payung Teduh)
+│ ⚡ *!spotifysearch* [judul]
+│    ↳ Nyari list lagu di Spotify
+│      (Contoh: !spotifys Hindia)
+└───────────────┈ ⳹`;
   }
 
   if (kategori === "voice") {
-    return `╭━━• [ 🎙️ *EDIT SUARA VN* ] •━━╮
-┃ 
-┃ ➯ !bass
-┃    ↳ Suara bass jebol
-┃ ➯ !chipmunk / !tupai
-┃    ↳ Suara kejepit pintu (tupai)
-┃ ➯ !robot
-┃    ↳ Suara kaleng rombeng (robot)
-┃ ➯ !slow
-┃    ↳ Efek lelet banget
-┃ ➯ !fast
-┃    ↳ Efek ngebut
-┃ ➯ !echo
-┃    ↳ Suara mantul-mantul
-┃ ➯ !reverb
-┃    ↳ Suara konser di kamar mandi
-┃ ➯ !nightcore
-┃    ↳ Suara wibu (cepet + tinggi)
-┃ ➯ !reverse
-┃    ↳ Suara mundur (manggil setan)
-┃ ➯ !vibrato
-┃    ↳ Suara getar-getar kedinginan
-┃ ➯ !dalek
-┃    ↳ Suara monster aneh
-┃ 
-┃ 📌 *Cara pakenya bambang:*
-┃ Reply/balas sebuah Voice Note (VN) pake 
-┃ salah satu command di atas.
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+    return `*✦ ──『 🎙️ EDIT SUARA VN 』── ✦*
+
+┌──❖ *E F E K  A U D I O*
+│ ⚡ *!bass* (Suara bass jebol)
+│ ⚡ *!chipmunk / !tupai* (Suara tupai)
+│ ⚡ *!robot* (Suara kaleng rombeng)
+│ ⚡ *!slow* (Efek lelet banget)
+│ ⚡ *!fast* (Efek ngebut)
+│ ⚡ *!echo* (Suara mantul-mantul)
+│ ⚡ *!reverb* (Suara konser di kamar mandi)
+│ ⚡ *!nightcore* (Suara wibu cepet)
+│ ⚡ *!reverse* (Suara mundur)
+│ ⚡ *!vibrato* (Suara getar kedinginan)
+│ ⚡ *!dalek* (Suara monster aneh)
+└───────────────┈ ⳹
+
+📌 *Cara pakenya bambang:*
+Reply/balas sebuah Voice Note (VN) pake 
+salah satu command di atas.`;
   }
   
   if (kategori === "dev") {
