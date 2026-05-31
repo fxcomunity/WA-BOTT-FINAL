@@ -178,12 +178,12 @@ async function startBot() {
       if (type !== "notify") return;
       const msg = messages[0];
       if (!msg.message) {
-      // Handle Anti-Delete for simple message deletes
-      if (msg.messageStubType === 68 || msg.messageStubType === 2) {
-         // Baileys may sometimes emit REVOKE as a stub type, but usually it's protocolMessage
+        // Handle Anti-Delete for simple message deletes
+        if (msg.messageStubType === 68 || msg.messageStubType === 2) {
+           // Baileys may sometimes emit REVOKE as a stub type, but usually it's protocolMessage
+        }
+        return;
       }
-      return;
-    }
       
       if (!msg.key || !msg.key.id) return;
       
@@ -311,7 +311,7 @@ async function startBot() {
       sender = jidNormalizedUser(sock.user.id);
     }
 
-    const isMenuFallback = ["1", "2", "3", "4", "5", "6"].includes(body);
+    const isMenuFallback = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].includes(body);
     let isCmd = false;
     let args = [];
     let cmd = "";
@@ -326,7 +326,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit",
         ...audioEffects.effectsList
       ];
 
@@ -791,7 +791,6 @@ async function startBot() {
         break;
       }
 
-      case "6":
       case "btn_owner": {
         if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa liat detail menu ini!");
         const txt = getHelpText(ownerCheck, adminCheck, "owner") + "\n\n_Ketik *!menu* untuk kembali._";

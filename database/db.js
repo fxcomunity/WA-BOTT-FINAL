@@ -19,6 +19,7 @@ db.exec(`
     streak INTEGER DEFAULT 0,
     lastDaily INTEGER DEFAULT 0,
     lastMancing INTEGER DEFAULT 0,
+    lastBerburu INTEGER DEFAULT 0,
     lastNambang INTEGER DEFAULT 0,
     pickaxeLevel INTEGER DEFAULT 1,
     pancinganLevel INTEGER DEFAULT 1,
@@ -29,6 +30,10 @@ db.exec(`
 
 try {
   db.exec("ALTER TABLE users ADD COLUMN pancinganLevel INTEGER DEFAULT 1;");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN lastBerburu INTEGER DEFAULT 0;");
 } catch (e) {}
 
 try {
