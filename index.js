@@ -407,6 +407,7 @@ async function startBot() {
 
     // ============================================
     // ANTI LINK — promo/invite = kick langsung, sosial/lain = warn dulu
+    // Admin grup & owner bot dikecualikan (bebas kirim link apapun)
     // ============================================
     if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && !isCmd) {
       const violation = moderation.analyzeViolation(body);

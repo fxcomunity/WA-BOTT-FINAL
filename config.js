@@ -101,5 +101,33 @@ module.exports = {
   // === KATA KASAR (tambah sesuai kebutuhan) ===
   badWords: ["anjing", "bangsat", "brengsek", "bajingan"],
 
-  allowedLinks: ["chat.whatsapp.com/KnkESJgEUKT5PEki4SpDD0"],
+  // === LINK WHITELIST (diizinkan, tidak kena anti-link) ===
+  // Admin grup & owner bot bebas kirim link apapun (dikecualikan di index.js)
+  allowedLinks: [
+    // 1. Grup WA resmi FX Community
+    "chat.whatsapp.com/KnkESJgEUKT5PEki4SpDD0",
+    // 2. APK FXCommunity (MEGA)
+    "mega.nz/file/DLIzVA5I",
+    "AoO4cdFq_GD07MOFBPGEOwu90SCCfoPU7vQpZtDmAYQ",
+    // 3. Website FXCommunity
+    "fxcomunity.vercel.app",
+    // 4. Jack Scanner
+    "jack-scanner.vercel.app",
+    // 5. VALLBOT
+    "vallbot.vercel.app",
+    // 6. Telegram resmi FX Community
+    "t.me/+Ng64dWNMACg1ODQ1",
+    "Ng64dWNMACg1ODQ1",
+    // 7. FBS Partners (affiliate resmi)
+    "fbs.partners",
+    "ibl=957159",
+    "ibp=37183404",
+    // 8. TradingView Indonesia
+    "id.tradingview.com",
+    // 9. MetaTrader 5
+    "metatrader5.com",
+    // 10. Google Drive materi edukasi
+    "drive.google.com/drive/folders/11HxV2K-ehYiyHFeI4LNjMqmuV7ETG7A3",
+    "11HxV2K-ehYiyHFeI4LNjMqmuV7ETG7A3",
+  ],
 };

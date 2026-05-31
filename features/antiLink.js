@@ -3,9 +3,8 @@
 const config = require("../config");
 
 const linkRegex = /(?:https?:\/\/[^\s<>'"]+|www\.[a-z0-9][-a-z0-9.]*\.[a-z]{2,}[^\s]*)/gi;
-const waInviteRegex = /chat\.whatsapp\.com\/[^\s]+/i;
 
-// Link promosi → kick langsung
+// Link promosi → kick langsung (kecuali ada di whitelist config)
 const promoPatterns = [
   /chat\.whatsapp\.com\/[^\s]+/i,
   /wa\.me\/[^\s]+/i,
@@ -28,8 +27,10 @@ const socialDomains = [
   "spotify.com", "open.spotify.com",
 ];
 
-function isAllowedByConfig(text) {
-  return config.allowedLinks.some(a => text.toLowerCase().includes(a.toLowerCase()));
+function isWhitelisted(textOrLink) {
+  if (!textOrLink) return false;
+  const lower = textOrLink.toLowerCase();
+  return config.allowedLinks.some(a => lower.includes(a.toLowerCase()));
 }
 
 function extractLinks(text) {
@@ -37,6 +38,7 @@ function extractLinks(text) {
 }
 
 function isPromoLink(link) {
+  if (isWhitelisted(link)) return false;
   return promoPatterns.some(p => p.test(link));
 }
 
@@ -48,26 +50,29 @@ function isSocialLink(link) {
 function classifyText(text) {
   if (!text || typeof text !== "string") return { action: "none" };
 
-  if (isAllowedByConfig(text)) return { action: "none" };
+  const links = extractLinks(text);
 
-  // Cek promo di seluruh teks (invite WA kadang tanpa http)
-  if (promoPatterns.some(p => p.test(text))) {
-    return { action: "kick", reason: "Nyebar link promosi / invite grup" };
+  // Pesan tanpa URL tapi ada pola invite (mis. chat.whatsapp.com/xxx tanpa http)
+  if (links.length === 0) {
+    const hasPromo = promoPatterns.some(p => p.test(text));
+    if (hasPromo && !isWhitelisted(text)) {
+      return { action: "kick", reason: "Nyebar link promosi / invite grup" };
+    }
+    return { action: "none" };
   }
 
-  const links = extractLinks(text);
-  if (links.length === 0) return { action: "none" };
+  // Hanya link whitelist → aman
+  const blocked = links.filter(l => !isWhitelisted(l));
+  if (blocked.length === 0) return { action: "none" };
 
-  for (const link of links) {
-    if (isAllowedByConfig(link)) continue;
+  // Ada link promo non-whitelist → kick langsung
+  for (const link of blocked) {
     if (isPromoLink(link)) {
       return { action: "kick", reason: "Nyebar link promosi / invite grup" };
     }
   }
 
-  const blocked = links.filter(l => !isAllowedByConfig(l));
-  if (blocked.length === 0) return { action: "none" };
-
+  // Link sosial / lainnya → warn dulu
   const allSocial = blocked.every(l => isSocialLink(l));
   return {
     action: "warn",
@@ -78,12 +83,13 @@ function classifyText(text) {
 
 module.exports = {
   classifyText,
+  isWhitelisted,
 
   hasLink(text) {
     return classifyText(text).action !== "none";
   },
 
   hasWAInvite(text) {
-    return waInviteRegex.test(text);
+    return /chat\.whatsapp\.com\/[^\s]+/i.test(text);
   },
 };
