@@ -66,6 +66,38 @@ Format nomor: **kode negara + nomor, tanpa + spasi atau strip**
 
 ---
 
+## 🌟 Fitur Utama
+
+Bot ini dilengkapi dengan ratusan fitur menarik dan interaktif, termasuk dukungan tombol **Quick Reply** (Balasan Cepat Interaktif) untuk mempermudah pengguna.
+
+### ⚔️ Mega RPG System
+- **`!mancing` & `!nambang`**: Sistem gacha item (Ikan & Ore) dengan sistem rarity Tier (Common, Uncommon, Rare, Epic, Mythic, Legendary, Mythos).
+- **`!shop` / `!beli`**: Beli perlengkapan (Pancingan, Pickaxe), enchant (Fortune/Lure), dan Stamina (Kecil/Sedang/Besar).
+- **`!inv` / `!inventory`**: Lihat status item, level, dan rarity item di dalam tas kamu.
+- **`!sell` / `!sell all`**: Jual hasil tangkapan dengan harga dinamis berdasarkan rarity.
+- **`!use` / `!pakai`**: Gunakan item stamina untuk mengurangi cooldown gacha RPG.
+
+### 🛡️ Group Security & Moderation
+- **Anti-Link**: Otomatis hapus pesan dan kick member yang mengirim link grup/terlarang (kecuali admin).
+- **Anti-Delete**: Jika ada pesan yang dihapus/ditarik, bot akan otomatis "menyelamatkan" pesan tersebut dan mengirimkannya (Forward) ke nomor Developer, lengkap dengan detail *Siapa yang menarik pesan* dan *Dari Grup Mana*.
+- **Anti-Spam**: Mencegah member melakukan spam pesan beruntun.
+- **Warn System**: `!warn`, `!resetwarn`, `!kick`, `!mute`, `!unmute` untuk manajemen grup.
+- **Welcome/Goodbye Message**: Otomatis menyapa member baru / yang keluar grup.
+
+### ⚡ Mode Khusus
+- **Self Mode / Public Mode**: `!self` (bot hanya merespon perintah Owner) dan `!public` (bot merespon semua member).
+
+### 📥 Downloader & Media
+- Fitur download lengkap dari YouTube (`!yt`), TikTok (`!tt`), Instagram (`!ig`).
+- Pembuatan dan pencarian Spotify (`!spotifyplay`, `!spotifysearch`).
+- Sticker Maker (`!sticker` / `!s`) dengan meta data.
+- Pinterest, Google Image, TTS (Text-to-Speech), dan Translate.
+
+### 🤖 AI Chatbot
+- Chat otomatis menggunakan AI yang pintar untuk merespon dan berbincang dengan member grup (`!brat`, `!jawab`, dll).
+
+---
+
 ## 📁 Struktur File
 
 ```
