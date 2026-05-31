@@ -843,8 +843,60 @@ async function startBot() {
         break;
 
       case "info":
-        const groupInfo = await sock.groupMetadata(groupId);
-        await reply(sock, msg, `📋 *Info Grup*\nNama: ${groupInfo.subject}\nMember: ${groupInfo.participants.length}\nDeskripsi: ${groupInfo.desc || "-"}`);
+        if (args.length > 0) {
+           const query = args.join(" ").toLowerCase();
+           const rpgData = require('./features/rpgData');
+           
+           // search monster
+           const monster = rpgData.monsters.find(m => m.name.toLowerCase().includes(query) || m.id === query);
+           if (monster) {
+             let msgInfo = `📖 *BESTIARY: ${monster.name}*\n\n`;
+             msgInfo += `🌟 Tier: ${rpgData.monsterTiers[monster.tier].name}\n`;
+             msgInfo += `❤️ HP: ${monster.maxHp}\n`;
+             msgInfo += `⚔️ Damage: ${monster.damage[0]} - ${monster.damage[1]}\n`;
+             msgInfo += `✨ Ability: ${monster.ability}\n`;
+             msgInfo += `💰 Drop Gold: ${monster.dropGold[0]} - ${monster.dropGold[1]}\n`;
+             msgInfo += `📦 Drop Item: ${monster.dropItem}\n`;
+             await reply(sock, msg, msgInfo);
+             break;
+           }
+           
+           // search artifact
+           const artifact = rpgData.artifacts.find(a => a.name.toLowerCase().includes(query) || a.id === query);
+           if (artifact) {
+             let msgInfo = `📖 *ARTIFACT: ${artifact.name}*\n\n`;
+             msgInfo += `🌟 Tier: ${rpgData.artifactTiers[artifact.tier].name}\n`;
+             msgInfo += `⚙️ Tipe: ${artifact.type}\n`;
+             if (artifact.action === "buff") msgInfo += `⚡ Efek: Buff [${artifact.buff}] selama ${artifact.duration} menit\n`;
+             if (artifact.action === "heal") msgInfo += `⚡ Efek: Heal ${artifact.amount} HP\n`;
+             if (artifact.action === "instant_ore" || artifact.action === "instant_epic" || artifact.action === "instant_massive") msgInfo += `⚡ Efek: Instan Drop (${artifact.action})\n`;
+             if (artifact.action === "reset_cd") msgInfo += `⚡ Efek: Reset CD Tambang\n`;
+             if (artifact.action === "heal_status") msgInfo += `⚡ Efek: Menyembuhkan status buruk\n`;
+             msgInfo += `💰 Harga Jual: ${artifact.price} koin\n`;
+             await reply(sock, msg, msgInfo);
+             break;
+           }
+           
+           await reply(sock, msg, `❌ Tidak menemukan monster atau artefak dengan nama '${query}'.\nKetik !info tanpa spasi untuk info grup.`);
+           break;
+        } else {
+           const w = economy.getWallet(sender);
+           if (w && w.combat && w.combat.active) {
+              const rpgData = require('./features/rpgData');
+              const monster = rpgData.monsters.find(m => m.id === w.combat.monsterId);
+              let msgInfo = `🔎 *MENGAMAT MONSTER SAAT INI*\n\n`;
+              msgInfo += `👹 Nama: ${monster.name}\n`;
+              msgInfo += `🌟 Tier: ${rpgData.monsterTiers[monster.tier].name}\n`;
+              msgInfo += `❤️ Sisa HP: ${w.combat.monsterHp}/${w.combat.monsterMaxHp}\n`;
+              msgInfo += `⚔️ Damage: ${monster.damage[0]} - ${monster.damage[1]}\n`;
+              msgInfo += `✨ Ability: ${monster.ability}\n`;
+              await reply(sock, msg, msgInfo);
+              break;
+           }
+           
+           const groupInfo = await sock.groupMetadata(groupId);
+           await reply(sock, msg, `📋 *Info Grup*\nNama: ${groupInfo.subject}\nMember: ${groupInfo.participants.length}\nDeskripsi: ${groupInfo.desc || "-"}`);
+        }
         break;
 
       case "status":
