@@ -322,19 +322,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "add", "lock", "unlock", "shutdown", "setowner", "warn", "kick", "mute", "unmute",
-        "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "self", "on", "public",
-        "afk", "sticker", "s", "info", "daily", "saldo", "transfer", "shop", "beli", "leaderboard",
-        "lb", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping",
-        "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "beli",
-        "serang", "lari", "potion", "skills", "skill", "belajar", "levelup", "upgrade", "quotes", "fakta", "apakah", "kapankah", "rate", "cuaca", "kurs", "qr", "remind",
-        "yt", "tt", "ig", "limit", "ceklimit", "limitall", "resetlimit", "setlimit", "status",
-        "jodoh", "cekkhodam", "bisakah", "brat", "pin", "gambar", "pinterest",
-        "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps",
-        "self", "on", "pengumuman", "menfess", "tts", "jadwalsholat",
-        "toimg", "tr", "translate", "rvo", "sw", "imagine",
-        "promote", "demote", "kickall", "setname", "setdesc", "setpp",
-        "igstalk", "ttstalk", "ghstalk", "fb", "x",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit",
         ...audioEffects.effectsList
       ];
 
