@@ -60,6 +60,7 @@ module.exports = {
           console.error(`Error ffmpeg ${effectName}:`, err);
           await sock.sendMessage(groupId, { text: "❌ Gagal bos memproses audio. File mungkin rusak atau format tidak didukung." }, { quoted: msg });
           try { fs.unlinkSync(tmpIn); } catch(e){}
+          try { fs.unlinkSync(tmpOut); } catch(e){}
         })
         .on('end', async () => {
           const outBuffer = fs.readFileSync(tmpOut);

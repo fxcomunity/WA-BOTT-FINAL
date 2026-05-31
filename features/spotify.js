@@ -38,7 +38,17 @@ module.exports = {
         caption
       }, { quoted: msg });
 
-      let head = await axios.head(v.download_url);
+      if (!v.download_url) {
+        await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
+        return sock.sendMessage(msg.key.remoteJid, { text: '❌ Link download lagu tidak tersedia dari API, coba lagu lain.' }, { quoted: msg });
+      }
+
+      let head;
+      try {
+        head = await axios.head(v.download_url);
+      } catch (e) {
+        head = { headers: {} };
+      }
       let size = Number(head.headers['content-length'] || 0);
       let sizeMB = size / 1024 / 1024;
 

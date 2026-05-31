@@ -71,14 +71,45 @@ module.exports = {
   },
 
   setPp: async (sock, msg, groupId, downloadMediaMessage) => {
-    const isImage = msg.message?.imageMessage || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
-    if (!isImage) return reply(sock, msg, `⚠️ Kirim ato reply foto pake caption !setpp bos!`);
+    const isQuotedImage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+    const isDirectImage = msg.message?.imageMessage;
+    if (!isDirectImage && !isQuotedImage) return reply(sock, msg, `⚠️ Kirim ato reply foto pake caption !setpp bos!`);
     
     try {
-      // Logic download media akan dilakukan di index.js
       await reply(sock, msg, `⏳ Sabar njir, lagi proses ganti PP grup...`);
+
+      // Determine which message contains the image
+      let targetMessage;
+      if (isDirectImage) {
+        targetMessage = msg;
+      } else {
+        targetMessage = {
+          key: {
+            remoteJid: msg.key.remoteJid,
+            id: msg.message.extendedTextMessage.contextInfo.stanzaId,
+            participant: msg.message.extendedTextMessage.contextInfo.participant
+          },
+          message: msg.message.extendedTextMessage.contextInfo.quotedMessage
+        };
+      }
+
+      // Download the image buffer
+      const buffer = await downloadMediaMessage(
+        targetMessage,
+        'buffer',
+        {},
+        {
+          logger: console,
+          reuploadRequest: sock.updateMediaMessage
+        }
+      );
+
+      // Update the group profile picture
+      await sock.updateProfilePicture(groupId, buffer);
+      await reply(sock, msg, `✅ PP grup berhasil diganti bos! Cakep dah.`);
     } catch (e) {
-      await reply(sock, msg, `❌ Gagal bos ganti PP njir, bot harus admin!`);
+      console.error("setPp error:", e);
+      await reply(sock, msg, `❌ Gagal bos ganti PP njir, bot harus admin! Error: ${e.message}`);
     }
   }
 };
