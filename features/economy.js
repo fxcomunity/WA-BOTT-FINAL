@@ -746,8 +746,9 @@ module.exports = {
       w.inventory[itemName] -= 1;
       w.lastMancing = Math.max(0, w.lastMancing - (10 * 60000));
       w.lastNambang = Math.max(0, w.lastNambang - (10 * 60000));
+      w.lastBerburu = Math.max(0, w.lastBerburu - (10 * 60000));
       saveWallet(sender, w);
-      return sock.sendMessage(msg.key.remoteJid, { text: `⚡ Glekkk! *Stamina Sedang* diteguk...\nCooldown Mancing dan Nambang dikurangin 10 menit.\n(Sisa stamina_sedang lu: ${w.inventory[itemName]})` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `⚡ Glekkk! *Stamina Sedang* diteguk...\nCooldown Mancing, Nambang, dan Berburu dikurangin 10 menit.\n(Sisa stamina_sedang lu: ${w.inventory[itemName]})` }, { quoted: msg });
     } else if (itemName === "potion_besar") {
       if (w.hp >= w.maxHp) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Darah lu masih pull ngab, ngapain minum ginian!` }, { quoted: msg });
       w.inventory[itemName] -= 1;
@@ -822,14 +823,14 @@ module.exports = {
     const w = getWallet(sender);
     const cost = 2000;
 
-    if (w.gold < cost) {
-      return sock.sendMessage(groupId, { text: `❌ Duit lu kaga cukup bos! Harga tiket gacha ${cost} Gold. Lu cuma punya ${w.gold} Gold.` }, { quoted: msg });
+    if (w.coins < cost) {
+      return sock.sendMessage(groupId, { text: `❌ Duit lu kaga cukup bos! Harga tiket gacha ${cost} koin. Lu cuma punya ${w.coins} koin.` }, { quoted: msg });
     }
 
-    w.gold -= cost;
+    w.coins -= cost;
     saveWallet(sender, w);
 
-    let sentMsg = await sock.sendMessage(groupId, { text: `🎰 *GACHA TIME* 🎰\n💸 Saldo kepotong: -${cost} Gold\n\n🎲 [ ⚀ | ⚄ | ⚂ ]\n_Ngocok dadu..._` }, { quoted: msg });
+    let sentMsg = await sock.sendMessage(groupId, { text: `🎰 *GACHA TIME* 🎰\n💸 Saldo kepotong: -${cost} koin\n\n🎲 [ ⚀ | ⚄ | ⚂ ]\n_Ngocok dadu..._` }, { quoted: msg });
     
     const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
     for (let i = 0; i < 4; i++) {
@@ -849,8 +850,8 @@ module.exports = {
       resultText = `💀 *ZONK ANJIR!* 💀\nLu dapet udara kosong. Sabar bos, bandar emang licik.`;
     } else if (rng <= 80) {
       const winGold = Math.floor(Math.random() * 4900) + 100;
-      w.gold += winGold;
-      resultText = `💸 *UANG KAGET!* 💸\nLumayan lu dapet *${winGold} Gold*!`;
+      w.coins += winGold;
+      resultText = `💸 *UANG KAGET!* 💸\nLumayan lu dapet *${winGold} koin*!`;
     } else if (rng <= 90) {
       w.inventory["stamina_kecil"] = (w.inventory["stamina_kecil"] || 0) + 1;
       resultText = `⚡ *DAPET ITEM!* ⚡\nLu dapet *1x Stamina Kecil*! Pake !pakai stamina_kecil buat ngurangin cooldown.`;
@@ -858,7 +859,7 @@ module.exports = {
       w.inventory["iron"] = (w.inventory["iron"] || 0) + 2;
       resultText = `📦 *LUMAYAN OKE!* 📦\nLu dapet *2x Iron* dari dalem box!`;
     } else {
-      const { enchantsData } = require('./enchantsData');
+      const enchantsData = require('./enchantsData');
       const droppedEnchant = enchantsData.rollEnchant() || { name: "Haste", id: "haste" };
       w.inventory[`buku_${droppedEnchant.id}`] = (w.inventory[`buku_${droppedEnchant.id}`] || 0) + 1;
       resultText = `🎉 *HOKI PARAH BOSKU!* 🎉\nSinar emas muncul dari dalem box! Lu dapet item langka:\n✨ *Buku ${droppedEnchant.name}*`;

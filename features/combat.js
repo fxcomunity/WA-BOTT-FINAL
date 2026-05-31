@@ -129,9 +129,10 @@ async function lari(sock, msg, sender) {
 
   const chance = Math.random();
   if (chance > 0.5) {
+    const mName = w.combat.monsterName;
     w.combat = { active: false };
     db.prepare(`UPDATE users SET combat = ? WHERE id = ?`).run(JSON.stringify(w.combat), sender);
-    return sock.sendMessage(msg.key.remoteJid, { text: `🏃💨 Kamu berhasil kabur dari kejaran *${w.combat.monsterName}* dengan selamat!` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `🏃💨 Kamu berhasil kabur dari kejaran *${mName}* dengan selamat!` }, { quoted: msg });
   } else {
     // Gagal bos lari, diserang
     const combat = w.combat;
