@@ -74,35 +74,35 @@ async function listSkills(sock, msg, sender) {
 // 2. COMMAND: !belajar (Pelajari skill baru ke Level 1)
 async function belajar(sock, msg, sender, args) {
   if (args.length < 1) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format: !belajar <nama_skill>\nContoh: !belajar ledakan terkendali" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format lu salah ngab! Ketik: !belajar <nama_skill>\nContoh: !belajar ledakan terkendali" }, { quoted: msg });
   }
 
   const query = args.join(" ").toLowerCase();
   const s = skillsData.skills.find(x => x.name.toLowerCase() === query || x.id === query);
 
   if (!s) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill tidak ditemukan. Cek !skills" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill apaan tuh? Ga nemu! Cek !skills dah." }, { quoted: msg });
   }
 
   const w = economy.getWallet(sender);
 
   if (w.skills[s.id]) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu sudah mempelajari skill ini! Ketik !levelup untuk upgrade." }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Lu udah tamat belajar skill ini ngab! Ketik !levelup buat nge-upgrade." }, { quoted: msg });
   }
 
   const lvl1 = s.levels[0];
 
   // Cek syarat Level 1
   if (lvl1.reqLevel && w.level < lvl1.reqLevel) {
-    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Level Mining kamu kurang! Butuh Level ${lvl1.reqLevel}.` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Level Mining lu masih ampas! Minimal butuh Level ${lvl1.reqLevel} bos.` }, { quoted: msg });
   }
   if (lvl1.reqGold && w.coins < lvl1.reqGold) {
-    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Koin kamu kurang! Butuh ${lvl1.reqGold} koin.` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Duit lu kurang miskin! Butuh ${lvl1.reqGold} koin.` }, { quoted: msg });
   }
   if (lvl1.reqItem) {
     const itemStock = w.inventory[lvl1.reqItem.id] || 0;
     if (itemStock < lvl1.reqItem.amount) {
-      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Kamu butuh ${lvl1.reqItem.amount}x ${lvl1.reqItem.id} di tas!` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Bahan lu kurang ngab! Butuh ${lvl1.reqItem.amount}x ${lvl1.reqItem.id} di tas.` }, { quoted: msg });
     }
   }
 
@@ -114,46 +114,46 @@ async function belajar(sock, msg, sender, args) {
   w.skills[s.id] = { lastUsed: 0, level: 1 };
   economy.saveWallet(sender, w);
 
-  return sock.sendMessage(msg.key.remoteJid, { text: `🎉 *SELAMAT!* Kamu berhasil mempelajari skill:\n\n✨ *${s.name} (Lv.1)*\n📖 _${lvl1.desc}_\n\nGunakan dengan mengetik: *!skill ${s.id}*` }, { quoted: msg });
+  return sock.sendMessage(msg.key.remoteJid, { text: `🎉 *CAKEPPP!* Lu berhasil tamatin buku skill:\n\n✨ *${s.name} (Lv.1)*\n📖 _${lvl1.desc}_\n\nPake skillnya ketik: *!skill ${s.id}*` }, { quoted: msg });
 }
 
 // 3. COMMAND: !levelup (Upgrade skill)
 async function levelupSkill(sock, msg, sender, args) {
   if (args.length < 1) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format: !levelup <nama_skill>" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format salah bos! Ketik: !levelup <nama_skill>" }, { quoted: msg });
   }
 
   const query = args.join(" ").toLowerCase();
   const s = skillsData.skills.find(x => x.name.toLowerCase() === query || x.id === query);
 
   if (!s) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill tidak ditemukan." }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill apaan tuh? Ga nemu." }, { quoted: msg });
   }
 
   const w = economy.getWallet(sender);
 
   if (!w.skills[s.id]) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu belum mempelajari skill ini! Ketik !belajar dulu." }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Lu aja belom belajar skill ini! Ketik !belajar dulu gih." }, { quoted: msg });
   }
 
   const currentLevel = w.skills[s.id].level || 1;
   if (currentLevel >= 5) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "⭐ Skill ini sudah mencapai Level Maksimal (Lv.5)!" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "⭐ Udah max level (Lv.5) bro! Gak bisa di-upgrade lagi." }, { quoted: msg });
   }
 
   const nextLevelData = s.levels[currentLevel]; // array index is 0-based, so currentLevel corresponds to the next level's index
 
   // Cek syarat Next Level
   if (nextLevelData.reqLevel && w.level < nextLevelData.reqLevel) {
-    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Level Mining kamu kurang! Butuh Level ${nextLevelData.reqLevel}.` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Level Mining lu masih cupu! Minimal Level ${nextLevelData.reqLevel}.` }, { quoted: msg });
   }
   if (nextLevelData.reqGold && w.coins < nextLevelData.reqGold) {
-    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Koin kamu kurang! Butuh ${nextLevelData.reqGold} koin.` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `❌ Duit lu ga cukup bang! Butuh ${nextLevelData.reqGold} koin.` }, { quoted: msg });
   }
   if (nextLevelData.reqItem) {
     const itemStock = w.inventory[nextLevelData.reqItem.id] || 0;
     if (itemStock < nextLevelData.reqItem.amount) {
-      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Kamu butuh ${nextLevelData.reqItem.amount}x ${nextLevelData.reqItem.id} di tas!` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `❌ Bahan kurang! Lu butuh ${nextLevelData.reqItem.amount}x ${nextLevelData.reqItem.id} di tas.` }, { quoted: msg });
     }
   }
 
@@ -165,28 +165,28 @@ async function levelupSkill(sock, msg, sender, args) {
   w.skills[s.id].level = currentLevel + 1;
   economy.saveWallet(sender, w);
 
-  return sock.sendMessage(msg.key.remoteJid, { text: `🎉 *UPGRADE BERHASIL!*\n\n✨ *${s.name}* naik ke *Level ${w.skills[s.id].level}*!\n📖 _${nextLevelData.desc}_` }, { quoted: msg });
+  return sock.sendMessage(msg.key.remoteJid, { text: `🎉 *GACOR KANG!*\n\n✨ *${s.name}* lu naik ke *Level ${w.skills[s.id].level}*!\n📖 _${nextLevelData.desc}_` }, { quoted: msg });
 }
 
 
 // 4. COMMAND: !skill (Gunakan skill)
 async function useSkill(sock, msg, sender, args) {
   if (args.length < 1) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format: !skill <nama_skill>" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format lu salah ngab: !skill <nama_skill>" }, { quoted: msg });
   }
 
   const query = args.join(" ").toLowerCase();
   const s = skillsData.skills.find(x => x.name.toLowerCase() === query || x.id === query);
 
   if (!s) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill tidak ditemukan." }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Skill apaan tuh? Cek !skills dulu." }, { quoted: msg });
   }
 
   const w = economy.getWallet(sender);
 
   // Check if learned
   if (!w.skills[s.id]) {
-    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu belum mempelajari skill ini! Ketik !belajar" }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: "❌ Lu belom belajar skill ini njir! Ketik !belajar" }, { quoted: msg });
   }
 
   const currentLevel = w.skills[s.id].level || 1;
@@ -196,12 +196,12 @@ async function useSkill(sock, msg, sender, args) {
   const now = Date.now();
   if (now - w.skills[s.id].lastUsed < lvlData.cooldownMs) {
     const sisa = lvlData.cooldownMs - (now - w.skills[s.id].lastUsed);
-    return sock.sendMessage(msg.key.remoteJid, { text: `⏳ Skill *${s.name}* sedang cooldown! Tunggu ${formatTime(sisa)} lagi.` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `⏳ *${s.name}* masih cooldown woy! Sabar ${formatTime(sisa)} lagi.` }, { quoted: msg });
   }
 
   // Check MP
   if (w.mp < lvlData.mpCost) {
-    return sock.sendMessage(msg.key.remoteJid, { text: `💧 Mana (MP) kamu tidak cukup! Butuh ${lvlData.mpCost} MP.\nSisa MP kamu: ${w.mp}/${w.maxMp}` }, { quoted: msg });
+    return sock.sendMessage(msg.key.remoteJid, { text: `💧 MP lu abis ngab! Butuh ${lvlData.mpCost} MP, sisa lu cuma ${w.mp}/${w.maxMp}. Nambang/minum pot sana!` }, { quoted: msg });
   }
 
   // ==============================

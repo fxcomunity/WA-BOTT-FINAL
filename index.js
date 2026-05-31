@@ -842,24 +842,24 @@ async function startBot() {
            const query = args.join(" ").toLowerCase();
            
            if (query === "rpg" || query === "panduan") {
-             let guide = `📖 *PANDUAN LENGKAP ECONOMY RPG* 📖\n\n`;
-             guide += `⛏️ *CARA BERMAIN*\n`;
-             guide += `• *Gold & Ore*: Gunakan \`!nambang\` setiap beberapa menit untuk mencari batuan. Jual ore dengan \`!sell [nama]\` untuk mendapatkan Gold.\n`;
-             guide += `• *Bahan Lain*: Gunakan \`!mancing\` dan \`!berburu\` untuk variasi material.\n\n`;
-             guide += `❤️ *HP & MP (DARAH & MANA)*\n`;
-             guide += `• *HP*: Berkurang saat diserang monster. Pulihkan dengan beli Potion di \`!shop\` lalu \`!pakai potion_kecil\`. Otomatis pulih 10/nambang jika ada buff mata air.\n`;
-             guide += `• *MP*: Energi untuk menggunakan skill sihir. Otomatis terisi 5 poin setiap kali \`!nambang\`, atau pulih instan dengan *Mana Potion*.\n\n`;
-             guide += `👹 *MONSTER & BOSS*\n`;
-             guide += `Saat nambang, kamu bisa diserang monster secara acak.\n`;
-             guide += `• Ketik \`!serang\` untuk melawan dan mendapat hadiah gold/material.\n`;
-             guide += `• Ketik \`!lari\` jika HP kamu krisis.\n`;
-             guide += `• *Boss* (Mythos) sangat kuat tapi memberi *Mythical Ore*.\n\n`;
-             guide += `🧙‍♂️ *MAGIC SKILLS & UPGRADE*\n`;
-             guide += `• *Melihat Skill*: Ketik \`!skills\` untuk melihat syarat belajar setiap jurus.\n`;
-             guide += `• *Mempelajari*: Ketik \`!belajar [nama_skill]\` (contoh: !belajar deteksi harta).\n`;
-             guide += `• *Mengupgrade*: Ketik \`!levelup [nama_skill]\` untuk menaikkan level (Max Lv.5) agar MP cost turun dan efek mematikan.\n`;
-             guide += `• *Menggunakan*: Ketik \`!skill [nama_skill]\`.\n\n`;
-             guide += `💡 *TIPS*: Ketik \`!info [nama monster/artefak]\` untuk melihat detail darah, ability, atau efek artefak.`;
+             let guide = `📖 *BUKU PINTAR RPG (BUAT LU YANG NOOB)* 📖\n\n`;
+             guide += `⛏️ *CARA MAIN (BACA BIAR GAK BEGO)*\n`;
+             guide += `• *Cari Duit*: Ketik \`!nambang\` tiap bbrp menit buat mulung batu. Kalo dapet ore, jual pake \`!sell [nama]\` biar dapet Gold (duit).\n`;
+             guide += `• *Selain Batu*: Lu juga bisa \`!mancing\` ato \`!berburu\` buat cari bahan lain. Jangan rebahan doang!\n\n`;
+             guide += `❤️ *DARAH (HP) & MANA (MP)*\n`;
+             guide += `• *HP*: Darah lu bakal ngurang kalo digebuk monster. Kalo mau idup, beli Potion di \`!shop\` trus minum pake \`!pakai potion_kecil\`. Darah juga nambah dikit otomatis tiap lu nambang.\n`;
+             guide += `• *MP*: Ini bensin buat ngeluarin skill sihir. Bakal nge-charge 5 poin tiap lu \`!nambang\`, ato instan nenggak *Mana Potion*.\n\n`;
+             guide += `👹 *MONSTER & BOSS BANGSAT*\n`;
+             guide += `Pas nambang, kadang ada monster nyebelin nyegat lu.\n`;
+             guide += `• Ketik \`!serang\` kalo lu ngerasa jago (dapet drop lumayan).\n`;
+             guide += `• Ketik \`!lari\` kalo darah lu sekarat (daripada mati konyol).\n`;
+             guide += `• *Boss* (Mythos): HP tebel asu, tapi ngedrop *Mythical Ore*.\n\n`;
+             guide += `🧙‍♂️ *SKILL MAGIC & BIKIN OP*\n`;
+             guide += `• *Liat Skill*: Ketik \`!skills\` buat ngintip jurus apa aja yang bisa lu pelajarin.\n`;
+             guide += `• *Belajar*: Ketik \`!belajar [nama_skill]\` (contoh: !belajar deteksi harta). Modal dikit bos!\n`;
+             guide += `• *Upgrade*: Ketik \`!levelup [nama_skill]\` biar jurus lu makin mematikan (Max Lv.5).\n`;
+             guide += `• *Pake Skill*: Ketik \`!skill [nama_skill]\` buat pamer.\n\n`;
+             guide += `💡 *TIPS*: Ketik \`!info [nama monster/artefak]\` buat nge-kepo-in detail stats mereka.`;
              return reply(sock, msg, guide);
            }
 
@@ -1660,49 +1660,49 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
   if (kategori === "rpg") {
     return `╭━━• [ ⚔️ *ECONOMY & RPG* ] •━━╮
 ┃ 
-┣━━ [ ⛏️ AKTIVITAS UTAMA ]
+┣━━ [ ⛏️ KERJA KERAS BAGAI QUDA ]
 ┃ ➯ !nambang
-┃    ↳ Nambang material berharga
+┃    ↳ Mulung batu & material 
 ┃ ➯ !mancing
-┃    ↳ Mancing ikan
+┃    ↳ Mancing mania mantap
 ┃ ➯ !berburu
-┃    ↳ Berburu hewan di hutan
+┃    ↳ Berburu hewan di utan
 ┃ 
-┣━━ [ 💰 EKONOMI & ITEM ]
+┣━━ [ 💰 DUIT & BARANG ]
 ┃ ➯ !inv / !inventory
-┃    ↳ Cek tas dan status darah/mana
+┃    ↳ Ngintip isi tas & status darah
 ┃ ➯ !saldo
-┃    ↳ Cek koin dan level kamu
+┃    ↳ Liat harta & level lu
 ┃ ➯ !shop
-┃    ↳ Lihat daftar barang toko
+┃    ↳ Buka pasar malem
 ┃ ➯ !beli [id]
-┃    ↳ Membeli item / potion
+┃    ↳ Check out barang / potion
 ┃ ➯ !sell / !jual [nama_item] [jumlah]
-┃    ↳ Menjual hasil tambang/ikan
+┃    ↳ Ngejual rongsokan hasil mulung
 ┃ ➯ !pakai [nama_item]
-┃    ↳ Memakai item (Potion, Buff)
+┃    ↳ Nenggak potion / pake item
 ┃ 
-┣━━ [ 🧙‍♂️ MAGIC & SKILLS ]
+┣━━ [ 🧙‍♂️ MAGIC BIAR OP ]
 ┃ ➯ !skills
-┃    ↳ Cek daftar skill aktif & tersedia
+┃    ↳ Liat daftar skill sihir
 ┃ ➯ !belajar [nama_skill]
-┃    ↳ Mempelajari skill baru
+┃    ↳ Belajar jurus baru (modal dikit)
 ┃ ➯ !levelup [nama_skill]
-┃    ↳ Upgrade skill ke level berikutnya
+┃    ↳ Upgrade skill biar makin gacor
 ┃ ➯ !skill [nama_skill]
-┃    ↳ Menggunakan efek sihir / buff
+┃    ↳ Pamer ngeluarin jurus
 ┃ 
-┣━━ [ ⚔️ COMBAT SYSTEM ]
+┣━━ [ ⚔️ GELUT SYSTEM ]
 ┃ ➯ !serang
-┃    ↳ Menyerang monster saat nambang
+┃    ↳ Gebuk monster pas nambang
 ┃ ➯ !potion
-┃    ↳ Minum ramuan pemulih HP
+┃    ↳ Minum ramuan pas sekarat
 ┃ ➯ !lari
-┃    ↳ Mencoba kabur dari pertarungan
+┃    ↳ Kabur njir daripada mati
 ┃ ➯ !info rpg
-┃    ↳ 📖 Membaca panduan lengkap RPG
+┃    ↳ 📖 Baca panduan lengkap buat noob
 ┃ ➯ !info [nama_monster]
-┃    ↳ Mengecek darah & ability monster
+┃    ↳ Kepoin stat & drop monster
 ╰━━━━━━━━━━━━━━━━━━━╯`;
   }
   
