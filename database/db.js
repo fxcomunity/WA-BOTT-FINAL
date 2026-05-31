@@ -88,6 +88,10 @@ try {
   db.exec("ALTER TABLE users ADD COLUMN maxPancinganDurability INTEGER DEFAULT 50;");
 } catch (e) {}
 
+try {
+  db.exec("ALTER TABLE users ADD COLUMN equipment TEXT DEFAULT '{}';");
+} catch (e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS limits (
     id TEXT PRIMARY KEY,

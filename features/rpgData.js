@@ -137,21 +137,77 @@ const artifacts = [
   { id: "mahkota_pencipta", name: "Mahkota Sang Pencipta Tambang", tier: 6, type: "passive", price: 100000 }
 ];
 
-function rollMonster() {
+const monsterTagMap = {
+  rayap_batu: ["slime", "beast"], kelelawar_buta: ["beast", "flying"], laba_batu: ["beast"],
+  cacing_tanah: ["beast"], tikus_tambang: ["beast"], goblin_penggali: ["humanoid"],
+  slime_abu: ["slime"], ular_dua_kepala: ["beast"], kumbang_besi: ["golem", "armor"],
+  scorpion_kristal: ["beast", "desert"], golem_runtuh: ["golem", "armor"],
+  vampir_gua: ["undead"], naga_kecil: ["beast", "flying", "magic"], ratu_laba: ["beast"],
+  fosil_hidup: ["undead"], beholder_batu: ["magic", "flying"], raja_goblin: ["humanoid", "boss"],
+  wyrm_pasir: ["beast", "desert"], golem_berlian: ["golem", "armor"], lich_penambang: ["undead", "magic", "boss"],
+  naga_emas: ["boss", "magic", "undead"], colossus_gunung: ["golem", "slow", "giant"],
+  void_crawler: ["magic", "boss"], phoenix_bawah_tanah: ["magic", "flying"],
+  titan_palu: ["slow", "giant", "boss"], eater_of_worlds: ["boss", "magic"],
+  primordial_golem: ["golem", "boss"], silent_one: ["magic", "boss"],
+  anomali_waktu: ["magic", "boss"], bedrock_king: ["boss", "golem"],
+};
+
+const huntMonsters = [
+  { id: "babi_hutan", name: "Babi Hutan", tier: 1, hp: 30, maxHp: 30, damage: [4, 10], tags: ["beast"],
+    ability: "charge", dropGold: [15, 30], dropItem: "daging_babi" },
+  { id: "rusa_liar", name: "Rusa Liar", tier: 1, hp: 22, maxHp: 22, damage: [2, 6], tags: ["beast"],
+    ability: "evade", dropGold: [10, 25], dropItem: "daging_rusa" },
+  { id: "serigala_kelaparan", name: "Serigala Kelaparan", tier: 1, hp: 35, maxHp: 35, damage: [5, 12], tags: ["beast"],
+    ability: "pack_bite", dropGold: [20, 35], dropItem: "bulu_serigala" },
+  { id: "beruang_coklat", name: "Beruang Coklat", tier: 2, hp: 80, maxHp: 80, damage: [12, 22], tags: ["beast", "slow"],
+    ability: "maul", dropGold: [50, 80], dropItem: "kulit_beruang" },
+  { id: "macan_tutul", name: "Macan Tutul", tier: 2, hp: 70, maxHp: 70, damage: [15, 25], tags: ["beast"],
+    ability: "pounce", dropGold: [60, 90], dropItem: "daging_macan" },
+  { id: "king_boar", name: "King Boar", tier: 3, hp: 150, maxHp: 150, damage: [20, 35], tags: ["beast", "boss"],
+    ability: "charge", dropGold: [120, 200], dropItem: "taring_babi_raja" },
+  { id: "harimau_putih", name: "Harimau Putih", tier: 3, hp: 130, maxHp: 130, damage: [25, 40], tags: ["beast"],
+    ability: "stealth_strike", dropGold: [150, 220], dropItem: "daging_harimau" },
+  { id: "alpha_wolf", name: "Alpha Wolf", tier: 3, hp: 140, maxHp: 140, damage: [22, 38], tags: ["beast", "boss"],
+    ability: "howl", dropGold: [140, 210], dropItem: "bulu_alpha" },
+  { id: "forest_wyrm", name: "Forest Wyrm", tier: 4, hp: 300, maxHp: 300, damage: [40, 65], tags: ["beast", "flying", "boss"],
+    ability: "fire_breath", dropGold: [400, 600], dropItem: "sisik_wyrm" },
+  { id: "ancient_bear", name: "Ancient Bear", tier: 4, hp: 380, maxHp: 380, damage: [35, 55], tags: ["beast", "slow", "giant"],
+    ability: "earthquake", dropGold: [450, 700], dropItem: "jantung_beruang" },
+  { id: "spirit_stag", name: "Spirit Stag", tier: 5, hp: 600, maxHp: 600, damage: [60, 90], tags: ["magic", "beast", "boss"],
+    ability: "nature_blast", dropGold: [800, 1200], dropItem: "tanduk_roh" },
+  { id: "primal_tiger", name: "Primal Tiger", tier: 5, hp: 550, maxHp: 550, damage: [70, 100], tags: ["beast", "boss"],
+    ability: "claw_fury", dropGold: [900, 1400], dropItem: "cakar_primal" },
+  { id: "beast_king", name: "Beast King of the Wild", tier: 6, hp: 2000, maxHp: 2000, damage: [120, 200], tags: ["beast", "boss", "giant"],
+    ability: "roar", dropGold: [3000, 5000], dropItem: "mahkota_binatang" },
+];
+
+function enrichMonster(m) {
+  return { ...m, tags: m.tags || monsterTagMap[m.id] || ["beast"] };
+}
+
+function findMonster(id) {
+  const m = monsters.find(x => x.id === id) || huntMonsters.find(x => x.id === id);
+  return m ? enrichMonster(m) : null;
+}
+
+function rollFromPool(pool, tiers) {
   let random = Math.random() * 100;
   let selectedTier = 1;
   let cumulative = 0;
-
   for (let t = 1; t <= 6; t++) {
-    cumulative += monsterTiers[t].encounterRate;
-    if (random <= cumulative) {
-      selectedTier = t;
-      break;
-    }
+    cumulative += tiers[t].encounterRate;
+    if (random <= cumulative) { selectedTier = t; break; }
   }
+  const tierPool = pool.filter(m => m.tier === selectedTier);
+  return enrichMonster(tierPool[Math.floor(Math.random() * tierPool.length)]);
+}
 
-  const tierMonsters = monsters.filter(m => m.tier === selectedTier);
-  return tierMonsters[Math.floor(Math.random() * tierMonsters.length)];
+function rollMonster() {
+  return rollFromPool(monsters, monsterTiers);
+}
+
+function rollHuntMonster() {
+  return rollFromPool(huntMonsters, monsterTiers);
 }
 
 function rollArtifact() {
@@ -175,7 +231,11 @@ module.exports = {
   monsterTiers,
   artifactTiers,
   monsters,
+  huntMonsters,
   artifacts,
   rollMonster,
-  rollArtifact
+  rollHuntMonster,
+  rollArtifact,
+  findMonster,
+  enrichMonster,
 };

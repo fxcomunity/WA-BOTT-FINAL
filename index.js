@@ -972,7 +972,7 @@ async function startBot() {
            }
 
            // search monster
-           const monster = rpgData.monsters.find(m => m.name.toLowerCase().includes(query) || m.id === query);
+           const monster = rpgData.findMonster(query) || rpgData.monsters.find(m => m.name.toLowerCase().includes(query));
            if (monster) {
              let msgInfo = `📖 *BESTIARY: ${monster.name}*\n\n`;
              msgInfo += `🌟 Tier: ${rpgData.monsterTiers[monster.tier].name}\n`;
@@ -1007,7 +1007,7 @@ async function startBot() {
            const w = economy.getWallet(sender);
            if (w && w.combat && w.combat.active) {
               const rpgData = require('./features/rpgData');
-              const monster = rpgData.monsters.find(m => m.id === w.combat.monsterId);
+              const monster = rpgData.findMonster(w.combat.monsterId);
               let msgInfo = `🔎 *MENGAMAT MONSTER SAAT INI*\n\n`;
               msgInfo += `👹 Nama: ${monster.name}\n`;
               msgInfo += `🌟 Tier: ${rpgData.monsterTiers[monster.tier].name}\n`;

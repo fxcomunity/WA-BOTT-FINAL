@@ -2,7 +2,9 @@
 
 const config = require("../config");
 const db = require('../database/db');
-const shop = [
+const gearData = require('./gearData');
+
+const baseShop = [
   { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role" },
   { id: 2, name: "Anti Warn 1x",          price: 300,   desc: "Hapus 1 warn kamu", type: "item" },
   { id: 3, name: "Bypass Slowmode",       price: 200,   desc: "Bypass slow mode 1 jam", type: "item" },
@@ -28,7 +30,52 @@ const shop = [
   { id: 23, name: "Buku Mending",         price: 999999999, desc: "Durabilitas pulih perlahan tiap dipake", type: "enchant", itemKey: "buku_mending" }
 ];
 
+const shop = [...baseShop, ...gearData.buildShopItems(24)];
+
 const itemsData = require('./itemsData');
+const BASE_MAX_HP = 100;
+const BASE_MAX_MP = 50;
+
+function parseJsonField(val, fallback) {
+  try { return typeof val === 'string' ? JSON.parse(val) : (val || fallback); } catch (e) { return fallback; }
+}
+
+function applyEquipmentStats(w) {
+  let bonusHp = 0;
+  let bonusMp = 0;
+  if (w.equipment?.armor) {
+    const armor = gearData.getArmor(w.equipment.armor);
+    if (armor) { bonusHp += armor.maxHpBonus || 0; bonusMp += armor.maxMpBonus || 0; }
+  }
+  if (w.equipment?.accessory) {
+    const acc = gearData.getAccessory(w.equipment.accessory);
+    if (acc) bonusMp += acc.maxMpBonus || 0;
+  }
+  w.maxHp = BASE_MAX_HP + bonusHp;
+  w.maxMp = BASE_MAX_MP + bonusMp;
+  w.hp = Math.min(w.hp ?? w.maxHp, w.maxHp);
+  w.mp = Math.min(w.mp ?? w.maxMp, w.maxMp);
+}
+
+function equipGear(w, slot, itemId) {
+  if ((w.inventory[itemId] || 0) <= 0) return { ok: false, msg: "❌ Item tidak ada di tas!" };
+  const gear = gearData.getGear(itemId);
+  if (!gear) return { ok: false, msg: "❌ Item bukan gear yang bisa dipakai!" };
+
+  const expectedSlot = gearData.getWeapon(itemId) ? "weapon" : gearData.getArmor(itemId) ? "armor" : "accessory";
+  if (slot !== expectedSlot) {
+    return { ok: false, msg: `❌ Item ini dipakai di slot *${expectedSlot}*, bukan ${slot}!` };
+  }
+
+  if (!w.equipment) w.equipment = { weapon: null, armor: null, accessory: null };
+  const old = w.equipment[slot];
+  if (old) w.inventory[old] = (w.inventory[old] || 0) + 1;
+
+  w.inventory[itemId] -= 1;
+  w.equipment[slot] = itemId;
+  applyEquipmentStats(w);
+  return { ok: true, gear };
+}
 
 function getDurabilityForLevel(lv) {
   if (lv === 1) return 50;
@@ -78,19 +125,24 @@ function getWallet(sender) {
       hp: 100, maxHp: 100, buffs: '{}', combat: '{}',
       mp: 50, maxMp: 50, skills: '{}',
       pickaxeDurability: 50, maxPickaxeDurability: 50,
-      pancinganDurability: 50, maxPancinganDurability: 50
+      pancinganDurability: 50, maxPancinganDurability: 50,
+      equipment: '{}'
     };
     db.prepare(`
-      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat, mp, maxMp, skills, pickaxeDurability, maxPickaxeDurability, pancinganDurability, maxPancinganDurability)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat, w.mp, w.maxMp, w.skills, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability);
+      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat, mp, maxMp, skills, pickaxeDurability, maxPickaxeDurability, pancinganDurability, maxPancinganDurability, equipment)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat, w.mp, w.maxMp, w.skills, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, w.equipment);
   }
   
   try { w.inventory = typeof w.inventory === 'string' ? JSON.parse(w.inventory) : w.inventory; } catch(e) { w.inventory = {}; }
   try { w.enchants = typeof w.enchants === 'string' ? JSON.parse(w.enchants) : w.enchants; } catch(e) { w.enchants = {}; }
   try { w.buffs = typeof w.buffs === 'string' ? JSON.parse(w.buffs) : w.buffs; } catch(e) { w.buffs = {}; }
   try { w.combat = typeof w.combat === 'string' ? JSON.parse(w.combat) : w.combat; } catch(e) { w.combat = {}; }
-  try { w.skills = typeof w.skills === 'string' ? JSON.parse(w.skills) : w.skills; } catch(e) { w.skills = {}; }
+  try { w.skills = parseJsonField(w.skills, {}); } catch(e) { w.skills = {}; }
+  w.equipment = parseJsonField(w.equipment, { weapon: null, armor: null, accessory: null });
+  if (!w.equipment || typeof w.equipment !== "object") {
+    w.equipment = { weapon: null, armor: null, accessory: null };
+  }
   
   if (!w.inventory) w.inventory = {};
   if (!w.enchants) w.enchants = {};
@@ -103,8 +155,9 @@ function getWallet(sender) {
   if (w.maxMp === undefined) w.maxMp = 50;
 
   normalizeDurability(w);
+  applyEquipmentStats(w);
 
-  // Set owner ke unlimited (999999999)
+  // Set owner ke unlimited
   const no = sender.split("@")[0];
   if (config.owners.includes(no)) {
     w.coins = 999999999;
@@ -128,11 +181,12 @@ function saveWallet(sender, w) {
   const buffsStr = JSON.stringify(w.buffs || {});
   const combatStr = JSON.stringify(w.combat || {});
   const skillsStr = JSON.stringify(w.skills || {});
+  const equipStr = JSON.stringify(w.equipment || { weapon: null, armor: null, accessory: null });
   db.prepare(`
     UPDATE users 
-    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?, mp = ?, maxMp = ?, skills = ?, pickaxeDurability = ?, maxPickaxeDurability = ?, pancinganDurability = ?, maxPancinganDurability = ?
+    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?, mp = ?, maxMp = ?, skills = ?, pickaxeDurability = ?, maxPickaxeDurability = ?, pancinganDurability = ?, maxPancinganDurability = ?, equipment = ?
     WHERE id = ?
-  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, w.mp || 50, w.maxMp || 50, skillsStr, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, sender);
+  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, w.mp || 50, w.maxMp || 50, skillsStr, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, equipStr, sender);
 }
 
 function levelUp(wallet) {
@@ -230,7 +284,10 @@ module.exports = {
       "item": "🎒 ITEM UMUM",
       "pickaxe": "⛏️ PERALATAN MULUNG",
       "pancingan": "🎣 PERALATAN MANCING",
-      "enchant": "📚 BUKU SIHIR BEKAS"
+      "enchant": "📚 BUKU SIHIR BEKAS",
+      "weapon": "⚔️ SENJATA",
+      "armor": "🛡️ ARMOR",
+      "accessory": "💍 AKSESORIS"
     };
     
     let text = "🛒 *PASAR MALEM BOT*\n\n";
@@ -305,6 +362,15 @@ module.exports = {
       if (!isOwner) w.coins -= item.price;
       saveWallet(sender, w);
       return sock.sendMessage(msg.key.remoteJid, { text: `✅ Yuhuuu! Lu berhasil beli ${item.name}!\nCek isi tas lu pake !inv` }, { quoted: msg });
+    }
+
+    if (item.type === "weapon" || item.type === "armor" || item.type === "accessory") {
+      w.inventory[item.itemKey] = (w.inventory[item.itemKey] || 0) + 1;
+      if (!isOwner) w.coins -= item.price;
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, {
+        text: `✅ *${item.name}* masuk tas!\nEquip pake: *!pakai ${item.itemKey}*\nCek gear di !inv`
+      }, { quoted: msg });
     }
 
     // Role
@@ -424,13 +490,21 @@ module.exports = {
     if (w.combat && w.combat.active) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Lu lagi digebuk monster njir! Gelut dulu ketik !serang ato kabur pake !lari" }, { quoted: msg });
     
     const now = Date.now();
-    const cooldown = 10 * 60000; // 10 menit
+    const cooldown = 10 * 60000;
     if (now - w.lastBerburu < cooldown) {
       const sisa = Math.ceil((cooldown - (now - w.lastBerburu)) / 60000);
       return sock.sendMessage(msg.key.remoteJid, { text: `⏳ Utan lagi ngeri bos! Binatang pada ngumpet, balik lagi ${sisa} menit.` }, { quoted: msg });
     }
     
     w.lastBerburu = now;
+
+    // 25% encounter monster berburu
+    if (Math.random() < 0.25) {
+      saveWallet(sender, w);
+      const combat = require('./combat');
+      return combat.triggerHuntEncounter(sock, msg, sender, w);
+    }
+
     const gacha = Math.random();
     if (gacha < 0.3) {
       saveWallet(sender, w);
@@ -572,7 +646,7 @@ module.exports = {
     text += `▪️ Darah (HP): ${w.hp} / ${w.maxHp}\n`;
     text += `▪️ Mana (MP): ${w.mp} / ${w.maxMp}\n`;
     if (w.combat && w.combat.active) {
-      text += `⚠️ *LAGI GELUT LAWAN: ${w.combat.monster}*\n`;
+      text += `⚠️ *LAGI GELUT LAWAN: ${w.combat.monsterName || w.combat.monster}*\n`;
     }
     text += `\n🎒 *ISI TAS LU*\n\n`;
     
@@ -599,6 +673,10 @@ module.exports = {
         } else if (itemId.includes("potion")) {
           str = `▪️ ${itemId.replace(/_/g, " ").toUpperCase()}: ${amount}\n`;
           cats.potion.push(str);
+        } else if (gearData.getGear(itemId)) {
+          const g = gearData.getGear(itemId);
+          str = `▪️ ${g.name}: ${amount}\n`;
+          cats.other.push(str);
         } else {
           str = `▪️ ${itemId.toUpperCase()}: ${amount}\n`;
           cats.other.push(str);
@@ -650,6 +728,16 @@ module.exports = {
     if (pancinganEnchants.length > 0) text += `   ↳ Enchant: ${pancinganEnchants.join(', ')}\n`;
     else text += `   ↳ Enchant: Kosong\n`;
 
+    text += `\n⚔️ *GEAR COMBAT*\n`;
+    const eq = w.equipment || {};
+    const wpn = eq.weapon ? gearData.getWeapon(eq.weapon) : null;
+    const arm = eq.armor ? gearData.getArmor(eq.armor) : null;
+    const acc = eq.accessory ? gearData.getAccessory(eq.accessory) : null;
+    text += `▪️ Senjata: ${wpn ? wpn.name : "— (tinju/pickaxe)"}\n`;
+    text += `▪️ Armor: ${arm ? `${arm.name} (DEF ${arm.def})` : "—"}\n`;
+    text += `▪️ Aksesoris: ${acc ? acc.name : "—"}\n`;
+    text += `_Equip: !pakai [id_senjata/armor/aksesoris]_\n`;
+
     text += `\n✨ *BUFFS AKTIF*\n`;
     let hasEnchant = false;
     
@@ -695,8 +783,21 @@ module.exports = {
     } else {
       // Find the item
       const foundItem = Object.values(itemsData.allItemsMap).find(i => i.id === itemName || i.name.toLowerCase().includes(itemName));
-      if (!foundItem) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Barang '${itemName}' fiktif njir! Liat tas lu dulu pake !inv.` }, { quoted: msg });
+      const gearItem = gearData.getGear(itemName);
+      if (!foundItem && !gearItem) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Barang '${itemName}' fiktif njir! Liat tas lu dulu pake !inv.` }, { quoted: msg });
       
+      if (gearItem) {
+        const realItemName = gearItem.id;
+        const amountToSell = parseInt(args[1]) || 1;
+        const currentStock = w.inventory[realItemName] || 0;
+        if (currentStock < amountToSell) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Stok ${gearItem.name} cuma ${currentStock}.` }, { quoted: msg });
+        const totalHarga = gearData.sellPrice(gearItem.price) * amountToSell;
+        w.inventory[realItemName] -= amountToSell;
+        w.coins += totalHarga;
+        saveWallet(sender, w);
+        return sock.sendMessage(msg.key.remoteJid, { text: `✅ Jual ${amountToSell}x *${gearItem.name}*\n💰 +${totalHarga} koin` }, { quoted: msg });
+      }
+
       const realItemName = foundItem.id;
       const amountToSell = parseInt(args[1]) || 1;
       const currentStock = w.inventory[realItemName] || 0;
@@ -713,14 +814,58 @@ module.exports = {
   },
 
   async pakai(sock, msg, sender, args) {
-    if (args.length < 1) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Mo pake apaan lu? Ketik namanya: !pakai stamina_kecil atau !pakai enchant buku_mending pickaxe` }, { quoted: msg });
+    if (args.length < 1) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Mo pake apaan lu?\n• !pakai [nama_item]\n• !pakai senjata [id]\n• !pakai armor [id]\n• !pakai aksesoris [id]\n• !pakai enchant buku_mending pickaxe` }, { quoted: msg });
+
+    const w = getWallet(sender);
+    const sub = args[0].toLowerCase();
+
+    if (sub === "senjata" || sub === "weapon") {
+      const itemId = args[1]?.toLowerCase();
+      if (!itemId) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Contoh: !pakai senjata rusty_iron_gladius" }, { quoted: msg });
+      const result = equipGear(w, "weapon", itemId);
+      if (!result.ok) return sock.sendMessage(msg.key.remoteJid, { text: result.msg }, { quoted: msg });
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `⚔️ *${result.gear.name}* terpasang!\nATK ${result.gear.baseAtk} (+${result.gear.bonusAtk} vs monster tertentu)` }, { quoted: msg });
+    }
+
+    if (sub === "armor") {
+      const itemId = args[1]?.toLowerCase();
+      if (!itemId) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Contoh: !pakai armor pelt_vest" }, { quoted: msg });
+      const result = equipGear(w, "armor", itemId);
+      if (!result.ok) return sock.sendMessage(msg.key.remoteJid, { text: result.msg }, { quoted: msg });
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `🛡️ *${result.gear.name}* terpasang!\nDEF ${result.gear.def} | Max HP ${w.maxHp}` }, { quoted: msg });
+    }
+
+    if (sub === "aksesoris" || sub === "accessory") {
+      const itemId = args[1]?.toLowerCase();
+      if (!itemId) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Contoh: !pakai aksesoris lucky_charm" }, { quoted: msg });
+      const result = equipGear(w, "accessory", itemId);
+      if (!result.ok) return sock.sendMessage(msg.key.remoteJid, { text: result.msg }, { quoted: msg });
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `💍 *${result.gear.name}* terpasang!` }, { quoted: msg });
+    }
+
+    // Auto-equip gear by id (weapon > armor > accessory)
+    const tryId = args[0].toLowerCase();
+    if (gearData.getWeapon(tryId)) {
+      const result = equipGear(w, "weapon", tryId);
+      if (result.ok) { saveWallet(sender, w); return sock.sendMessage(msg.key.remoteJid, { text: `⚔️ *${result.gear.name}* terpasang!` }, { quoted: msg }); }
+    }
+    if (gearData.getArmor(tryId)) {
+      const result = equipGear(w, "armor", tryId);
+      if (result.ok) { saveWallet(sender, w); return sock.sendMessage(msg.key.remoteJid, { text: `🛡️ *${result.gear.name}* terpasang!` }, { quoted: msg }); }
+    }
+    if (gearData.getAccessory(tryId)) {
+      const result = equipGear(w, "accessory", tryId);
+      if (result.ok) { saveWallet(sender, w); return sock.sendMessage(msg.key.remoteJid, { text: `💍 *${result.gear.name}* terpasang!` }, { quoted: msg }); }
+    }
     
     if (args[0].toLowerCase() === "enchant") {
       if (args.length < 3) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Format salah! Contoh: !pakai enchant buku_mending pickaxe\nAlat bisa: pickaxe atau pancingan` }, { quoted: msg });
       
       const bookName = args[1].toLowerCase();
-      const toolName = args[2].toLowerCase(); // "pickaxe" or "pancingan"
-      const w = getWallet(sender);
+      const toolName = args[2].toLowerCase();
       
       if (toolName !== "pickaxe" && toolName !== "pancingan") {
         return sock.sendMessage(msg.key.remoteJid, { text: `❌ Alat apaan tuh njir? Cuma bisa dipasang di 'pickaxe' atau 'pancingan'.` }, { quoted: msg });
@@ -738,7 +883,6 @@ module.exports = {
     }
 
     const itemName = args[0].toLowerCase();
-    const w = getWallet(sender);
     
     const qty = w.inventory[itemName] || 0;
     if (qty <= 0) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Ngigo lu njir? Lu kaga punya ${itemName} di tas!` }, { quoted: msg });
