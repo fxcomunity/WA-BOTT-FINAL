@@ -9,6 +9,16 @@ const pino = require("pino");
 const fs = require('fs');
 const config = require("./config");
 
+function validateConfig() {
+  if (config.features.aiChatbot) {
+    const { gemini, openai, deepseek, mistral } = config.apiKeys || {};
+    if (!gemini && !openai && !deepseek && !mistral) {
+      console.warn("⚠️ [CONFIG] aiChatbot aktif tapi tidak ada API key di .env — fitur AI tidak akan berjalan.");
+    }
+  }
+}
+validateConfig();
+
 const messageCache = new Map();
 const processedMessages = new Set();
 
@@ -394,29 +404,17 @@ async function startBot() {
 
 
     // ============================================
-    // ANTI LINK (Auto-Kick)
+    // ANTI LINK (Warn dulu, kick setelah maxWarn)
     // ============================================
-    if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck) {
+    if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && !isCmd) {
       if (antiLink.hasLink(body)) {
         try {
           const botId = jidNormalizedUser(sock.user.id);
           const botIsAdmin = await isAdmin(sock, groupId, botId);
-          
+
           if (botIsAdmin) {
             await sock.sendMessage(groupId, { delete: msg.key }).catch(e => console.log("Gagal bos hapus pesan link:", e));
-            await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e => console.log("Gagal bos kick member:", e));
-            
-            const dDate = new Date();
-            const strDate = `${dDate.toLocaleDateString('id-ID')} | ${dDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-            
-            const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (AUTO) ] •━━╮
-┃
-┃ 👤 *Target:* @${sender.split("@")[0]}
-┃ 📝 *Pelanggaran:* Nyebar Link Haram
-┃ ⏰ *Waktu Eksekusi:* ${strDate}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-            await sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
+            await warnSystem.autoWarn(sock, groupId, sender, "Nyebar Link Haram");
           } else {
             await reply(sock, msg, `⚠️ Woi @${sender.split("@")[0]} nyebar link njir! Admin asli tolong kick nih bocah (Gue belom diangkat admin soalnya)!`);
           }

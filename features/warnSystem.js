@@ -54,4 +54,37 @@ module.exports = {
   getWarn(sender) {
     return db.prepare('SELECT warnCount FROM warns WHERE id = ?').get(sender)?.warnCount || 0;
   },
+
+  async autoWarn(sock, groupId, sender, alasan = "Melanggar aturan grup") {
+    let count = db.prepare('SELECT warnCount FROM warns WHERE id = ?').get(sender)?.warnCount || 0;
+    count++;
+    db.prepare('INSERT OR REPLACE INTO warns (id, warnCount) VALUES (?, ?)').run(sender, count);
+    const max = config.maxWarn;
+
+    const dDate = new Date();
+    const strDate = `${dDate.toLocaleDateString('id-ID')} | ${dDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
+
+    if (count >= max) {
+      await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e => console.log("Gagal kick auto-warn:", e));
+      db.prepare('DELETE FROM warns WHERE id = ?').run(sender);
+      const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (AUTO) ] •━━╮
+┃
+┃ 👤 *Target:* @${sender.split("@")[0]}
+┃ 📝 *Alasan:* ${alasan} (${max}x SP)
+┃ ⏰ *Waktu Eksekusi:* ${strDate}
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+      return sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
+    }
+
+    const warnMsg = `╭━━• [ ⚠️ *SURAT PERINGATAN (SP)* (${count}/${max}) ] •━━╮
+┃
+┃ 👤 *Target:* @${sender.split("@")[0]}
+┃ 📝 *Dosa:* ${alasan}
+┃ ⏰ *Waktu Kejadian:* ${strDate}
+┃ ⚠️ *Sisa Nyawa:* ${max - count} kali lagi
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+    return sock.sendMessage(groupId, { text: warnMsg, mentions: [sender] });
+  },
 };
