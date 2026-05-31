@@ -748,6 +748,7 @@ async function startBot() {
                         { title: "Menu Khusus Owner", description: "Perintah khusus owner bot", id: "btn_owner" },
                         { title: "Menu Admin Grup", description: "Perintah khusus admin grup", id: "btn_admin" },
                         { title: "Menu Member Utama", description: "Perintah umum untuk semua member", id: "btn_member" },
+                        { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
                         { title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
                         { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
                         { title: "Developer Info", description: "Informasi website & developer", id: "btn_dev" },
@@ -791,7 +792,13 @@ async function startBot() {
       case "3":
       case "btn_game": {
         const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        await sock.sendMessage(msg.key.remoteJid, { text: txt });
+        break;
+      }
+      
+      case "btn_rpg": {
+        const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt });
         break;
       }
       
@@ -1610,19 +1617,13 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
   if (kategori === "game") {
     return `╭━━• [ 🎮 *GAME & FUN* ] •━━╮
 ┃ 
-┣━━ [ 🎯 PERMAINAN & RPG ]
+┣━━ [ 🎯 PERMAINAN KUIS ]
 ┃ ➯ !kuis
 ┃    ↳ Main tebak pengetahuan
 ┃ ➯ !tebak
 ┃    ↳ Main tebak angka rahasia
 ┃ ➯ !jawab [angka]
 ┃    ↳ Menjawab tebakan angka
-┃ ➯ !mancing
-┃    ↳ Mancing ikan (Economy RPG)
-┃ ➯ !berburu
-┃    ↳ Berburu hewan (Economy RPG)
-┃ ➯ !nambang
-┃    ↳ Nambang material (Economy RPG)
 ┃ 
 ┣━━ [ 🎭 FUN & HIBURAN ]
 ┃ ➯ !cekkhodam [nama]
@@ -1643,6 +1644,52 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 ┃    ↳ Prediksi waktu kejadian
 ┃ ➯ !rate [nama]
 ┃    ↳ Cek persentase skor
+╰━━━━━━━━━━━━━━━━━━━╯`;
+  }
+  if (kategori === "rpg") {
+    return `╭━━• [ ⚔️ *ECONOMY & RPG* ] •━━╮
+┃ 
+┣━━ [ ⛏️ AKTIVITAS UTAMA ]
+┃ ➯ !nambang
+┃    ↳ Nambang material berharga
+┃ ➯ !mancing
+┃    ↳ Mancing ikan
+┃ ➯ !berburu
+┃    ↳ Berburu hewan di hutan
+┃ 
+┣━━ [ 💰 EKONOMI & ITEM ]
+┃ ➯ !inv / !inventory
+┃    ↳ Cek tas dan status darah/mana
+┃ ➯ !saldo
+┃    ↳ Cek koin dan level kamu
+┃ ➯ !shop
+┃    ↳ Lihat daftar barang toko
+┃ ➯ !beli [id]
+┃    ↳ Membeli item / potion
+┃ ➯ !sell / !jual [nama_item] [jumlah]
+┃    ↳ Menjual hasil tambang/ikan
+┃ ➯ !pakai [nama_item]
+┃    ↳ Memakai item (Potion, Buff)
+┃ 
+┣━━ [ 🧙‍♂️ MAGIC & SKILLS ]
+┃ ➯ !skills
+┃    ↳ Cek daftar skill aktif & tersedia
+┃ ➯ !belajar [nama_skill]
+┃    ↳ Mempelajari skill baru
+┃ ➯ !levelup [nama_skill]
+┃    ↳ Upgrade skill ke level berikutnya
+┃ ➯ !skill [nama_skill]
+┃    ↳ Menggunakan efek sihir / buff
+┃ 
+┣━━ [ ⚔️ COMBAT SYSTEM ]
+┃ ➯ !serang
+┃    ↳ Menyerang monster saat nambang
+┃ ➯ !potion
+┃    ↳ Minum ramuan pemulih HP
+┃ ➯ !lari
+┃    ↳ Mencoba kabur dari pertarungan
+┃ ➯ !info
+┃    ↳ Melihat daftar monster & artefak
 ╰━━━━━━━━━━━━━━━━━━━╯`;
   }
   
