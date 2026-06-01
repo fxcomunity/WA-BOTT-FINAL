@@ -1,9 +1,5 @@
-// ============================================
-// config.js — Konfigurasi JackBOT
-// ============================================
-// PENTING: Isi nomor owner di bawah ini
-// Format: kode negara + nomor TANPA +, spasi, atau strip
-// Contoh: +62 812-3738-XXXX => "628123738XXXX"
+// config.example.js – contoh konfigurasi tanpa data sensitif
+// Salin file ini menjadi config.js dan isi dengan data Anda sendiri.
 
 require('dotenv').config();
 
@@ -45,9 +41,7 @@ function hasValidApiKeys() {
 
 module.exports = {
   owners: [
-    "62895404147521", // Owner tunggal
-    "129003956510974", // LID Owner
-    "6289531526042" // Nomor user saat ini
+    // Tambahkan nomor WA atau LID Anda di sini, misalnya "6281234567890"
   ],
 
   // === PENGATURAN BOT ===
@@ -56,12 +50,12 @@ module.exports = {
   botVersion: "3.0.0",
 
   // === MODERASI ===
-  maxWarn: 3,           // warn ke-berapa langsung kick (!warn manual)
-  antiLinkMaxStrike: 3, // pelanggaran link terpisah dari warn manual
-  floodLimit: 5,        // maks pesan per 10 detik
-  muteDuration: 10,     // menit mute otomatis saat kena anti-spam
-  slowModeDelay: 30,    // detik antar pesan saat slow mode aktif
-  autoDeleteOldMsg: false, // hapus pesan > 7 hari
+  maxWarn: 3,
+  antiLinkMaxStrike: 3,
+  floodLimit: 5,
+  muteDuration: 10,
+  slowModeDelay: 30,
+  autoDeleteOldMsg: false,
 
   // === FITUR ON/OFF ===
   features: {
@@ -87,46 +81,34 @@ module.exports = {
   // === EKONOMI ===
   dailyCoins: 50,
   quizReward: 10,
-  activeReward: 1,      // koin per pesan
+  activeReward: 1,
 
   // === AI CHATBOT ===
   aiTrigger: ["bot,", "bot:", "!tanya"],
-  aiModel: "claude-sonnet-4-20250514", // ganti jika perlu
+  aiModel: "claude-sonnet-4-20250514",
 
   apiKeys,
-
   isValidApiKey,
   hasValidApiKeys,
 
-  // === KATA KASAR (tambah sesuai kebutuhan) ===
+  // === KATA KASAR ===
   badWords: ["anjing", "bangsat", "brengsek", "bajingan"],
 
-  // === LINK WHITELIST (diizinkan, tidak kena anti-link) ===
-  // Admin grup & owner bot bebas kirim link apapun (dikecualikan di index.js)
+  // === LINK WHITELIST ===
   allowedLinks: [
-    // 1. Grup WA resmi FX Community
     "chat.whatsapp.com/KnkESJgEUKT5PEki4SpDD0",
-    // 2. APK FXCommunity (MEGA)
     "mega.nz/file/DLIzVA5I",
     "AoO4cdFq_GD07MOFBPGEOwu90SCCfoPU7vQpZtDmAYQ",
-    // 3. Website FXCommunity
     "fxcomunity.vercel.app",
-    // 4. Jack Scanner
     "jack-scanner.vercel.app",
-    // 5. VALLBOT
     "vallbot.vercel.app",
-    // 6. Telegram resmi FX Community
     "t.me/+Ng64dWNMACg1ODQ1",
     "Ng64dWNMACg1ODQ1",
-    // 7. FBS Partners (affiliate resmi)
     "fbs.partners",
     "ibl=957159",
     "ibp=37183404",
-    // 8. TradingView Indonesia
     "id.tradingview.com",
-    // 9. MetaTrader 5
     "metatrader5.com",
-    // 10. Google Drive materi edukasi
     "drive.google.com/drive/folders/11HxV2K-ehYiyHFeI4LNjMqmuV7ETG7A3",
     "11HxV2K-ehYiyHFeI4LNjMqmuV7ETG7A3",
   ],
