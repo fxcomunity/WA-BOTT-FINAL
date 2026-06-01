@@ -3,8 +3,11 @@ auth_info/
 .venv/
 .env
 config.js
-data_stats.json
+# Ignore data files
+.data_stats.json
 *.bak
 tmp_*
 yt-dlp.exe
 auth_info_backup/
+settings.json
+fix-modules.js

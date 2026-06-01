@@ -1915,8 +1915,8 @@ salah satu command di atas.`;
 ┃ ➯ https://fxcomunity.vercel.app/
 ┃ 
 ┣━━ [ 📞 NOMOR DEVELOPER ]
-┃ ➯ https://wa.me/62895404147521
-┃ ➯ https://wa.me/6289531526042
+const devLinks = config.devContact.map(n => `┃ ➯ https://wa.me/${n}`).join('\n');
+return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮\n┃ \n┣━━ [ 🌐 WEBSITE ]\n┃ ➯ https://jack-scanner.biz.id (Nunggu Confirmasi dari PANDI)\n┃ ➯ https://fxcomunity.vercel.app/\n┃ \n┣━━ [ 📞 NOMOR DEVELOPER ]\n${devLinks}\n╰━━━━━━━━━━━━━━━━━━━╯`;
 ╰━━━━━━━━━━━━━━━━━━━╯`;
   }
 
