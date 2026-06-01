@@ -43,6 +43,9 @@ const khodam = [
   "Nyi Roro Kidul 🌊", "Bapak Lu 👨", "Biji Ketumbar 🌰", "Kecoak Terbang 🪳", "Kosong (Sama Kaya Otak Lu) 👻"
 ];
 
+// Cooldown map for menfess (sender JID -> timestamp of last use)
+const menfessCooldown = {};
+
 module.exports = {
   getQuote: async (sock, msg) => {
     const q = quotes[Math.floor(Math.random() * quotes.length)];
@@ -99,6 +102,12 @@ module.exports = {
     await sock.sendMessage(msg.key.remoteJid, { text: `🎱 *Pertanyaan:* Bisakah ${question}\n*Jawaban:* ${ans}` }, { quoted: msg });
   },
   sendMenfess: async (sock, msg, sender, args) => {
+    // Cooldown: 1 minute per sender
+    const now = Date.now();
+    if (menfessCooldown[sender] && now - menfessCooldown[sender] < 60000) {
+      return sock.sendMessage(msg.key.remoteJid, { text: "❌ Sabar njir, cooldown 1 menit!" }, { quoted: msg });
+    }
+    menfessCooldown[sender] = now;
     const raw = args.join(" ");
     if (!raw.includes("|")) return sock.sendMessage(msg.key.remoteJid, { text: "❌ Format salah njir! Pake: !menfess nomor_tujuan | pesan\nContoh: !menfess 628123456789 | Woi nyet balikin duit gue" }, { quoted: msg });
     

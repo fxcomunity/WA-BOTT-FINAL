@@ -16,14 +16,20 @@ module.exports = {
     const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses video YouTube...");
 
     try {
-      const { exec } = require('child_process');
-      const util = require('util');
-      const execPromise = util.promisify(exec);
-      
+      const { spawn } = require('child_process');
       const os = require('os');
       const ytdlpBin = os.platform() === 'win32' ? '.\\yt-dlp.exe' : 'yt-dlp';
-      const cmd = `${ytdlpBin} -j --no-warnings -f "best[ext=mp4]/best" "${link}"`;
-      const { stdout } = await execPromise(cmd);
+      const stdout = await new Promise((resolve, reject) => {
+        const proc = spawn(ytdlpBin, ['-j','--no-warnings','-f','best[ext=mp4]/best', link]);
+        let data = '';
+        proc.stdout.on('data', (chunk) => data += chunk);
+        proc.stderr.on('data', (chunk) => console.error('yt-dlp error:', chunk.toString()));
+        proc.on('error', reject);
+        proc.on('close', (code) => {
+          if (code === 0) resolve(data);
+          else reject(new Error(`yt-dlp exited with code ${code}`));
+        });
+      });
       
       const data = JSON.parse(stdout);
       const videoUrl = data.url;

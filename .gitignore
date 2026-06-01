@@ -4,7 +4,7 @@ auth_info/
 .env
 config.js
 # Ignore data files
-.data_stats.json
+data_stats.json
 *.bak
 tmp_*
 yt-dlp.exe
