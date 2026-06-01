@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon SQL Editor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Neon SQL Editor</h1>
+    <div class="card query-card">
+      <textarea id="sql-input" placeholder="Enter your SQL query here..." spellcheck="false"></textarea>
+      <button id="run-btn">Run Query</button>
+    </div>
+    <div class="card result-card" id="result-card" style="display:none;">
+      <h2>Results</h2>
+      <table id="result-table"></table>
+    </div>
+    <div class="error" id="error-msg" style="display:none;"></div>
+  </div>
+
+  <script>
+    const runBtn = document.getElementById('run-btn');
+    const sqlInput = document.getElementById('sql-input');
+    const resultCard = document.getElementById('result-card');
+    const resultTable = document.getElementById('result-table');
+    const errorMsg = document.getElementById('error-msg');
+
+    runBtn.addEventListener('click', async () => {
+      const sql = sqlInput.value.trim();
+      if (!sql) return;
+      errorMsg.style.display = 'none';
+      resultCard.style.display = 'none';
+
+      try {
+        const resp = await fetch('http://localhost:3001/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        renderResult(data);
+      } catch (e) {
+        errorMsg.textContent = e.message;
+        errorMsg.style.display = 'block';
+        // shake animation on error
+        errorMsg.classList.add('shake');
+        setTimeout(() => errorMsg.classList.remove('shake'), 500);
+      }
+    });
+
+    function renderResult({ rows, fields }) {
+      // clear previous
+      resultTable.innerHTML = '';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      fields.forEach(f => {
+        const th = document.createElement('th');
+        th.textContent = f;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      resultTable.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        fields.forEach(f => {
+          const td = document.createElement('td');
+          td.textContent = row[f];
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      resultTable.appendChild(tbody);
+
+      resultCard.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

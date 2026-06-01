@@ -1,0 +1,17 @@
+{
+  "name": "sql-editor",
+  "version": "1.0.0",
+  "description": "Premium web‑based SQL editor for Neon PostgreSQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
