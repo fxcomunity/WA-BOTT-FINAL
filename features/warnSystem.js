@@ -1,16 +1,22 @@
-// features/warnSystem.js — Sistem Warn, Kick Otomatis
+// features/warnSystem.js — Sistem Warn, Kick Otomatis (Neon PostgreSQL)
 
 const config = require("../config");
-const db = require('../database/db');
+const { sql } = require('../database/db');
 
 module.exports = {
   async warn(sock, msg, groupId, sender, args) {
     const target = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
     if (!target) return sock.sendMessage(groupId, { text: "❌ Tag dulu orangnya bego! Contoh: !warn @user alasan" });
 
-    let count = db.prepare('SELECT warnCount FROM warns WHERE id = ?').get(target)?.warnCount || 0;
+    let rows = await sql`SELECT "warnCount" FROM warns WHERE id = ${target}`;
+    let count = rows[0]?.warnCount || 0;
     count++;
-    db.prepare('INSERT OR REPLACE INTO warns (id, warnCount) VALUES (?, ?)').run(target, count);
+    
+    await sql`
+      INSERT INTO warns (id, "warnCount") VALUES (${target}, ${count})
+      ON CONFLICT (id) DO UPDATE SET "warnCount" = EXCLUDED."warnCount"
+    `;
+    
     const max   = config.maxWarn;
     const alasan = args.slice(1).join(" ") || "Cari ribut / ngelanggar aturan";
     
@@ -19,7 +25,7 @@ module.exports = {
 
     if (count >= max) {
       await sock.groupParticipantsUpdate(groupId, [target], "remove");
-      db.prepare('DELETE FROM warns WHERE id = ?').run(target);
+      await sql`DELETE FROM warns WHERE id = ${target}`;
       const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* ] •━━╮
 ┃
 ┃ 👤 *Target:* @${target.split("@")[0]}
@@ -41,24 +47,31 @@ module.exports = {
     return sock.sendMessage(groupId, { text: warnMsg, mentions: [target] });
   },
 
-  resetWarn(sender) {
-    db.prepare('DELETE FROM warns WHERE id = ?').run(sender);
+  async resetWarn(sender) {
+    await sql`DELETE FROM warns WHERE id = ${sender}`;
   },
 
-  getWarnList() {
-    const entries = db.prepare('SELECT * FROM warns').all();
+  async getWarnList() {
+    const entries = await sql`SELECT * FROM warns`;
     if (entries.length === 0) return "✅ Bersih ngab! Kaga ada yg punya SP.";
     return "📋 *Daftar Orang Bermasalah:*\n" + entries.map(v => `• ${v.id.split("@")[0]}: ${v.warnCount}x SP`).join("\n");
   },
 
-  getWarn(sender) {
-    return db.prepare('SELECT warnCount FROM warns WHERE id = ?').get(sender)?.warnCount || 0;
+  async getWarn(sender) {
+    const rows = await sql`SELECT "warnCount" FROM warns WHERE id = ${sender}`;
+    return rows[0]?.warnCount || 0;
   },
 
   async autoWarn(sock, groupId, sender, alasan = "Melanggar aturan grup") {
-    let count = db.prepare('SELECT warnCount FROM warns WHERE id = ?').get(sender)?.warnCount || 0;
+    let rows = await sql`SELECT "warnCount" FROM warns WHERE id = ${sender}`;
+    let count = rows[0]?.warnCount || 0;
     count++;
-    db.prepare('INSERT OR REPLACE INTO warns (id, warnCount) VALUES (?, ?)').run(sender, count);
+    
+    await sql`
+      INSERT INTO warns (id, "warnCount") VALUES (${sender}, ${count})
+      ON CONFLICT (id) DO UPDATE SET "warnCount" = EXCLUDED."warnCount"
+    `;
+    
     const max = config.maxWarn;
 
     const dDate = new Date();
@@ -66,7 +79,7 @@ module.exports = {
 
     if (count >= max) {
       await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e => console.log("Gagal kick auto-warn:", e));
-      db.prepare('DELETE FROM warns WHERE id = ?').run(sender);
+      await sql`DELETE FROM warns WHERE id = ${sender}`;
       const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (AUTO) ] •━━╮
 ┃
 ┃ 👤 *Target:* @${sender.split("@")[0]}

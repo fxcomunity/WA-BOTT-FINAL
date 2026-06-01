@@ -1,8 +1,53 @@
 // features/economy.js — Sistem Ekonomi Grup (Koin, Level, Daily, Shop)
 
 const config = require("../config");
-const db = require('../database/db');
+const { sql } = require('../database/db');
 const gearData = require('./gearData');
+
+// ============================================
+// WALLETS MEMORY CACHE WITH BACKGROUND SYNC
+// ============================================
+const walletsCache = new Map();
+
+async function initCache() {
+  try {
+    const all = await sql`SELECT * FROM users`;
+    for (const w of all) {
+      w.coins = Number(w.coins);
+      w.level = Number(w.level);
+      w.xp = Number(w.xp);
+      w.streak = Number(w.streak);
+      w.lastDaily = Number(w.lastDaily);
+      w.lastMancing = Number(w.lastMancing);
+      w.lastBerburu = Number(w.lastBerburu);
+      w.lastNambang = Number(w.lastNambang);
+      w.pickaxeLevel = Number(w.pickaxeLevel);
+      w.pancinganLevel = Number(w.pancinganLevel);
+      w.hp = Number(w.hp);
+      w.maxHp = Number(w.maxHp);
+      w.mp = Number(w.mp);
+      w.maxMp = Number(w.maxMp);
+      w.pickaxeDurability = Number(w.pickaxeDurability);
+      w.maxPickaxeDurability = Number(w.maxPickaxeDurability);
+      w.pancinganDurability = Number(w.pancinganDurability);
+      w.maxPancinganDurability = Number(w.maxPancinganDurability);
+
+      try { w.inventory = typeof w.inventory === 'string' ? JSON.parse(w.inventory) : (w.inventory || {}); } catch(e) { w.inventory = {}; }
+      try { w.enchants = typeof w.enchants === 'string' ? JSON.parse(w.enchants) : (w.enchants || {}); } catch(e) { w.enchants = {}; }
+      try { w.buffs = typeof w.buffs === 'string' ? JSON.parse(w.buffs) : (w.buffs || {}); } catch(e) { w.buffs = {}; }
+      try { w.combat = typeof w.combat === 'string' ? JSON.parse(w.combat) : (w.combat || {}); } catch(e) { w.combat = {}; }
+      try { w.skills = typeof w.skills === 'string' ? JSON.parse(w.skills) : (w.skills || {}); } catch(e) { w.skills = {}; }
+      try { w.equipment = typeof w.equipment === 'string' ? JSON.parse(w.equipment) : (w.equipment || { weapon: null, armor: null, accessory: null }); } catch(e) { w.equipment = { weapon: null, armor: null, accessory: null }; }
+      
+      walletsCache.set(w.id, w);
+    }
+    console.log(`[ECONOMY] ✅ Loaded ${walletsCache.size} wallets into memory cache!`);
+  } catch (err) {
+    console.error("[ECONOMY] ❌ Failed to load wallets from Neon:", err.message);
+  }
+}
+
+initCache().catch(e => console.error("Failed to init economy cache:", e));
 
 const baseShop = [
   { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role" },
@@ -115,33 +160,34 @@ function normalizeDurability(w) {
 }
 
 function getWallet(sender) {
-  let w = db.prepare('SELECT * FROM users WHERE id = ?').get(sender);
+  let w = walletsCache.get(sender);
   if (!w) {
     w = {
       id: sender,
       coins: 0, level: 1, xp: 0, streak: 0, lastDaily: 0,
       lastMancing: 0, lastBerburu: 0, lastNambang: 0, pickaxeLevel: 1, pancinganLevel: 1,
-      inventory: '{}', enchants: '{}',
-      hp: 100, maxHp: 100, buffs: '{}', combat: '{}',
-      mp: 50, maxMp: 50, skills: '{}',
+      inventory: {}, enchants: {},
+      hp: 100, maxHp: 100, buffs: {}, combat: {},
+      mp: 50, maxMp: 50, skills: {},
       pickaxeDurability: 50, maxPickaxeDurability: 50,
       pancinganDurability: 50, maxPancinganDurability: 50,
-      equipment: '{}'
+      equipment: { weapon: null, armor: null, accessory: null }
     };
-    db.prepare(`
-      INSERT INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel, pancinganLevel, inventory, enchants, hp, maxHp, buffs, combat, mp, maxMp, skills, pickaxeDurability, maxPickaxeDurability, pancinganDurability, maxPancinganDurability, equipment)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(w.id, w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel, w.inventory, w.enchants, w.hp, w.maxHp, w.buffs, w.combat, w.mp, w.maxMp, w.skills, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, w.equipment);
-  }
-  
-  try { w.inventory = typeof w.inventory === 'string' ? JSON.parse(w.inventory) : w.inventory; } catch(e) { w.inventory = {}; }
-  try { w.enchants = typeof w.enchants === 'string' ? JSON.parse(w.enchants) : w.enchants; } catch(e) { w.enchants = {}; }
-  try { w.buffs = typeof w.buffs === 'string' ? JSON.parse(w.buffs) : w.buffs; } catch(e) { w.buffs = {}; }
-  try { w.combat = typeof w.combat === 'string' ? JSON.parse(w.combat) : w.combat; } catch(e) { w.combat = {}; }
-  try { w.skills = parseJsonField(w.skills, {}); } catch(e) { w.skills = {}; }
-  w.equipment = parseJsonField(w.equipment, { weapon: null, armor: null, accessory: null });
-  if (!w.equipment || typeof w.equipment !== "object") {
-    w.equipment = { weapon: null, armor: null, accessory: null };
+    walletsCache.set(sender, w);
+    
+    // Simpan ke Neon di background
+    const invStr = JSON.stringify(w.inventory);
+    const enchStr = JSON.stringify(w.enchants);
+    const buffsStr = JSON.stringify(w.buffs);
+    const combatStr = JSON.stringify(w.combat);
+    const skillsStr = JSON.stringify(w.skills);
+    const equipStr = JSON.stringify(w.equipment);
+    
+    sql`
+      INSERT INTO users (id, coins, level, xp, streak, "lastDaily", "lastMancing", "lastBerburu", "lastNambang", "pickaxeLevel", "pancinganLevel", inventory, enchants, hp, "maxHp", buffs, combat, mp, "maxMp", skills, "pickaxeDurability", "maxPickaxeDurability", "pancinganDurability", "maxPancinganDurability", equipment)
+      VALUES (${w.id}, ${w.coins}, ${w.level}, ${w.xp}, ${w.streak}, ${w.lastDaily}, ${w.lastMancing}, ${w.lastBerburu}, ${w.lastNambang}, ${w.pickaxeLevel}, ${w.pancinganLevel}, ${invStr}, ${enchStr}, ${w.hp}, ${w.maxHp}, ${buffsStr}, ${combatStr}, ${w.mp}, ${w.maxMp}, ${skillsStr}, ${w.pickaxeDurability}, ${w.maxPickaxeDurability}, ${w.pancinganDurability}, ${w.maxPancinganDurability}, ${equipStr})
+      ON CONFLICT (id) DO NOTHING
+    `.catch(e => console.error("[ECONOMY] Error creating new user in background:", e.message));
   }
   
   if (!w.inventory) w.inventory = {};
@@ -149,6 +195,9 @@ function getWallet(sender) {
   if (!w.buffs) w.buffs = {};
   if (!w.combat) w.combat = {};
   if (!w.skills) w.skills = {};
+  if (!w.equipment || typeof w.equipment !== "object") {
+    w.equipment = { weapon: null, armor: null, accessory: null };
+  }
   if (w.hp === undefined) w.hp = 100;
   if (w.maxHp === undefined) w.maxHp = 100;
   if (w.mp === undefined) w.mp = 50;
@@ -176,17 +225,20 @@ function getWallet(sender) {
 
 function saveWallet(sender, w) {
   normalizeDurability(w);
+  walletsCache.set(sender, w);
+  
   const invStr = JSON.stringify(w.inventory || {});
   const enchStr = JSON.stringify(w.enchants || {});
   const buffsStr = JSON.stringify(w.buffs || {});
   const combatStr = JSON.stringify(w.combat || {});
   const skillsStr = JSON.stringify(w.skills || {});
   const equipStr = JSON.stringify(w.equipment || { weapon: null, armor: null, accessory: null });
-  db.prepare(`
+  
+  sql`
     UPDATE users 
-    SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?, pancinganLevel = ?, inventory = ?, enchants = ?, hp = ?, maxHp = ?, buffs = ?, combat = ?, mp = ?, maxMp = ?, skills = ?, pickaxeDurability = ?, maxPickaxeDurability = ?, pancinganDurability = ?, maxPancinganDurability = ?, equipment = ?
-    WHERE id = ?
-  `).run(w.coins, w.level, w.xp, w.streak, w.lastDaily, w.lastMancing, w.lastBerburu, w.lastNambang, w.pickaxeLevel, w.pancinganLevel || 1, invStr, enchStr, w.hp || 100, w.maxHp || 100, buffsStr, combatStr, w.mp || 50, w.maxMp || 50, skillsStr, w.pickaxeDurability, w.maxPickaxeDurability, w.pancinganDurability, w.maxPancinganDurability, equipStr, sender);
+    SET coins = ${w.coins}, level = ${w.level}, xp = ${w.xp}, streak = ${w.streak}, "lastDaily" = ${w.lastDaily}, "lastMancing" = ${w.lastMancing}, "lastBerburu" = ${w.lastBerburu}, "lastNambang" = ${w.lastNambang}, "pickaxeLevel" = ${w.pickaxeLevel}, "pancinganLevel" = ${w.pancinganLevel || 1}, inventory = ${invStr}, enchants = ${enchStr}, hp = ${w.hp || 100}, "maxHp" = ${w.maxHp || 100}, buffs = ${buffsStr}, combat = ${combatStr}, mp = ${w.mp || 50}, "maxMp" = ${w.maxMp || 50}, skills = ${skillsStr}, "pickaxeDurability" = ${w.pickaxeDurability}, "maxPickaxeDurability" = ${w.maxPickaxeDurability}, "pancinganDurability" = ${w.pancinganDurability}, "maxPancinganDurability" = ${w.maxPancinganDurability}, equipment = ${equipStr}
+    WHERE id = ${sender}
+  `.catch(e => console.error("[ECONOMY] Error updating user in background:", e.message));
 }
 
 function levelUp(wallet) {
@@ -386,14 +438,14 @@ module.exports = {
 
   leaderboard(sock, msg, groupId) {
     const limitSystem = require("./limitSystem");
-    const sorted = db.prepare('SELECT * FROM users ORDER BY coins DESC LIMIT 10').all();
+    const sorted = Array.from(walletsCache.values()).sort((a, b) => Number(b.coins) - Number(a.coins)).slice(0, 10);
     if (sorted.length === 0) return sock.sendMessage(msg.key.remoteJid, { text: "Belom ada data ekonomi." }, { quoted: msg });
     const medals = ["🥇", "🥈", "🥉"];
     const text = sorted.map((v, i) => {
       const k = v.id;
       const userLimit = limitSystem.getLimit(k);
       const name = userLimit.name && userLimit.name !== "Unknown" ? userLimit.name : k.split("@")[0];
-      return `${medals[i] || `${i + 1}.`} ${name} — ${v.coins} koin (Lv.${v.level})`;
+      return `${medals[i] || `${i + 1}.`} ${name} — ${Number(v.coins).toLocaleString('id-ID')} koin (Lv.${v.level})`;
     }).join("\n");
     return sock.sendMessage(msg.key.remoteJid, { text: `🏆 *Leaderboard Koin*\n\n${text}` }, { quoted: msg });
   },
@@ -1027,6 +1079,6 @@ module.exports = {
 
   // Method tambahan untuk API
   getAllWallets() {
-    return db.prepare('SELECT * FROM users').all();
+    return Array.from(walletsCache.values());
   }
 };

@@ -1,15 +1,8 @@
-// features/moderation.js — Anti-link: promo kick langsung, sosial/lain warn dulu
+// features/moderation.js — Anti-link: promo kick langsung, sosial/lain warn dulu (Neon PostgreSQL)
 
 const config = require("../config");
-const db = require("../database/db");
+const { sql } = require("../database/db");
 const antiLink = require("./antiLink");
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS link_strikes (
-    id TEXT PRIMARY KEY,
-    strikeCount INTEGER DEFAULT 0
-  );
-`);
 
 function formatTimestamp() {
   const d = new Date();
@@ -25,19 +18,20 @@ module.exports = {
     return antiLink.classifyText(text).action !== "none";
   },
 
-  getLinkStrikes(sender) {
-    return db.prepare("SELECT strikeCount FROM link_strikes WHERE id = ?").get(sender)?.strikeCount || 0;
+  async getLinkStrikes(sender) {
+    const rows = await sql`SELECT "strikeCount" FROM link_strikes WHERE id = ${sender}`;
+    return rows[0]?.strikeCount || 0;
   },
 
-  resetLinkStrikes(sender) {
-    db.prepare("DELETE FROM link_strikes WHERE id = ?").run(sender);
+  async resetLinkStrikes(sender) {
+    await sql`DELETE FROM link_strikes WHERE id = ${sender}`;
   },
 
   async handlePromoKick(sock, groupId, sender, reason = "Nyebar link promosi / invite grup") {
     await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e =>
       console.log("Gagal kick promo-link:", e)
     );
-    db.prepare("DELETE FROM link_strikes WHERE id = ?").run(sender);
+    await sql`DELETE FROM link_strikes WHERE id = ${sender}`;
 
     const strDate = formatTimestamp();
     const tag = `@${sender.split("@")[0]}`;
@@ -55,9 +49,13 @@ module.exports = {
 
   async handleLinkViolation(sock, groupId, sender, reason = "Nyebar link") {
     const max = config.antiLinkMaxStrike ?? config.maxWarn;
-    let count = this.getLinkStrikes(sender);
+    let count = await this.getLinkStrikes(sender);
     count++;
-    db.prepare("INSERT OR REPLACE INTO link_strikes (id, strikeCount) VALUES (?, ?)").run(sender, count);
+    
+    await sql`
+      INSERT INTO link_strikes (id, "strikeCount") VALUES (${sender}, ${count})
+      ON CONFLICT (id) DO UPDATE SET "strikeCount" = EXCLUDED."strikeCount"
+    `;
 
     const strDate = formatTimestamp();
     const tag = `@${sender.split("@")[0]}`;
@@ -66,7 +64,7 @@ module.exports = {
       await sock.groupParticipantsUpdate(groupId, [sender], "remove").catch(e =>
         console.log("Gagal kick anti-link:", e)
       );
-      db.prepare("DELETE FROM link_strikes WHERE id = ?").run(sender);
+      await sql`DELETE FROM link_strikes WHERE id = ${sender}`;
 
       const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (ANTI-LINK) ] •━━╮
 ┃

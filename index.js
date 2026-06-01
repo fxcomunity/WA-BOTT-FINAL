@@ -46,6 +46,7 @@ const afk         = require("./features/afk");
 const fun         = require("./features/fun");
 const audioEffects = require("./features/audioEffects");
 const plugins     = require("./features/plugins");
+const osint       = require("./features/osint");
 
 // ============================================
 // FUNGSI CEK ADMIN (DENGAN CACHE ANTI TIMEOUT)
@@ -76,7 +77,19 @@ const isAdmin = async (sock, groupId, sender) => {
     try {
         if (!groupId) return false;
         const admins = await getGroupAdmins(sock, groupId);
-        return admins.includes(jidNormalizedUser(sender));
+        const normSender = jidNormalizedUser(sender);
+        if (admins.includes(normSender)) return true;
+        
+        // Cek jika sender adalah bot (bisa phone number atau LID)
+        const isBot = normSender === jidNormalizedUser(sock.user.id) || (sock.user.lid && normSender === jidNormalizedUser(sock.user.lid));
+        if (isBot) {
+            const botIds = [
+                jidNormalizedUser(sock.user.id),
+                sock.user.lid ? jidNormalizedUser(sock.user.lid) : null
+            ].filter(Boolean);
+            return admins.some(adminJid => botIds.includes(adminJid));
+        }
+        return false;
     } catch (e) {
         return false;
     }
@@ -178,6 +191,7 @@ async function startBot() {
   // MEMBER JOIN / LEAVE
   // ============================================
   sock.ev.on("group-participants.update", async ({ id, participants, action }) => {
+    groupAdminsCache.delete(id);
     if (action === "add")    await welcome.sendWelcome(sock, id, participants);
     if (action === "remove") await welcome.sendGoodbye(sock, id, participants);
   });
@@ -281,11 +295,23 @@ async function startBot() {
     
     let nativeFlowId = "";
     try {
-      if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson) {
-        const params = JSON.parse(msg.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson);
+      // Path 1: nativeFlowResponseMessage (Baileys / WA terbaru)
+      const nfr = msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage;
+      if (nfr?.paramsJson) {
+        const params = JSON.parse(nfr.paramsJson);
         if (params.id) nativeFlowId = params.id;
       }
-    } catch(e) {}
+      // Path 2: listResponseMessage (list reply)
+      const lr = msg.message?.listResponseMessage;
+      if (!nativeFlowId && lr?.singleSelectReply?.selectedRowId) {
+        nativeFlowId = lr.singleSelectReply.selectedRowId;
+      }
+      // Path 3: templateButtonReplyMessage
+      const tbr = msg.message?.templateButtonReplyMessage;
+      if (!nativeFlowId && tbr?.selectedId) {
+        nativeFlowId = tbr.selectedId;
+      }
+    } catch(e) { console.log("[DEBUG] Error parsing button response:", e.message); }
 
     const body = (
       msg.message?.conversation ||
@@ -293,6 +319,7 @@ async function startBot() {
       msg.message?.imageMessage?.caption ||
       msg.message?.videoMessage?.caption ||
       msg.message?.buttonsResponseMessage?.selectedButtonId ||
+      msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
       nativeFlowId || ""
     ).trim();
 
@@ -338,7 +365,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data",
         ...audioEffects.effectsList
       ];
 
@@ -348,8 +375,9 @@ async function startBot() {
       }
     }
 
-    // Untuk fallback angka dan tombol balasan
-    if (isMenuFallback || msg.message?.buttonsResponseMessage || nativeFlowId) {
+    // Untuk fallback angka dan tombol balasan (list reply / interactive button)
+    const isButtonReply = !!(msg.message?.buttonsResponseMessage || msg.message?.listResponseMessage || msg.message?.templateButtonReplyMessage || nativeFlowId);
+    if (isMenuFallback || isButtonReply) {
       isCmd = true;
       args = body.split(/\s+/);
       cmd = args.shift()?.toLowerCase();
@@ -362,6 +390,8 @@ async function startBot() {
 
     const ownerCheck = isOwner(sock, sender);
     const adminCheck = await isAdmin(sock, groupId, sender);
+    // Super Owner — hanya +62895404147521 / LID owner yg bisa !self / !public
+    const isSuperOwner = sender.split('@')[0] === '62895404147521' || sender.split('@')[0] === '129003956510974';
 
     // MODE SELF: Abaikan semua command jika bukan dari owner
     if (isSelfMode && !ownerCheck && isCmd) {
@@ -485,7 +515,9 @@ async function startBot() {
     if (!isCmd) return;
 
     // --- GLOBAL COOLDOWN SYSTEM UNTUK SEMUA FITUR (30 DETIK PER USER) ---
-    if (!ownerCheck) {
+    // Navigasi menu (btn_ prefix, list reply, angka menu) dikecualikan dari cooldown
+    const isMenuNavigation = isButtonReply || isMenuFallback || cmd?.startsWith("btn_") || ["menu", "help"].includes(cmd);
+    if (!ownerCheck && !isMenuNavigation) {
       if (!global.cmdCooldown) global.cmdCooldown = {};
       const now = Date.now();
       if (global.cmdCooldown[sender] && now - global.cmdCooldown[sender] < 30000) {
@@ -500,9 +532,9 @@ async function startBot() {
 
     switch (cmd) {
 
-      // ---------- OWNER ONLY ----------
+      // ---------- SUPER OWNER ONLY (khusus +62895404147521) ----------
       case "self":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
+        if (!isSuperOwner) return reply(sock, msg, "❌ Command ini khusus Presiden Utama (+62895404147521) doang!");
         isSelfMode = true;
         saveSettings();
         await reply(sock, msg, "🔇 *Mode SELF Aktif!*\nBot sekarang cuma akan merespon perintah dari Owner. (Tersimpan permanen)");
@@ -510,7 +542,7 @@ async function startBot() {
 
       case "on":
       case "public":
-        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden!");
+        if (!isSuperOwner) return reply(sock, msg, "❌ Command ini khusus Presiden Utama (+62895404147521) doang!");
         isSelfMode = false;
         saveSettings();
         await reply(sock, msg, "🔊 *Mode PUBLIC Aktif!*\nBot sekarang kembali melayani semua member grup. (Tersimpan permanen)");
@@ -679,14 +711,14 @@ async function startBot() {
         const resetTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (resetTarget) {
 
-          warnSystem.resetWarn(resetTarget);
+          await warnSystem.resetWarn(resetTarget);
           await reply(sock, msg, `✅ Warn ${resetTarget.split("@")[0]} direset.`);
         }
         break;
 
       case "warnlist":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        await reply(sock, msg, warnSystem.getWarnList());
+        await reply(sock, msg, await warnSystem.getWarnList());
         break;
 
       case "tagall":
@@ -740,6 +772,7 @@ async function startBot() {
 ┌──❖ *T O D A Y*
 │ 📆 Date : ${strHariTanggal}
 │ 🕒 Time : ${strJam}
+│ 🤖 Mode : ${isSelfMode ? 'Self (!public)' : 'Public (!self)'}
 └───────────────┈ ⳹
 
 ┌──❖ *C O M M U N I T Y*
@@ -769,6 +802,7 @@ async function startBot() {
                         { title: "Developer Info", description: "Informasi website & developer", id: "btn_dev" },
                         { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
                         { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
+                        { title: "Menu OSINT & Tracking", description: "Cek data breach & username stalker", id: "btn_osint" },
                         { title: "Menu Plugin Tools", description: "Daftar semua plugin bot", id: "btn_plugin" }
                       ]
                     }
@@ -860,6 +894,12 @@ async function startBot() {
       case "btn_voice":
       case "menu_6": {
         const txt = getHelpText(ownerCheck, adminCheck, "voice") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        break;
+      }
+
+      case "btn_osint": {
+        const txt = getHelpText(ownerCheck, adminCheck, "osint") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
@@ -1037,7 +1077,7 @@ async function startBot() {
         }
         
         const stWallet = economy.getRawWallet(stTarget);
-        const stWarns = warnSystem.getWarn(stTarget);
+        const stWarns = await warnSystem.getWarn(stTarget);
         const maxW = config.maxWarn;
         const stLimit = limitSystem.cek(stTarget, "download") ? "Tersedia" : "Habis";
         
@@ -1228,6 +1268,14 @@ async function startBot() {
         await stalker.ghStalk(sock, msg, args[0]);
         break;
 
+      case "sc":
+        await osint.searchUsername(sock, msg, args[0]);
+        break;
+
+      case "data":
+        await osint.checkBreach(sock, msg, args[0]);
+        break;
+
       case "tutor":
         const tutorMsg = `🎓 *TUTORIAL JackBOT* 🎓
 
@@ -1297,12 +1345,18 @@ Selamat bersenang-senang! 🎉`;
         const freeRAM = Math.round(os.freemem() / 1024 / 1024);
         const usedRAM = totalRAM - freeRAM;
 
-        const text = `🏓 *PONG!*\n\n` +
+        const text = `🚀 *SYSTEM STATUS & BOT INFO* 🚀\n\n` +
+                     `🏓 *PONG!*\n` +
                      `⚡ *Kecepatan Respon:* ${pingEnd - pingStart} ms\n` +
                      `⏱️ *Uptime Bot:* ${uptimeStr}\n` +
-                     `💻 *Platform:* ${os.type()} ${os.release()}\n` +
                      `💾 *RAM:* ${usedRAM} MB / ${totalRAM} MB\n\n` +
-                     `👤 *Developer:* 陈嘉杰 | Val`;
+                     `🤖 *INFORMASI BOT* 🤖\n` +
+                     `┃ 🏷️ *Nama BOT:* JackBOT\n` +
+                     `┃ 📦 *Version:* v3.0.0\n` +
+                     `┃ 🌐 *Hosting BOT:* https://yurahostingg.my.id\n` +
+                     `┃ 👑 *Nomor Owner:* +62 895-4041-47521 (陈嘉杰 | Val)\n` +
+                     `┃ 📱 *Nomor BOT:* +62 895-3152-6042 (Vall Dev)\n` +
+                     `┃ 📡 *DNS:* 8.8.8.8 (Google Primary) | 8.8.4.4 (Google Secondary) | 1.1.1.1 (Cloudflare)`;
 
         await reply(sock, msg, text);
         break;
@@ -1907,18 +1961,29 @@ Reply/balas sebuah Voice Note (VN) pake
 salah satu command di atas.`;
   }
   
+  if (kategori === "osint") {
+    return `*✦ ──『 🕵️ OSINT TOOLS 』── ✦*
+
+┌──❖ *T R A C K I N G*
+│ ⚡ *!sc* [username]
+│    ↳ Cek username di berbagai platform
+│ ⚡ *!data* [email]
+│    ↳ Cek kebocoran data (data breach)
+└───────────────┈ ⳹`;
+  }
+
   if (kategori === "dev") {
-    return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮
+  const devLinks = config.devContact.map(n => `┃ ➯ https://wa.me/${n}`).join('\n');
+  return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮
 ┃ 
 ┣━━ [ 🌐 WEBSITE ]
 ┃ ➯ https://jack-scanner.biz.id (Nunggu Confirmasi dari PANDI)
 ┃ ➯ https://fxcomunity.vercel.app/
 ┃ 
 ┣━━ [ 📞 NOMOR DEVELOPER ]
-const devLinks = config.devContact.map(n => `┃ ➯ https://wa.me/${n}`).join('\n');
-return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮\n┃ \n┣━━ [ 🌐 WEBSITE ]\n┃ ➯ https://jack-scanner.biz.id (Nunggu Confirmasi dari PANDI)\n┃ ➯ https://fxcomunity.vercel.app/\n┃ \n┣━━ [ 📞 NOMOR DEVELOPER ]\n${devLinks}\n╰━━━━━━━━━━━━━━━━━━━╯`;
+${devLinks}
 ╰━━━━━━━━━━━━━━━━━━━╯`;
-  }
+}
 
   return `🤖 *JackBOT*\n\nKetik !menu buat liat daftar isi bossku.`;
 }

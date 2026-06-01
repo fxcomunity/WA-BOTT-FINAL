@@ -1,223 +1,391 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+// database/db.js — Hybrid Neon PostgreSQL / Local JSON database
+require('dotenv').config();
+const { neon } = require('@neondatabase/serverless');
 const fs = require('fs');
-const config = require('../config');
+const path = require('path');
 
-// Inisialisasi database SQLite
-const dbPath = path.join(__dirname, '../database.sqlite');
-const db = new Database(dbPath);
+const localDbPath = path.join(__dirname, 'local_db.json');
 
-// ==========================================
-// 1. CREATE TABLES (IF NOT EXISTS)
-// ==========================================
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    coins INTEGER DEFAULT 0,
-    level INTEGER DEFAULT 1,
-    xp INTEGER DEFAULT 0,
-    streak INTEGER DEFAULT 0,
-    lastDaily INTEGER DEFAULT 0,
-    lastMancing INTEGER DEFAULT 0,
-    lastBerburu INTEGER DEFAULT 0,
-    lastNambang INTEGER DEFAULT 0,
-    pickaxeLevel INTEGER DEFAULT 1,
-    pancinganLevel INTEGER DEFAULT 1,
-    inventory TEXT DEFAULT '{}',
-    enchants TEXT DEFAULT '{}'
-  );
-`);
+let neonClient = null;
+let useLocalFallback = false;
+let fallbackLoaded = false;
+let localData = {
+  users: {},
+  limits: {},
+  warns: {},
+  link_strikes: {}
+};
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN pancinganLevel INTEGER DEFAULT 1;");
-} catch (e) {}
+// Coba buat client Neon jika ada URL
+if (process.env.DATABASE_URL) {
+  try {
+    neonClient = neon(process.env.DATABASE_URL);
+  } catch (e) {
+    console.error("[DB] ❌ Gagal membuat client Neon:", e.message);
+    useLocalFallback = true;
+  }
+} else {
+  useLocalFallback = true;
+}
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN lastBerburu INTEGER DEFAULT 0;");
-} catch (e) {}
+// Load database lokal
+function loadLocalDb() {
+  if (fallbackLoaded) return;
+  try {
+    if (fs.existsSync(localDbPath)) {
+      const data = fs.readFileSync(localDbPath, 'utf8');
+      localData = JSON.parse(data);
+      console.log(`[DB] ℹ️ Menggunakan database lokal (JSON) - ${Object.keys(localData.users || {}).length} users, ${Object.keys(localData.limits || {}).length} limits`);
+      fallbackLoaded = true;
+    } else {
+      console.log("[DB] ⚠️ Database lokal tidak ditemukan, membuat baru...");
+      saveLocalDb();
+      fallbackLoaded = true;
+    }
+  } catch (err) {
+    console.error("[DB] ❌ Gagal memuat database lokal:", err.message);
+  }
+}
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN inventory TEXT DEFAULT '{}';");
-} catch (e) {}
+// Simpan database lokal ke file
+function saveLocalDb() {
+  try {
+    fs.writeFileSync(localDbPath, JSON.stringify(localData, null, 2), 'utf8');
+  } catch (err) {
+    console.error("[DB] ❌ Gagal menulis database lokal:", err.message);
+  }
+}
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN enchants TEXT DEFAULT '{}';");
-} catch (e) {}
+// Jalankan load di awal jika fallback aktif
+if (useLocalFallback) {
+  loadLocalDb();
+}
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN hp INTEGER DEFAULT 100;");
-} catch (e) {}
+// Parser query SQL sederhana untuk fallback lokal
+function runLocalQuery(strings, values) {
+  if (!useLocalFallback) {
+    useLocalFallback = true;
+    loadLocalDb();
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN maxHp INTEGER DEFAULT 100;");
-} catch (e) {}
+  const queryText = strings.join('?').trim();
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN buffs TEXT DEFAULT '{}';");
-} catch (e) {}
+  // 1. SELECT * FROM users
+  if (queryText.includes('SELECT * FROM users')) {
+    return Object.values(localData.users || {});
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN combat TEXT DEFAULT '{}';");
-} catch (e) {}
+  // 2. SELECT * FROM limits WHERE id = ?
+  if (queryText.includes('SELECT * FROM limits WHERE id =')) {
+    const id = values[0];
+    const val = localData.limits[id];
+    return val ? [val] : [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN mp INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 3. SELECT "warnCount" FROM warns WHERE id = ?
+  if (queryText.includes('SELECT "warnCount" FROM warns WHERE id =')) {
+    const id = values[0];
+    const val = localData.warns[id];
+    return val ? [val] : [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN maxMp INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 4. SELECT * FROM warns
+  if (queryText.includes('SELECT * FROM warns')) {
+    return Object.values(localData.warns || {});
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN skills TEXT DEFAULT '{}';");
-} catch (e) {}
+  // 5. SELECT "strikeCount" FROM link_strikes WHERE id = ?
+  if (queryText.includes('SELECT "strikeCount" FROM link_strikes WHERE id =')) {
+    const id = values[0];
+    const val = localData.link_strikes[id];
+    return val ? [val] : [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN pickaxeDurability INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 6. DELETE FROM
+  if (queryText.startsWith('DELETE FROM')) {
+    const id = values[0];
+    if (queryText.includes('limits')) {
+      delete localData.limits[id];
+    } else if (queryText.includes('warns')) {
+      delete localData.warns[id];
+    } else if (queryText.includes('link_strikes')) {
+      delete localData.link_strikes[id];
+    }
+    saveLocalDb();
+    return [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN maxPickaxeDurability INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 7. UPDATE limits SET dl_used = 0, ... (global reset)
+  if (queryText.includes('UPDATE limits SET dl_used = 0') && !queryText.includes('WHERE id =')) {
+    for (const id in localData.limits) {
+      localData.limits[id].dl_used = 0;
+      localData.limits[id].ai_used = 0;
+      localData.limits[id].kuis_used = 0;
+      localData.limits[id].st_used = 0;
+    }
+    saveLocalDb();
+    return [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN pancinganDurability INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 8. INSERT INTO limits
+  if (queryText.startsWith('INSERT INTO limits')) {
+    const id = values[0];
+    if (!localData.limits[id]) {
+      localData.limits[id] = {
+        id: id,
+        name: 'Unknown',
+        dl_used: 0,
+        dl_reset: values[1],
+        ai_used: 0,
+        ai_reset: values[2],
+        kuis_used: 0,
+        kuis_reset: values[3],
+        st_used: 0,
+        st_reset: values[4],
+        dl_max: 0,
+        ai_max: 0,
+        kuis_max: 0,
+        st_max: 0
+      };
+      saveLocalDb();
+    }
+    return [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN maxPancinganDurability INTEGER DEFAULT 50;");
-} catch (e) {}
+  // 9. INSERT INTO users
+  if (queryText.startsWith('INSERT INTO users')) {
+    const id = values[0];
+    if (!localData.users[id]) {
+      localData.users[id] = {
+        id: id,
+        coins: values[1],
+        level: values[2],
+        xp: values[3],
+        streak: values[4],
+        lastDaily: values[5],
+        lastMancing: values[6],
+        lastBerburu: values[7],
+        lastNambang: values[8],
+        pickaxeLevel: values[9],
+        pancinganLevel: values[10],
+        inventory: typeof values[11] === 'string' ? JSON.parse(values[11]) : (values[11] || {}),
+        enchants: typeof values[12] === 'string' ? JSON.parse(values[12]) : (values[12] || {}),
+        hp: values[13],
+        maxHp: values[14],
+        buffs: typeof values[15] === 'string' ? JSON.parse(values[15]) : (values[15] || {}),
+        combat: typeof values[16] === 'string' ? JSON.parse(values[16]) : (values[16] || {}),
+        mp: values[17],
+        maxMp: values[18],
+        skills: typeof values[19] === 'string' ? JSON.parse(values[19]) : (values[19] || {}),
+        pickaxeDurability: values[20],
+        maxPickaxeDurability: values[21],
+        pancinganDurability: values[22],
+        maxPancinganDurability: values[23],
+        equipment: typeof values[24] === 'string' ? JSON.parse(values[24]) : (values[24] || {})
+      };
+      saveLocalDb();
+    }
+    return [];
+  }
 
-try {
-  db.exec("ALTER TABLE users ADD COLUMN equipment TEXT DEFAULT '{}';");
-} catch (e) {}
+  // 10. INSERT INTO warns
+  if (queryText.startsWith('INSERT INTO warns')) {
+    const id = values[0];
+    localData.warns[id] = {
+      id: id,
+      warnCount: values[1]
+    };
+    saveLocalDb();
+    return [];
+  }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS limits (
-    id TEXT PRIMARY KEY,
-    name TEXT DEFAULT 'Unknown',
-    dl_used INTEGER DEFAULT 0,
-    dl_reset INTEGER DEFAULT 0,
-    ai_used INTEGER DEFAULT 0,
-    ai_reset INTEGER DEFAULT 0,
-    kuis_used INTEGER DEFAULT 0,
-    kuis_reset INTEGER DEFAULT 0,
-    st_used INTEGER DEFAULT 0,
-    st_reset INTEGER DEFAULT 0
-  );
+  // 11. INSERT INTO link_strikes
+  if (queryText.startsWith('INSERT INTO link_strikes')) {
+    const id = values[0];
+    localData.link_strikes[id] = {
+      id: id,
+      strikeCount: values[1]
+    };
+    saveLocalDb();
+    return [];
+  }
 
-  CREATE TABLE IF NOT EXISTS warns (
-    id TEXT PRIMARY KEY,
-    warnCount INTEGER DEFAULT 0
-  );
-`);
+  // 12. UPDATE users
+  if (queryText.startsWith('UPDATE users')) {
+    const id = values[values.length - 1];
+    localData.users[id] = {
+      id: id,
+      coins: values[0],
+      level: values[1],
+      xp: values[2],
+      streak: values[3],
+      lastDaily: values[4],
+      lastMancing: values[5],
+      lastBerburu: values[6],
+      lastNambang: values[7],
+      pickaxeLevel: values[8],
+      pancinganLevel: values[9],
+      inventory: typeof values[10] === 'string' ? JSON.parse(values[10]) : (values[10] || {}),
+      enchants: typeof values[11] === 'string' ? JSON.parse(values[11]) : (values[11] || {}),
+      hp: values[12],
+      maxHp: values[13],
+      buffs: typeof values[14] === 'string' ? JSON.parse(values[14]) : (values[14] || {}),
+      combat: typeof values[15] === 'string' ? JSON.parse(values[15]) : (values[15] || {}),
+      mp: values[16],
+      maxMp: values[17],
+      skills: typeof values[18] === 'string' ? JSON.parse(values[18]) : (values[18] || {}),
+      pickaxeDurability: values[19],
+      maxPickaxeDurability: values[20],
+      pancinganDurability: values[21],
+      maxPancinganDurability: values[22],
+      equipment: typeof values[23] === 'string' ? JSON.parse(values[23]) : (values[23] || {})
+    };
+    saveLocalDb();
+    return [];
+  }
 
-// Add custom max columns to limits table for !setlimit persistence
-try { db.exec("ALTER TABLE limits ADD COLUMN dl_max INTEGER DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE limits ADD COLUMN ai_max INTEGER DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE limits ADD COLUMN kuis_max INTEGER DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE limits ADD COLUMN st_max INTEGER DEFAULT 0;"); } catch (e) {}
+  // 13. UPDATE limits
+  if (queryText.startsWith('UPDATE limits')) {
+    const id = values[values.length - 1];
+    localData.limits[id] = {
+      id: id,
+      name: values[0],
+      dl_used: values[1],
+      dl_reset: values[2],
+      ai_used: values[3],
+      ai_reset: values[4],
+      kuis_used: values[5],
+      kuis_reset: values[6],
+      st_used: values[7],
+      st_reset: values[8],
+      dl_max: values[9],
+      ai_max: values[10],
+      kuis_max: values[11],
+      st_max: values[12]
+    };
+    saveLocalDb();
+    return [];
+  }
 
-// ==========================================
-// 2. MIGRASI OTOMATIS DARI JSON (SEKALI SAJA)
-// ==========================================
+  return [];
+}
 
-function migrateEconomy() {
-  const jsonPath = path.join(__dirname, '../data_economy.json');
-  if (fs.existsSync(jsonPath)) {
-    console.log("[DB] Memulai migrasi data economy JSON ke SQLite...");
-    try {
-      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-      const insert = db.prepare(`
-        INSERT OR IGNORE INTO users (id, coins, level, xp, streak, lastDaily, lastMancing, lastBerburu, lastNambang, pickaxeLevel)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      const update = db.prepare(`
-        UPDATE users 
-        SET coins = ?, level = ?, xp = ?, streak = ?, lastDaily = ?, lastMancing = ?, lastBerburu = ?, lastNambang = ?, pickaxeLevel = ?
-        WHERE id = ?
-      `);
+// Wrapper fungsi query sql utama
+const sql = async (strings, ...values) => {
+  if (useLocalFallback || !neonClient) {
+    return runLocalQuery(strings, values);
+  }
+  try {
+    return await neonClient(strings, ...values);
+  } catch (err) {
+    const errMsg = err.message || '';
+    if (
+      errMsg.includes('fetch failed') || 
+      errMsg.includes('ETIMEDOUT') || 
+      errMsg.includes('connect') || 
+      errMsg.includes('unreachable') || 
+      errMsg.includes('connection')
+    ) {
+      if (!useLocalFallback) {
+        console.warn('[DB] ⚠️ Koneksi ke Neon PostgreSQL terhambat. Mengaktifkan fallback lokal...');
+        useLocalFallback = true;
+        loadLocalDb();
+      }
+      return runLocalQuery(strings, values);
+    }
+    throw err;
+  }
+};
 
-      db.transaction(() => {
-        for (const [id, w] of Object.entries(data)) {
-          // Coba insert, kalau udah ada update
-          const info = insert.run(id, w.coins || 0, w.level || 1, w.xp || 0, w.streak || 0, w.lastDaily || 0, w.lastMancing || 0, w.lastBerburu || 0, w.lastNambang || 0, w.pickaxeLevel || 1);
-          if (info.changes === 0) {
-            update.run(w.coins || 0, w.level || 1, w.xp || 0, w.streak || 0, w.lastDaily || 0, w.lastMancing || 0, w.lastBerburu || 0, w.lastNambang || 0, w.pickaxeLevel || 1, id);
-          }
-        }
-      })();
-      
-      // Rename file agar tidak dimigrasi berulang-ulang
-      fs.renameSync(jsonPath, jsonPath + '.bak');
-      console.log("[DB] Migrasi data economy berhasil! File asli diubah menjadi data_economy.json.bak");
-    } catch (e) {
-      console.error("[DB] Gagal bos migrasi data economy:", e);
+// Fungsi inisialisasi tabel / pengecekan koneksi
+async function initDb() {
+  if (useLocalFallback || !neonClient) {
+    loadLocalDb();
+    return;
+  }
+
+  try {
+    // Test query cepat untuk memastikan koneksi ke Neon lancar
+    await neonClient`SELECT 1`;
+    
+    // Inisialisasi skema tabel jika belum ada
+    await neonClient`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        coins BIGINT DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        xp BIGINT DEFAULT 0,
+        streak BIGINT DEFAULT 0,
+        "lastDaily" BIGINT DEFAULT 0,
+        "lastMancing" BIGINT DEFAULT 0,
+        "lastBerburu" BIGINT DEFAULT 0,
+        "lastNambang" BIGINT DEFAULT 0,
+        "pickaxeLevel" INTEGER DEFAULT 1,
+        "pancinganLevel" INTEGER DEFAULT 1,
+        inventory TEXT DEFAULT '{}',
+        enchants TEXT DEFAULT '{}',
+        hp INTEGER DEFAULT 100,
+        "maxHp" INTEGER DEFAULT 100,
+        buffs TEXT DEFAULT '{}',
+        combat TEXT DEFAULT '{}',
+        mp INTEGER DEFAULT 50,
+        "maxMp" INTEGER DEFAULT 50,
+        skills TEXT DEFAULT '{}',
+        "pickaxeDurability" INTEGER DEFAULT 50,
+        "maxPickaxeDurability" INTEGER DEFAULT 50,
+        "pancinganDurability" INTEGER DEFAULT 50,
+        "maxPancinganDurability" INTEGER DEFAULT 50,
+        equipment TEXT DEFAULT '{}'
+      )
+    `;
+
+    await neonClient`
+      CREATE TABLE IF NOT EXISTS limits (
+        id TEXT PRIMARY KEY,
+        name TEXT DEFAULT 'Unknown',
+        dl_used INTEGER DEFAULT 0,
+        dl_reset BIGINT DEFAULT 0,
+        ai_used INTEGER DEFAULT 0,
+        ai_reset BIGINT DEFAULT 0,
+        kuis_used INTEGER DEFAULT 0,
+        kuis_reset BIGINT DEFAULT 0,
+        st_used INTEGER DEFAULT 0,
+        st_reset BIGINT DEFAULT 0,
+        dl_max INTEGER DEFAULT 0,
+        ai_max INTEGER DEFAULT 0,
+        kuis_max INTEGER DEFAULT 0,
+        st_max INTEGER DEFAULT 0
+      )
+    `;
+
+    await neonClient`
+      CREATE TABLE IF NOT EXISTS warns (
+        id TEXT PRIMARY KEY,
+        "warnCount" INTEGER DEFAULT 0
+      )
+    `;
+
+    await neonClient`
+      CREATE TABLE IF NOT EXISTS link_strikes (
+        id TEXT PRIMARY KEY,
+        "strikeCount" INTEGER DEFAULT 0
+      )
+    `;
+
+    console.log('[DB] ✅ Neon PostgreSQL siap digunakan!');
+  } catch (err) {
+    if (!useLocalFallback) {
+      console.warn('[DB] ⚠️ Gagal terhubung ke Neon PostgreSQL, menggunakan penyimpanan lokal.');
+      useLocalFallback = true;
+      loadLocalDb();
     }
   }
 }
 
-function migrateLimits() {
-  const jsonPath = path.join(__dirname, 'limit.json');
-  if (fs.existsSync(jsonPath)) {
-    console.log("[DB] Memulai migrasi data limit JSON ke SQLite...");
-    try {
-      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-      const insert = db.prepare(`INSERT OR IGNORE INTO limits (id, name, dl_used, dl_reset, ai_used, ai_reset, kuis_used, kuis_reset, st_used, st_reset) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-      const update = db.prepare(`UPDATE limits SET name = ?, dl_used = ?, dl_reset = ?, ai_used = ?, ai_reset = ?, kuis_used = ?, kuis_reset = ?, st_used = ?, st_reset = ? WHERE id = ?`);
+// Panggil fungsi inisialisasi
+initDb().catch(err => {
+  useLocalFallback = true;
+  loadLocalDb();
+});
 
-      db.transaction(() => {
-        for (const [id, l] of Object.entries(data)) {
-          const d_used = l.download?.used || 0, d_reset = l.download?.resetAt || 0;
-          const a_used = l.ai?.used || 0, a_reset = l.ai?.resetAt || 0;
-          const k_used = l.kuis?.used || 0, k_reset = l.kuis?.resetAt || 0;
-          const s_used = l.sticker?.used || 0, s_reset = l.sticker?.resetAt || 0;
-          
-          const info = insert.run(id, l.name || 'Unknown', d_used, d_reset, a_used, a_reset, k_used, k_reset, s_used, s_reset);
-          if (info.changes === 0) {
-            update.run(l.name || 'Unknown', d_used, d_reset, a_used, a_reset, k_used, k_reset, s_used, s_reset, id);
-          }
-        }
-      })();
-      
-      fs.renameSync(jsonPath, jsonPath + '.bak');
-      console.log("[DB] Migrasi data limit berhasil!");
-    } catch (e) {
-      console.error("[DB] Gagal bos migrasi data limit:", e);
-    }
-  }
-}
-
-function migrateWarns() {
-  const jsonPath = path.join(__dirname, 'warn.json');
-  if (fs.existsSync(jsonPath)) {
-    console.log("[DB] Memulai migrasi data warn JSON ke SQLite...");
-    try {
-      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-      const insert = db.prepare(`INSERT OR IGNORE INTO warns (id, warnCount) VALUES (?, ?)`);
-      const update = db.prepare(`UPDATE warns SET warnCount = ? WHERE id = ?`);
-
-      db.transaction(() => {
-        for (const [id, count] of Object.entries(data)) {
-          const info = insert.run(id, count || 0);
-          if (info.changes === 0) {
-            update.run(count || 0, id);
-          }
-        }
-      })();
-      
-      fs.renameSync(jsonPath, jsonPath + '.bak');
-      console.log("[DB] Migrasi data warn berhasil!");
-    } catch (e) {
-      console.error("[DB] Gagal bos migrasi data warn:", e);
-    }
-  }
-}
-
-// Jalankan migrasi saat modul dipanggil pertama kali
-migrateEconomy();
-migrateLimits();
-migrateWarns();
-
-module.exports = db;
+module.exports = { sql };
