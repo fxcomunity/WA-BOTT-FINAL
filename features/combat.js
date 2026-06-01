@@ -55,17 +55,54 @@ function calcSwordDamage(w, mData) {
   if (acc?.bossBonus && mData.tags?.includes("boss")) dmg += acc.bossBonus;
 
   if (w.buffs["damage_plus_5"]?.expiresAt > Date.now()) dmg += 5;
+
+  // Apply weapon enchants
+  if (w.enchants) {
+    if (w.enchants["weapon_sharpness"]) dmg = Math.floor(dmg * 1.15);
+    if (w.enchants["weapon_power"]) dmg = Math.floor(dmg * 1.20);
+    if (w.enchants["weapon_quick_charge"]) dmg = Math.floor(dmg * 1.10);
+    if (w.enchants["armor_soul_speed"]) dmg = Math.floor(dmg * 1.10);
+    
+    if (w.enchants["weapon_smite"] && mData.tags?.includes("undead")) {
+      dmg = Math.floor(dmg * 1.30);
+    }
+    if (w.enchants["weapon_bane_of_arthropods"] && ["rayap_batu", "laba_batu", "scorpion_kristal", "ratu_laba"].includes(mData.id)) {
+      dmg = Math.floor(dmg * 1.30);
+    }
+    if (w.enchants["weapon_impaling"] && (["cacing_tanah"].includes(mData.id) || mData.id.includes("hiu") || mData.id.includes("ikan"))) {
+      dmg = Math.floor(dmg * 1.35);
+    }
+    if (w.enchants["weapon_piercing"]) {
+      dmg += 15;
+    }
+    if (w.enchants["weapon_fire_aspect"]) {
+      dmg = Math.floor(dmg * 1.10);
+    }
+    if (w.enchants["weapon_flame"]) {
+      dmg = Math.floor(dmg * 1.12);
+    }
+  }
+
   return Math.max(1, dmg);
 }
 
 function calcMagicDamage(w, magicInfo, mData) {
   const lvl = magicInfo.level;
   let dmg = 25 + (lvl * 18) + Math.floor(Math.random() * 25);
-  w.mp -= magicInfo.mpCost;
+  
+  if (w.enchants && w.enchants["weapon_infinity"]) {
+    // MP cost ignored!
+  } else {
+    w.mp -= magicInfo.mpCost;
+  }
 
   const acc = w.equipment?.accessory ? gearData.getAccessory(w.equipment.accessory) : null;
   if (acc?.magicBonus) dmg += acc.magicBonus;
   if (mData.tags?.includes("magic")) dmg += Math.floor(lvl * 5);
+
+  if (w.enchants && w.enchants["weapon_channeling"]) {
+    dmg = Math.floor(dmg * 1.25);
+  }
 
   return Math.max(1, dmg);
 }
@@ -76,10 +113,33 @@ function rollAttackType(w) {
   return { type: Math.random() < 0.5 ? "sword" : "magic", magic };
 }
 
-function applyArmorReduction(w, incoming) {
+function applyArmorReduction(w, incoming, mData) {
   const armor = w.equipment?.armor ? gearData.getArmor(w.equipment.armor) : null;
-  if (!armor) return incoming;
-  return Math.max(1, incoming - armor.def);
+  let def = armor ? armor.def : 0;
+
+  if (w.enchants) {
+    if (w.enchants["armor_aqua_affinity"]) def += 10;
+    
+    // Protection enchants directly reduce incoming damage
+    if (w.enchants["armor_protection"]) {
+      incoming = Math.floor(incoming * 0.85);
+    }
+    if (w.enchants["armor_blast_protection"] && mData && (mData.tags?.includes("golem") || mData.tags?.includes("armor"))) {
+      incoming = Math.floor(incoming * 0.70);
+    }
+    if (w.enchants["armor_fire_protection"] && mData && (mData.tags?.includes("fire") || mData.id.includes("naga") || mData.id.includes("phoenix"))) {
+      incoming = Math.floor(incoming * 0.70);
+    }
+    if (w.enchants["armor_projectile_protection"] && mData && mData.tags?.includes("flying")) {
+      incoming = Math.floor(incoming * 0.70);
+    }
+    if (w.enchants["armor_frost_walker"] && mData && (mData.id.includes("magma") || mData.id.includes("phoenix"))) {
+      incoming = Math.floor(incoming * 0.75);
+    }
+  }
+
+  if (def === 0) return Math.max(1, incoming);
+  return Math.max(1, incoming - def);
 }
 
 function applyMonsterAbility(w, mData) {
@@ -139,7 +199,7 @@ async function serang(sock, msg, sender) {
 
   if (attack.type === "magic" && attack.magic) {
     playerDmg = calcMagicDamage(w, attack.magic, mData);
-    attackLine = `✨ Kamu melempar *${attack.magic.name}* ke *${combat.monsterName}* → *${playerDmg}* magic damage! (-${attack.magic.mpCost} MP)`;
+    attackLine = `✨ Kamu melempar *${attack.magic.name}* ke *${combat.monsterName}* → *${playerDmg}* magic damage!${w.enchants?.["weapon_infinity"] ? " (⚡ INFINITY: 0 Mana!)" : ` (-${attack.magic.mpCost} MP)`}`;
   } else {
     playerDmg = calcSwordDamage(w, mData);
     const weapon = w.equipment?.weapon ? gearData.getWeapon(w.equipment.weapon) : null;
@@ -148,12 +208,22 @@ async function serang(sock, msg, sender) {
   }
 
   let text = `${attackLine}\n`;
-  combat.monsterHp -= playerDmg;
+  
+  let hits = 1;
+  if (attack.type !== "magic" && w.enchants && w.enchants["weapon_multishot"] && Math.random() < 0.25) {
+    hits = 2;
+    text += `🏹 *MULTISHOT:* Tembakan beruntun! Kamu menyerang *2x* sekaligus!\n`;
+  }
+  
+  combat.monsterHp -= (playerDmg * hits);
 
   if (combat.monsterHp <= 0) {
     let goldDrop = Math.floor(Math.random() * (mData.dropGold[1] - mData.dropGold[0] + 1)) + mData.dropGold[0];
     const acc = w.equipment?.accessory ? gearData.getAccessory(w.equipment.accessory) : null;
     if (acc?.goldBonus) goldDrop = Math.floor(goldDrop * (1 + acc.goldBonus));
+    if (w.enchants && w.enchants["weapon_looting"]) {
+      goldDrop = Math.floor(goldDrop * 1.25);
+    }
 
     w.coins += goldDrop;
     w.inventory[mData.dropItem] = (w.inventory[mData.dropItem] || 0) + 1;
@@ -162,21 +232,115 @@ async function serang(sock, msg, sender) {
     text += `\n🎉 *${combat.monsterName} TELAH DIKALAHKAN!*\n`;
     text += `💰 +${goldDrop} Koin\n📦 +1x ${mData.dropItem.replace(/_/g, " ").toUpperCase()}`;
     if (combat.monsterId === "lich_penambang") text += `\n✨ Kutukan Lich hilang!`;
+    
+    if (w.enchants && w.enchants["weapon_mending"]) {
+      w.hp = Math.min(w.maxHp, w.hp + 5);
+      text += `\n✨ *MENDING:* Memulihkan +5 HP karena menang pertarungan!`;
+    }
   } else {
-    let monsterDmg = Math.floor(Math.random() * (combat.monsterDamage[1] - combat.monsterDamage[0] + 1)) + combat.monsterDamage[0];
-    monsterDmg = applyArmorReduction(w, monsterDmg);
+    let monsterCounter = true;
+    if (w.enchants) {
+      if (w.enchants["weapon_knockback"] && Math.random() < 0.15) {
+        monsterCounter = false;
+        text += `💨 *KNOCKBACK:* Monster terpental dan gagal counter turn ini!\n`;
+      } else if (w.enchants["weapon_punch"] && Math.random() < 0.20) {
+        monsterCounter = false;
+        text += `🥊 *PUNCH:* Monster terkena stun dan melewatkan serangannya!\n`;
+      }
+    }
 
-    text += `\n👹 *${combat.monsterName}* counter → *${monsterDmg}* damage!\n`;
-    text += applyMonsterAbility(w, mData);
-    w.hp -= monsterDmg;
+    if (monsterCounter) {
+      let monsterDmg = Math.floor(Math.random() * (combat.monsterDamage[1] - combat.monsterDamage[0] + 1)) + combat.monsterDamage[0];
+      monsterDmg = applyArmorReduction(w, monsterDmg, mData);
 
-    if (w.hp <= 0) {
-      const penalty = Math.floor(w.coins * 0.1);
-      w.coins -= penalty;
-      w.hp = 10;
-      w.combat = { active: false };
-      text += `\n☠️ *KAMU PINGSAN!* 💸 -${penalty} koin (HP → 10)`;
+      text += `👹 *${combat.monsterName}* counter → *${monsterDmg}* damage!\n`;
+      text += applyMonsterAbility(w, mData);
+      
+      // Thorns reflect
+      if (w.enchants && w.enchants["armor_thorns"] && monsterDmg > 0) {
+        const reflectDmg = Math.max(1, Math.floor(monsterDmg * 0.20));
+        combat.monsterHp -= reflectDmg;
+        text += `🌵 *THORNS:* Baju berduri memantulkan *${reflectDmg}* damage ke monster!\n`;
+      }
+
+      w.hp -= monsterDmg;
+
+      if (combat.monsterHp <= 0) {
+        // Monster died from thorns!
+        let goldDrop = Math.floor(Math.random() * (mData.dropGold[1] - mData.dropGold[0] + 1)) + mData.dropGold[0];
+        if (w.enchants && w.enchants["weapon_looting"]) goldDrop = Math.floor(goldDrop * 1.25);
+        w.coins += goldDrop;
+        w.inventory[mData.dropItem] = (w.inventory[mData.dropItem] || 0) + 1;
+        w.combat = { active: false };
+        text += `\n🎉 *${combat.monsterName} mati terkena pantulan duri!*\n💰 +${goldDrop} Koin\n📦 +1x ${mData.dropItem.replace(/_/g, " ").toUpperCase()}`;
+        if (w.enchants && w.enchants["weapon_mending"]) {
+          w.hp = Math.min(w.maxHp, w.hp + 5);
+        }
+      } else if (w.hp <= 0) {
+        let penalty = Math.floor(w.coins * 0.1);
+        if (w.enchants && w.enchants["armor_feather_falling"]) {
+          penalty = Math.floor(penalty * 0.5);
+          text += `🪶 *FEATHER FALLING:* Denda koin pingsan dikurangi 50%!\n`;
+        }
+        w.coins -= penalty;
+        w.hp = 10;
+        w.combat = { active: false };
+        
+        text += `\n☠️ *KAMU PINGSAN!* 💸 -${penalty} koin (HP → 10)\n`;
+        
+        // Remove curse of binding
+        if (w.enchants && w.enchants["armor_curse_of_binding"]) {
+          delete w.enchants["armor_curse_of_binding"];
+          text += `🔓 *Curse of Binding* terlepas dari armor kamu!\n`;
+        }
+        
+        // Curse of vanishing checks
+        if (w.enchants) {
+          if (w.enchants["pickaxe_curse_of_vanishing"]) {
+            w.pickaxeLevel = 1;
+            w.pickaxeDurability = 50;
+            w.maxPickaxeDurability = 50;
+            for (const k of Object.keys(w.enchants)) {
+              if (k.startsWith("pickaxe_")) delete w.enchants[k];
+            }
+            text += `☠️ *CURSE OF VANISHING:* Pickaxe kamu lenyap seketika!\n`;
+          }
+          if (w.enchants["pancingan_curse_of_vanishing"]) {
+            w.pancinganLevel = 1;
+            w.pancinganDurability = 50;
+            w.maxPancinganDurability = 50;
+            for (const k of Object.keys(w.enchants)) {
+              if (k.startsWith("pancingan_")) delete w.enchants[k];
+            }
+            text += `☠️ *CURSE OF VANISHING:* Pancingan kamu lenyap seketika!\n`;
+          }
+          if (w.enchants["weapon_curse_of_vanishing"]) {
+            const itemKey = w.equipment?.weapon;
+            if (itemKey) {
+              w.equipment.weapon = null;
+              for (const k of Object.keys(w.enchants)) {
+                if (k.startsWith("weapon_")) delete w.enchants[k];
+              }
+              text += `☠️ *CURSE OF VANISHING:* Senjata *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!\n`;
+            }
+          }
+          if (w.enchants["armor_curse_of_vanishing"]) {
+            const itemKey = w.equipment?.armor;
+            if (itemKey) {
+              w.equipment.armor = null;
+              for (const k of Object.keys(w.enchants)) {
+                if (k.startsWith("armor_")) delete w.enchants[k];
+              }
+              text += `☠️ *CURSE OF VANISHING:* Armor *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!\n`;
+            }
+          }
+        }
+      } else {
+        text += `\n❤️ HP: ${w.hp}/${w.maxHp} | 🖤 Monster: ${combat.monsterHp}/${combat.monsterMaxHp}\n`;
+        text += `Ketik *!serang* lagi atau *!lari*!`;
+      }
     } else {
+      // Monster counter skipped
       text += `\n❤️ HP: ${w.hp}/${w.maxHp} | 🖤 Monster: ${combat.monsterHp}/${combat.monsterMaxHp}\n`;
       text += `Ketik *!serang* lagi atau *!lari*!`;
     }
@@ -192,7 +356,13 @@ async function lari(sock, msg, sender) {
     return sock.sendMessage(msg.key.remoteJid, { text: "❌ Kamu sedang tidak bertarung." }, { quoted: msg });
   }
 
-  if (Math.random() > 0.5) {
+  let runChance = 0.5;
+  if (w.enchants) {
+    if (w.enchants["weapon_riptide"]) runChance = 0.8;
+    if (w.enchants["armor_depth_strider"]) runChance += 0.10;
+  }
+
+  if (Math.random() < runChance) {
     const mName = w.combat.monsterName;
     w.combat = { active: false };
     economy.saveWallet(sender, w);
@@ -201,20 +371,77 @@ async function lari(sock, msg, sender) {
 
   const combat = w.combat;
   const mData = rpgData.findMonster(combat.monsterId);
-  let monsterDmg = applyArmorReduction(w,
-    Math.floor(Math.random() * (combat.monsterDamage[1] - combat.monsterDamage[0] + 1)) + combat.monsterDamage[0]
-  );
+  let monsterDmg = Math.floor(Math.random() * (combat.monsterDamage[1] - combat.monsterDamage[0] + 1)) + combat.monsterDamage[0];
+  monsterDmg = applyArmorReduction(w, monsterDmg, mData);
+
+  if (w.enchants && w.enchants["weapon_loyalty"] && Math.random() < 0.5) {
+    monsterDmg = 0;
+  }
+
   w.hp -= monsterDmg;
 
   let text = `🏃❌ Gagal kabur! *${combat.monsterName}* serang → *${monsterDmg}* damage!\n`;
+  if (monsterDmg === 0 && w.enchants?.["weapon_loyalty"]) {
+    text = `🏃❌ Gagal kabur! *${combat.monsterName}* melayangkan serangan, tapi 🔱 *LOYALTY* melindungimu! (0 damage)\n`;
+  }
   text += applyMonsterAbility(w, mData);
 
   if (w.hp <= 0) {
-    const penalty = Math.floor(w.coins * 0.1);
+    let penalty = Math.floor(w.coins * 0.1);
+    if (w.enchants && w.enchants["armor_feather_falling"]) {
+      penalty = Math.floor(penalty * 0.5);
+    }
     w.coins -= penalty;
     w.hp = 10;
     w.combat = { active: false };
-    text += `\n☠️ *PINGSAN!* 💸 -${penalty} koin`;
+    text += `\n☠️ *PINGSAN!* 💸 -${penalty} koin (HP → 10)`;
+    
+    // Remove curse of binding
+    if (w.enchants && w.enchants["armor_curse_of_binding"]) {
+      delete w.enchants["armor_curse_of_binding"];
+    }
+
+    // Curse of vanishing checks
+    if (w.enchants) {
+      if (w.enchants["pickaxe_curse_of_vanishing"]) {
+        w.pickaxeLevel = 1;
+        w.pickaxeDurability = 50;
+        w.maxPickaxeDurability = 50;
+        for (const k of Object.keys(w.enchants)) {
+          if (k.startsWith("pickaxe_")) delete w.enchants[k];
+        }
+        text += `\n☠️ *CURSE OF VANISHING:* Pickaxe kamu lenyap seketika!`;
+      }
+      if (w.enchants["pancingan_curse_of_vanishing"]) {
+        w.pancinganLevel = 1;
+        w.pancinganDurability = 50;
+        w.maxPancinganDurability = 50;
+        for (const k of Object.keys(w.enchants)) {
+          if (k.startsWith("pancingan_")) delete w.enchants[k];
+        }
+        text += `\n☠️ *CURSE OF VANISHING:* Pancingan kamu lenyap seketika!`;
+      }
+      if (w.enchants["weapon_curse_of_vanishing"]) {
+        const itemKey = w.equipment?.weapon;
+        if (itemKey) {
+          w.equipment.weapon = null;
+          for (const k of Object.keys(w.enchants)) {
+            if (k.startsWith("weapon_")) delete w.enchants[k];
+          }
+          text += `\n☠️ *CURSE OF VANISHING:* Senjata *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!`;
+        }
+      }
+      if (w.enchants["armor_curse_of_vanishing"]) {
+        const itemKey = w.equipment?.armor;
+        if (itemKey) {
+          w.equipment.armor = null;
+          for (const k of Object.keys(w.enchants)) {
+            if (k.startsWith("armor_")) delete w.enchants[k];
+          }
+          text += `\n☠️ *CURSE OF VANISHING:* Armor *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!`;
+        }
+      }
+    }
   } else {
     text += `\n❤️ HP: ${w.hp}/${w.maxHp}\nKetik *!serang* atau *!lari*!`;
   }

@@ -49,6 +49,8 @@ async function initCache() {
 
 initCache().catch(e => console.error("Failed to init economy cache:", e));
 
+const enchantsData = require('./enchantsData');
+
 const baseShop = [
   { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role" },
   { id: 2, name: "Anti Warn 1x",          price: 300,   desc: "Hapus 1 warn kamu", type: "item" },
@@ -66,16 +68,22 @@ const baseShop = [
   { id: 14, name: "Pickaxe Mythic (Lv.5)",price: 50000, desc: "Hasil nambang 2000-10000 koin", type: "pickaxe", level: 5 },
   { id: 15, name: "Pancingan Fiberglass", price: 800,   desc: "Hasil mancing 25-150 koin", type: "pancingan", level: 2 },
   { id: 16, name: "Pancingan Karbon",     price: 4000,  desc: "Hasil mancing 150-800 koin", type: "pancingan", level: 3 },
-  { id: 17, name: "Pancingan Pro Caster", price: 15000, desc: "Hasil mancing 800-3000 koin", type: "pancingan", level: 4 },
-  { id: 18, name: "Buku Fortune",         price: 20000, desc: "Peluang dapetin bijih/ikan lebih banyak", type: "enchant", itemKey: "buku_fortune" },
-  { id: 19, name: "Buku Lure",            price: 25000, desc: "Peluang dapet ikan tier tinggi / barang bagus", type: "enchant", itemKey: "buku_lure" },
-  { id: 20, name: "Buku Unbreaking",      price: 50000, desc: "50% kemungkinan durabilitas alat tidak berkurang", type: "enchant", itemKey: "buku_unbreaking" },
-  { id: 21, name: "Buku Efficiency",      price: 60000, desc: "Cooldown mancing/nambang dikurangi 20%", type: "enchant", itemKey: "buku_efficiency" },
-  { id: 22, name: "Buku Haste",           price: 30000, desc: "Bonus XP +50% tiap kegiatan", type: "enchant", itemKey: "buku_haste" },
-  { id: 23, name: "Buku Mending",         price: 999999999, desc: "Durabilitas pulih perlahan tiap dipake", type: "enchant", itemKey: "buku_mending" }
+  { id: 17, name: "Pancingan Pro Caster", price: 15000, desc: "Hasil mancing 800-3000 koin", type: "pancingan", level: 4 }
 ];
 
-const shop = [...baseShop, ...gearData.buildShopItems(24)];
+const enchantShopItems = enchantsData.enchants.map((e, idx) => {
+  return {
+    id: 18 + idx,
+    name: `Buku ${e.name}`,
+    price: e.price,
+    desc: e.ability,
+    type: "enchant",
+    itemKey: `buku_${e.id}`
+  };
+});
+
+const nextShopId = 18 + enchantShopItems.length;
+const shop = [...baseShop, ...enchantShopItems, ...gearData.buildShopItems(nextShopId)];
 
 const itemsData = require('./itemsData');
 const BASE_MAX_HP = 100;
@@ -96,10 +104,40 @@ function applyEquipmentStats(w) {
     const acc = gearData.getAccessory(w.equipment.accessory);
     if (acc) bonusMp += acc.maxMpBonus || 0;
   }
+  if (w.enchants && w.enchants["armor_respiration"]) {
+    bonusMp += 15;
+  }
   w.maxHp = BASE_MAX_HP + bonusHp;
   w.maxMp = BASE_MAX_MP + bonusMp;
   w.hp = Math.min(w.hp ?? w.maxHp, w.maxHp);
   w.mp = Math.min(w.mp ?? w.maxMp, w.maxMp);
+}
+
+function checkEnchantCompatibility(w, toolName, newEnchantId) {
+  if (!w.enchants) w.enchants = {};
+  const currentEnchants = Object.keys(w.enchants)
+    .filter(k => k.startsWith(`${toolName}_`))
+    .map(k => k.replace(`${toolName}_`, ""));
+
+  const groups = [
+    ["fortune", "silk_touch"],
+    ["riptide", "loyalty"],
+    ["multishot", "piercing"],
+    ["mending", "infinity"],
+    ["depth_strider", "frost_walker"],
+    ["smite", "bane_of_arthropods", "sharpness"],
+    ["protection", "blast_protection", "fire_protection", "projectile_protection"]
+  ];
+
+  for (const group of groups) {
+    if (group.includes(newEnchantId)) {
+      const conflict = currentEnchants.find(e => e !== newEnchantId && group.includes(e));
+      if (conflict) {
+        return { ok: false, conflict: conflict };
+      }
+    }
+  }
+  return { ok: true };
 }
 
 function equipGear(w, slot, itemId) {
@@ -112,9 +150,20 @@ function equipGear(w, slot, itemId) {
     return { ok: false, msg: `❌ Item ini dipakai di slot *${expectedSlot}*, bukan ${slot}!` };
   }
 
+  if (slot === "armor" && w.enchants && w.enchants["armor_curse_of_binding"]) {
+    return { ok: false, msg: `❌ Armor tempur Anda saat ini terkunci oleh *Curse of Binding*! Kamu tidak bisa melepas atau menggantinya sampai kamu pingsan!` };
+  }
+
   if (!w.equipment) w.equipment = { weapon: null, armor: null, accessory: null };
   const old = w.equipment[slot];
   if (old) w.inventory[old] = (w.inventory[old] || 0) + 1;
+
+  // Clear slot enchants when changing gear
+  if (w.enchants) {
+    for (const k of Object.keys(w.enchants)) {
+      if (k.startsWith(`${slot}_`)) delete w.enchants[k];
+    }
+  }
 
   w.inventory[itemId] -= 1;
   w.equipment[slot] = itemId;
@@ -381,11 +430,11 @@ module.exports = {
       w.pickaxeDurability = (item.level === 1) ? 50 : (item.level === 2 ? 100 : (item.level === 3 ? 200 : (item.level === 4 ? 400 : (item.level === 5 ? 800 : 1500))));
       w.maxPickaxeDurability = w.pickaxeDurability;
       // Clear pickaxe enchants when upgrading
-      delete w.enchants["pickaxe_fortune"];
-      delete w.enchants["pickaxe_unbreaking"];
-      delete w.enchants["pickaxe_efficiency"];
-      delete w.enchants["pickaxe_haste"];
-      delete w.enchants["pickaxe_mending"];
+      if (w.enchants) {
+        for (const k of Object.keys(w.enchants)) {
+          if (k.startsWith("pickaxe_")) delete w.enchants[k];
+        }
+      }
       
       if (!isOwner) w.coins -= item.price;
       saveWallet(sender, w);
@@ -398,11 +447,11 @@ module.exports = {
       w.pancinganDurability = (item.level === 1) ? 50 : (item.level === 2 ? 100 : (item.level === 3 ? 200 : (item.level === 4 ? 400 : (item.level === 5 ? 800 : 1500))));
       w.maxPancinganDurability = w.pancinganDurability;
       // Clear pancingan enchants when upgrading
-      delete w.enchants["pancingan_lure"];
-      delete w.enchants["pancingan_unbreaking"];
-      delete w.enchants["pancingan_efficiency"];
-      delete w.enchants["pancingan_haste"];
-      delete w.enchants["pancingan_mending"];
+      if (w.enchants) {
+        for (const k of Object.keys(w.enchants)) {
+          if (k.startsWith("pancingan_")) delete w.enchants[k];
+        }
+      }
       
       if (!isOwner) w.coins -= item.price;
       saveWallet(sender, w);
@@ -492,16 +541,27 @@ module.exports = {
     }
 
     const gacha = Math.random();
-    if (gacha < 0.15) { // 15% fail rate
+    const isMagnet = w.enchants["pancingan_magnet"];
+    const isJackpot = w.enchants["pancingan_jackpot"];
+    const isLure = w.enchants["pancingan_lure"];
+    
+    const failRate = isMagnet ? 0.05 : 0.15;
+    if (gacha < failRate) {
       saveWallet(sender, w);
       return sock.sendMessage(msg.key.remoteJid, { text: "🎣 Anjay kail lu putus ditarik hiu megalodon! Zonk bos kaga dapet ikan." }, { quoted: msg });
     }
 
-    const isLure = w.enchants["pancingan_lure"];
-    const result = itemsData.rollItem('fishing', w.pancinganLevel, isLure);
+    const result = itemsData.rollItem('fishing', w.pancinganLevel, isLure || isJackpot || w.enchants["pancingan_luck_of_the_sea"]);
     const item = result.item;
     const tier = result.tierData;
     
+    let jackpotText = "";
+    if (isJackpot && Math.random() < 0.3) {
+      const bonusCoins = Math.floor(item.price * 0.5);
+      w.coins += bonusCoins;
+      jackpotText = `\n🎰 *JACKPOT:* Lu dapet bonus koin instan +*${bonusCoins}* dari hasil pancingan!`;
+    }
+
     let namaPancingan = "Bambu (Lv.1)";
     if (w.pancinganLevel == 2) namaPancingan = "Fiberglass (Lv.2)";
     if (w.pancinganLevel == 3) namaPancingan = "Karbon (Lv.3)";
@@ -511,7 +571,7 @@ module.exports = {
     
     // Roll Enchant Book (Mancing chance)
     const enchantsData = require('./enchantsData');
-    const droppedEnchant = enchantsData.rollEnchant();
+    const droppedEnchant = enchantsData.rollEnchant(w.enchants["pancingan_luck_of_the_sea"] ? 1.5 : 1);
     let enchantText = "";
     if (droppedEnchant) {
       w.inventory[`buku_${droppedEnchant.id}`] = (w.inventory[`buku_${droppedEnchant.id}`] || 0) + 1;
@@ -524,7 +584,7 @@ module.exports = {
     levelUp(w);
     saveWallet(sender, w);
     
-    const text = `🎣 Mancing mania mantap! Pake *${namaPancingan}*\n\n🐟 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${enchantText}\n\n_(Durabilitas: ${w.pancinganDurability}/${w.maxPancinganDurability})_`;
+    const text = `🎣 Mancing mania mantap! Pake *${namaPancingan}*\n\n🐟 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${jackpotText}${enchantText}\n\n_(Durabilitas: ${w.pancinganDurability}/${w.maxPancinganDurability})_`;
     
     // Notif jika Epic ke atas
     if (item.tier >= 4) {
@@ -642,10 +702,38 @@ module.exports = {
     }
 
     const isFortune = w.enchants["pickaxe_fortune"];
+    const isSledgehammer = w.enchants["pickaxe_sledgehammer"];
+    const isTelekinesis = w.enchants["pickaxe_telekinesis"];
+    const isSilkTouch = w.enchants["pickaxe_silk_touch"];
     const rpgData = require('./rpgData');
     const result = itemsData.rollItem('mining', w.pickaxeLevel, isFortune);
-    const item = result.item;
+    let item = result.item;
     const tier = result.tierData;
+
+    let silkTouchText = "";
+    if (isSilkTouch && item.category === "mining") {
+      const pureItem = itemsData.allItemsMap[`pure_${item.id}`];
+      if (pureItem) {
+        item = pureItem;
+        silkTouchText = `\n✨ *SILK TOUCH:* Mendapatkan bijih murni berharga 1.5x lipat!`;
+      }
+    }
+
+    let sledgehammerText = "";
+    let itemAmount = 1;
+    if (isSledgehammer && Math.random() < 0.25) {
+      itemAmount = 2;
+      sledgehammerText = `\n🔨 *SLEDGEHAMMER:* Hantaman batu lu dapet double (*2x*) item!`;
+    }
+
+    let telekinesisText = "";
+    if (isTelekinesis) {
+      const sellPrice = item.price * itemAmount;
+      w.coins += sellPrice;
+      telekinesisText = `\n🔮 *TELEKINESIS:* Bijih langsung dijual otomatis seharga *${sellPrice}* koin!`;
+    } else {
+      w.inventory[item.id] = (w.inventory[item.id] || 0) + itemAmount;
+    }
     
     // Check Artifact Drop (Only if they actually got ore)
     let artifactText = "";
@@ -669,15 +757,13 @@ module.exports = {
     if (w.pickaxeLevel == 3) namaPickaxe = "Emas (Lv.3)";
     if (w.pickaxeLevel == 4) namaPickaxe = "Berlian (Lv.4)";
     if (w.pickaxeLevel >= 5) namaPickaxe = "Mythic (Lv.5+)";
-
-    w.inventory[item.id] = (w.inventory[item.id] || 0) + 1;
     
     const xpBonus = w.enchants["pickaxe_haste"] ? 1.5 : 1;
     w.xp += Math.floor(item.price * xpBonus);
     levelUp(w);
     saveWallet(sender, w);
 
-    const text = `⛏️ Mulung kelar bos pake *${namaPickaxe}*!\n\n💎 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${artifactText}${enchantText}\n\n_(Durabilitas: ${w.pickaxeDurability}/${w.maxPickaxeDurability})_`;
+    const text = `⛏️ Mulung kelar bos pake *${namaPickaxe}*!\n\n💎 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${sledgehammerText}${telekinesisText}${silkTouchText}${artifactText}${enchantText}\n\n_(Durabilitas: ${w.pickaxeDurability}/${w.maxPickaxeDurability})_`;
     
     // Notif jika Epic ke atas
     if (item.tier >= 4) {
@@ -914,24 +1000,50 @@ module.exports = {
     }
     
     if (args[0].toLowerCase() === "enchant") {
-      if (args.length < 3) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Format salah! Contoh: !pakai enchant buku_mending pickaxe\nAlat bisa: pickaxe atau pancingan` }, { quoted: msg });
+      if (args.length < 3) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Format salah! Contoh: !pakai enchant buku_mending pickaxe\nPeralatan/gear: pickaxe, pancingan, weapon, armor` }, { quoted: msg });
       
       const bookName = args[1].toLowerCase();
       const toolName = args[2].toLowerCase();
       
-      if (toolName !== "pickaxe" && toolName !== "pancingan") {
-        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Alat apaan tuh njir? Cuma bisa dipasang di 'pickaxe' atau 'pancingan'.` }, { quoted: msg });
+      if (toolName !== "pickaxe" && toolName !== "pancingan" && toolName !== "weapon" && toolName !== "armor") {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Slot tidak valid! Hanya bisa dipasang di 'pickaxe', 'pancingan', 'weapon', atau 'armor'.` }, { quoted: msg });
       }
       
       const qty = w.inventory[bookName] || 0;
       if (qty <= 0) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Mana ada bukunya! Tas lu kosong njir.` }, { quoted: msg });
       
       let enchantKey = bookName.replace("buku_", "");
+      const enchant = enchantsData.enchants.find(e => e.id === enchantKey);
+      if (!enchant) {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Enchantment *${enchantKey.toUpperCase()}* tidak dikenal!` }, { quoted: msg });
+      }
+      
+      if (enchant.target !== "all" && enchant.target !== toolName) {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Buku sihir ini khusus untuk slot *${enchant.target.toUpperCase()}*, tidak bisa dipasang di *${toolName.toUpperCase()}*!` }, { quoted: msg });
+      }
+      
+      if (toolName === "weapon" && (!w.equipment || !w.equipment.weapon)) {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Lu belum pakai senjata tempur apa-apa! Equip senjata dulu baru di-enchant.` }, { quoted: msg });
+      }
+      if (toolName === "armor" && (!w.equipment || !w.equipment.armor)) {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ Lu belum pakai armor apa-apa! Equip armor dulu baru di-enchant.` }, { quoted: msg });
+      }
+      
+      // Check for incompatibilities
+      const conflictResult = checkEnchantCompatibility(w, toolName, enchantKey);
+      let warningText = "";
+      if (!conflictResult.ok) {
+        const conflictKey = conflictResult.conflict;
+        delete w.enchants[`${toolName}_${conflictKey}`];
+        warningText = `\n⚠️ *INFO:* Enchant *${conflictKey.toUpperCase()}* yang bertabrakan telah ditimpa!`;
+      }
+      
       w.inventory[bookName]--;
       w.enchants[`${toolName}_${enchantKey}`] = true;
+      applyEquipmentStats(w); // re-apply stats in case of respiration or other buffs
       saveWallet(sender, w);
       
-      return sock.sendMessage(msg.key.remoteJid, { text: `✨ BOOM! Enchant *${enchantKey.toUpperCase()}* berhasil ditempa ke *${toolName.toUpperCase()}* lu!\nMakin sakti aja nih alat.` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `✨ BOOM! Enchant *${enchantKey.toUpperCase()}* berhasil ditempa ke *${toolName.toUpperCase()}* lu!\nMakin sakti aja nih gear.${warningText}` }, { quoted: msg });
     }
 
     const itemName = args[0].toLowerCase();

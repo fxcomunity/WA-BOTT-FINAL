@@ -32,6 +32,8 @@ const fishingItems = [
   { id: "sturgeon", name: "Ikan Sturgeon", tier: 3, price: 350 },
   { id: "hiu_martil", name: "Hiu Martil", tier: 3, price: 400 },
   { id: "koi_juara", name: "Koi Juara", tier: 3, price: 500 },
+  { id: "belut_listrik", name: "Belut Listrik", tier: 3, price: 450 },
+  { id: "ikan_pterois", name: "Ikan Pterois (Lionfish)", tier: 3, price: 480 },
   
   // Tier 4 (Epic)
   { id: "arwana_super_red", name: "Arwana Super Red", tier: 4, price: 2000 },
@@ -39,6 +41,9 @@ const fishingItems = [
   { id: "arapaima", name: "Arapaima Gigas", tier: 4, price: 2200 },
   { id: "ikan_dayung", name: "Ikan Dayung", tier: 4, price: 1500 },
   { id: "mola_mola", name: "Mola Mola (Sunfish)", tier: 4, price: 1800 },
+  { id: "kraken_tentacle", name: "Tentakel Kraken", tier: 4, price: 2800 },
+  { id: "kepiting_raksasa", name: "Kepiting Raja Alaska", tier: 4, price: 2400 },
+  { id: "gurita_penyamar", name: "Mimic Octopus", tier: 4, price: 2600 },
   
   // Tier 5 (Legendary)
   { id: "coelacanth", name: "Coelacanth (Ikan Purba)", tier: 5, price: 15000 },
@@ -46,19 +51,28 @@ const fishingItems = [
   { id: "oarfish", name: "Oarfish Raksasa", tier: 5, price: 18000 },
   { id: "hiu_megalodon", name: "Hiu Megalodon", tier: 5, price: 25000 },
   { id: "beluga_sturgeon", name: "Beluga Sturgeon", tier: 5, price: 20000 },
+  { id: "ikan_purba_emas", name: "Golden Coelacanth", tier: 5, price: 17500 },
+  { id: "hiu_hantu", name: "Ghost Shark", tier: 5, price: 16000 },
+  { id: "kraken_baby", name: "Bayi Kraken", tier: 5, price: 19000 },
   
   // Tier 6 (Mystic)
   { id: "ikan_naga", name: "Ikan Naga (Dragonfish)", tier: 6, price: 120000 },
   { id: "ikan_transparan", name: "Glass-Head Barreleye", tier: 6, price: 100000 },
   { id: "magma_carp", name: "Magma Carp", tier: 6, price: 150000 },
   { id: "ikan_hantu", name: "Ghost Knifelike Fish", tier: 6, price: 130000 },
+  { id: "crystal_fish", name: "Crystal Abyssal Fish", tier: 6, price: 140000 },
+  { id: "abyssal_angler", name: "Anglerfish Purba", tier: 6, price: 110000 },
+  { id: "neon_jellyfish", name: "Ubur-ubur Cahaya", tier: 6, price: 135000 },
   
   // Tier 7 (Mythos)
   { id: "leviathan", name: "Leviathan", tier: 7, price: 1500000 },
   { id: "kraken", name: "Kraken", tier: 7, price: 1200000 },
   { id: "abaia", name: "Abaia", tier: 7, price: 1000000 },
   { id: "namazu", name: "Namazu", tier: 7, price: 1800000 },
-  { id: "makara", name: "Makara", tier: 7, price: 2000000 }
+  { id: "makara", name: "Makara", tier: 7, price: 2000000 },
+  { id: "poseidon_trident_fragment", name: "Patahan Trisula Poseidon", tier: 7, price: 2500000 },
+  { id: "tiamat", name: "Naga Laut Tiamat", tier: 7, price: 2200000 },
+  { id: "neptune_crown", name: "Mahkota Raja Neptunus", tier: 7, price: 3000000 }
 ];
 
 const miningItems = [
@@ -79,36 +93,62 @@ const miningItems = [
   { id: "platinum", name: "Platina (Platinum)", tier: 3, price: 300 },
   { id: "titanium", name: "Titanium", tier: 3, price: 400 },
   { id: "uranium", name: "Uranium", tier: 3, price: 500 },
+  { id: "batu_akik", name: "Batu Akik Nusantara", tier: 3, price: 450 },
+  { id: "amethyst", name: "Kecubung (Amethyst)", tier: 3, price: 480 },
   
   // Tier 4 (Epic)
   { id: "diamond", name: "Intan (Diamond)", tier: 4, price: 2000 },
   { id: "mithril", name: "Mithril", tier: 4, price: 2500 },
   { id: "adamantite", name: "Adamantite", tier: 4, price: 3000 },
   { id: "cobalt", name: "Cobalt", tier: 4, price: 2200 },
+  { id: "ruby", name: "Batu Ruby (Merah Delima)", tier: 4, price: 2800 },
+  { id: "emerald", name: "Zamrud (Emerald)", tier: 4, price: 2600 },
+  { id: "sapphire", name: "Nilam (Sapphire)", tier: 4, price: 2700 },
   
   // Tier 5 (Legendary)
   { id: "orichalcum", name: "Orichalcum", tier: 5, price: 15000 },
   { id: "netherite", name: "Netherite (Ancient Debris)", tier: 5, price: 20000 },
   { id: "obsidian", name: "Obsidian", tier: 5, price: 12000 },
   { id: "meteorite", name: "Meteorite", tier: 5, price: 18000 },
+  { id: "star_shard", name: "Pecahan Bintang (Star Shard)", tier: 5, price: 17500 },
+  { id: "rainbow_stone", name: "Batu Pelangi", tier: 5, price: 16500 },
+  { id: "dark_matter", name: "Dark Matter Ore", tier: 5, price: 19500 },
   
   // Tier 6 (Mystic)
   { id: "eternium", name: "Eternium", tier: 6, price: 150000 },
   { id: "elementium", name: "Elementium", tier: 6, price: 120000 },
   { id: "aether", name: "Aether Crystal", tier: 6, price: 180000 },
   { id: "bloodstone", name: "Bloodstone", tier: 6, price: 130000 },
+  { id: "void_ore", name: "Void Ore", tier: 6, price: 140000 },
+  { id: "cosmic_debris", name: "Pecahan Komet Cosmic", tier: 6, price: 115000 },
+  { id: "neutron_star", name: "Inti Bintang Neutron", tier: 6, price: 145000 },
   
   // Tier 7 (Mythos)
   { id: "uru", name: "Uru Ore", tier: 7, price: 1500000 },
   { id: "hihiirokane", name: "Hihi'irokane", tier: 7, price: 1800000 },
   { id: "celestial", name: "Celestial Ore", tier: 7, price: 2000000 },
-  { id: "philosophers", name: "Philosopher's Stone", tier: 7, price: 5000000 }
+  { id: "philosophers", name: "Philosopher's Stone", tier: 7, price: 5000000 },
+  { id: "infinity_stone", name: "Infinity Stone Fragment", tier: 7, price: 2500000 },
+  { id: "chronos_shard", name: "Pecahan Waktu Chronos", tier: 7, price: 2200000 },
+  { id: "star_creator_core", name: "Inti Pembuat Bintang", tier: 7, price: 3200000 }
 ];
 
 // Combine all for selling and inventory lookup
 const allItemsMap = {};
 fishingItems.forEach(i => allItemsMap[i.id] = { ...i, category: 'fishing' });
 miningItems.forEach(i => allItemsMap[i.id] = { ...i, category: 'mining' });
+
+// Add pure versions of mining items dynamically for Silk Touch
+miningItems.forEach(item => {
+  const pureId = `pure_${item.id}`;
+  allItemsMap[pureId] = {
+    id: pureId,
+    name: `Bijih Murni ${item.name}`,
+    tier: item.tier,
+    price: Math.floor(item.price * 1.5),
+    category: 'mining'
+  };
+});
 
 // Juga tambahkan sisa item lama agar player lama tidak hilang uangnya jika jual sisa inventory lama
 const legacyItems = {
