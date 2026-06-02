@@ -672,7 +672,7 @@ async function startBot() {
     }
 
     // Otomatis berikan reaksi 🕒 saat sebuah command tereksekusi
-    await sock.sendMessage(groupId, { react: { text: "🕒", key: msg.key } });
+    await sock.sendMessage(groupId, { react: { text: "🕒", key: msg.key } }).catch(() => {});
 
     switch (cmd) {
 
@@ -707,7 +707,7 @@ async function startBot() {
         }
         
         await sock.sendMessage(groupId, { text: responseText, mentions: [senderJid] }, { quoted: msg });
-        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
         break;
       }
 
