@@ -49,64 +49,17 @@ module.exports = {
   listPlugins: async (sock, msg) => {
     const text = `*✦ ──『 🔌 DAFTAR PLUGIN 』── ✦*
 
-Silakan klik tombol di bawah ini:
-└───────────────┈ ⳹`;
-
-    const messageContent = {
-      viewOnceMessage: {
-        interactiveMessage: {
-          body: { text },
-          footer: { text: "JackBOT v3.0" },
-          header: {
-            title: "",
-            hasMediaAttachment: false
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "🎮 Fake FF",
-                  id: "!fakeff"
-                })
-              },
-              {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "🗜️ Kompres Image",
-                  id: "!kompres"
-                })
-              },
-              {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "✨ Enhance HD",
-                  id: "!hd"
-                })
-              }
-            ]
-          }
-        }
-      }
-    };
-
-    try {
-      const msgObj = generateWAMessageFromContent(msg.key.remoteJid, messageContent, { quoted: msg });
-      await sock.relayMessage(msg.key.remoteJid, msgObj.message, { messageId: msgObj.key.id });
-    } catch(e) {
-      // Fallback text if client doesn't support interactive buttons
-      const fallbackText = `*✦ ──『 🔌 DAFTAR PLUGIN 』── ✦*
-
 ┌──❖ *T O O L S*
 │ ⚡ *!fakeff* [nickname]
 │    ↳ Bikin gambar Fake Lobby FF
-│ ⚡ *!kompres* (Balas gambar)
-│    ↳ Kompres ukuran gambar
-│ ⚡ *!hd* (Balas gambar)
-│    ↳ Perjelas/Enhance gambar
-└───────────────┈ ⳹`;
-      await sock.sendMessage(msg.key.remoteJid, { text: fallbackText }, { quoted: msg });
-    }
+│ ⚡ *!kompres* (Balas gambar/reply)
+│    ↳ Kompres ukuran gambar gratis
+│ ⚡ *!hd* (Balas gambar/reply)
+│    ↳ Perjelas/Enhance gambar HD
+└───────────────┈ ⳹
+
+_Silakan ketik perintah di atas secara langsung untuk menggunakan fiturnya._`;
+    await sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
   },
 
   fakeff: async (sock, msg, text) => {

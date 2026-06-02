@@ -307,6 +307,64 @@ async function serang(sock, msg, sender) {
         if (w.enchants && w.enchants["weapon_mending"]) {
           w.hp = Math.min(w.maxHp, w.hp + 5);
         }
+        
+        // Cek jika player juga mati (hp <= 0) karena serangan terakhir monster tersebut
+        if (w.hp <= 0) {
+          let penalty = Math.floor(w.coins * 0.1);
+          if (w.enchants && w.enchants["armor_feather_falling"]) {
+            penalty = Math.floor(penalty * 0.5);
+            text += `\n🪶 *FEATHER FALLING:* Denda koin pingsan dikurangi 50%!`;
+          }
+          w.coins -= penalty;
+          w.hp = 10;
+          text += `\n☠️ *KAMU PINGSAN!* Walaupun monster mati, kamu juga pingsan akibat serangan terakhir! 💸 -${penalty} koin (HP → 10)`;
+          
+          if (w.enchants && w.enchants["armor_curse_of_binding"]) {
+            delete w.enchants["armor_curse_of_binding"];
+            text += `\n🔓 *Curse of Binding* terlepas dari armor kamu!`;
+          }
+          
+          if (w.enchants) {
+            if (w.enchants["pickaxe_curse_of_vanishing"]) {
+              w.pickaxeLevel = 1;
+              w.pickaxeDurability = 50;
+              w.maxPickaxeDurability = 50;
+              for (const k of Object.keys(w.enchants)) {
+                if (k.startsWith("pickaxe_")) delete w.enchants[k];
+              }
+              text += `\n☠️ *CURSE OF VANISHING:* Pickaxe kamu lenyap seketika!`;
+            }
+            if (w.enchants["pancingan_curse_of_vanishing"]) {
+              w.pancinganLevel = 1;
+              w.pancinganDurability = 50;
+              w.maxPancinganDurability = 50;
+              for (const k of Object.keys(w.enchants)) {
+                if (k.startsWith("pancingan_")) delete w.enchants[k];
+              }
+              text += `\n☠️ *CURSE OF VANISHING:* Pancingan kamu lenyap seketika!`;
+            }
+            if (w.enchants["weapon_curse_of_vanishing"]) {
+              const itemKey = w.equipment?.weapon;
+              if (itemKey) {
+                w.equipment.weapon = null;
+                for (const k of Object.keys(w.enchants)) {
+                  if (k.startsWith("weapon_")) delete w.enchants[k];
+                }
+                text += `\n☠️ *CURSE OF VANISHING:* Senjata *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!`;
+              }
+            }
+            if (w.enchants["armor_curse_of_vanishing"]) {
+              const itemKey = w.equipment?.armor;
+              if (itemKey) {
+                w.equipment.armor = null;
+                for (const k of Object.keys(w.enchants)) {
+                  if (k.startsWith("armor_")) delete w.enchants[k];
+                }
+                text += `\n☠️ *CURSE OF VANISHING:* Armor *${itemKey.replace(/_/g, " ").toUpperCase()}* kamu lenyap seketika!`;
+              }
+            }
+          }
+        }
       } else if (w.hp <= 0) {
         let penalty = Math.floor(w.coins * 0.1);
         if (w.enchants && w.enchants["armor_feather_falling"]) {

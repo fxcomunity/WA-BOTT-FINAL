@@ -951,24 +951,31 @@ ${ownerCheck ? '👑 *1* : Menu Khusus Presiden (Owner)\n' : ''}👥 *2* : Menu 
 
 _Ketik *!menu [angka]* (contoh: *!menu 3*) atau balas pesan ini dengan angkanya saja._`;
 
-        const buttons = [];
+        const rows = [];
         if (ownerCheck) {
-          buttons.push({
-            name: "quick_reply",
-            params: { display_text: "👑 Menu Presiden (Owner)", id: "btn_owner" }
-          });
+          rows.push({ header: "", title: "Menu Khusus Presiden", description: "Perintah khusus presiden bot", id: "btn_owner" });
         }
-        buttons.push(
-          { name: "quick_reply", params: { display_text: "👥 Menu Mentri (Admin)", id: "btn_admin" } },
-          { name: "quick_reply", params: { display_text: "👤 Menu Rakyat (Member)", id: "btn_member" } },
-          { name: "quick_reply", params: { display_text: "⚔️ Menu RPG & Ekonomi", id: "btn_rpg" } },
-          { name: "quick_reply", params: { display_text: "🎮 Menu Game & Hiburan", id: "btn_game" } },
-          { name: "quick_reply", params: { display_text: "📥 Menu Downloader", id: "btn_downloader" } },
-          { name: "quick_reply", params: { display_text: "🎵 Spotify Music", id: "btn_spotify" } },
-          { name: "quick_reply", params: { display_text: "🎙️ Voice Changer", id: "btn_voice" } },
-          { name: "quick_reply", params: { display_text: "🕵️ Menu OSINT & Track", id: "btn_osint" } },
-          { name: "quick_reply", params: { display_text: "🔌 Daftar Plugin", id: "btn_plugin" } }
+        rows.push(
+          { header: "", title: "Menu Mentri Grup", description: "Perintah khusus mentri grup", id: "btn_admin" },
+          { header: "", title: "Menu Rakyat Utama", description: "Perintah umum untuk semua rakyat", id: "btn_member" },
+          { header: "", title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
+          { header: "", title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
+          { header: "", title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
+          { header: "", title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
+          { header: "", title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
+          { header: "", title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
+          { header: "", title: "Daftar Plugin", description: "Fitur plugin tambahan", id: "btn_plugin" }
         );
+
+        const buttons = [
+          {
+            name: "single_select",
+            params: {
+              title: "Pilih Kategori",
+              sections: [{ title: "Kategori Menu", highlight_label: "Pilihan", rows }]
+            }
+          }
+        ];
 
         await sendInteractiveMessage(sock, msg.key.remoteJid, helpMsg, "JackBOT v3.0.0", buttons, msg, "./assets/public/menu.jpg");
         break;

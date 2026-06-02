@@ -8,6 +8,7 @@ const gearData = require('./gearData');
 // WALLETS MEMORY CACHE WITH BACKGROUND SYNC
 // ============================================
 const walletsCache = new Map();
+const pendingInserts = new Map();
 
 async function initCache() {
   try {
@@ -237,11 +238,15 @@ function getWallet(sender) {
     const skillsStr = JSON.stringify(w.skills);
     const equipStr = JSON.stringify(w.equipment);
     
-    sql`
+    const insertPromise = sql`
       INSERT INTO users (id, coins, level, xp, streak, "lastDaily", "lastMancing", "lastBerburu", "lastNambang", "pickaxeLevel", "pancinganLevel", inventory, enchants, hp, "maxHp", buffs, combat, mp, "maxMp", skills, "pickaxeDurability", "maxPickaxeDurability", "pancinganDurability", "maxPancinganDurability", equipment)
       VALUES (${w.id}, ${w.coins}, ${w.level}, ${w.xp}, ${w.streak}, ${w.lastDaily}, ${w.lastMancing}, ${w.lastBerburu}, ${w.lastNambang}, ${w.pickaxeLevel}, ${w.pancinganLevel}, ${invStr}, ${enchStr}, ${w.hp}, ${w.maxHp}, ${buffsStr}, ${combatStr}, ${w.mp}, ${w.maxMp}, ${skillsStr}, ${w.pickaxeDurability}, ${w.maxPickaxeDurability}, ${w.pancinganDurability}, ${w.maxPancinganDurability}, ${equipStr})
       ON CONFLICT (id) DO NOTHING
-    `.catch(e => console.error("[ECONOMY] Error creating new user in background:", e.message));
+    `.catch(e => console.error("[ECONOMY] Error creating new user in background:", e.message))
+     .finally(() => {
+       pendingInserts.delete(sender);
+     });
+    pendingInserts.set(sender, insertPromise);
   }
   
   if (!w.inventory) w.inventory = {};
@@ -293,11 +298,20 @@ function saveWallet(sender, w) {
   const skillsStr = JSON.stringify(w.skills || {});
   const equipStr = JSON.stringify(w.equipment || { weapon: null, armor: null, accessory: null });
   
-  sql`
-    UPDATE users 
-    SET coins = ${w.coins}, level = ${w.level}, xp = ${w.xp}, streak = ${w.streak}, "lastDaily" = ${w.lastDaily}, "lastMancing" = ${w.lastMancing}, "lastBerburu" = ${w.lastBerburu}, "lastNambang" = ${w.lastNambang}, "pickaxeLevel" = ${w.pickaxeLevel}, "pancinganLevel" = ${w.pancinganLevel || 1}, inventory = ${invStr}, enchants = ${enchStr}, hp = ${w.hp || 100}, "maxHp" = ${w.maxHp || 100}, buffs = ${buffsStr}, combat = ${combatStr}, mp = ${w.mp || 50}, "maxMp" = ${w.maxMp || 50}, skills = ${skillsStr}, "pickaxeDurability" = ${w.pickaxeDurability}, "maxPickaxeDurability" = ${w.maxPickaxeDurability}, "pancinganDurability" = ${w.pancinganDurability}, "maxPancinganDurability" = ${w.maxPancinganDurability}, equipment = ${equipStr}
-    WHERE id = ${sender}
-  `.catch(e => console.error("[ECONOMY] Error updating user in background:", e.message));
+  const proceedSave = () => {
+    sql`
+      UPDATE users 
+      SET coins = ${w.coins}, level = ${w.level}, xp = ${w.xp}, streak = ${w.streak}, "lastDaily" = ${w.lastDaily}, "lastMancing" = ${w.lastMancing}, "lastBerburu" = ${w.lastBerburu}, "lastNambang" = ${w.lastNambang}, "pickaxeLevel" = ${w.pickaxeLevel}, "pancinganLevel" = ${w.pancinganLevel || 1}, inventory = ${invStr}, enchants = ${enchStr}, hp = ${w.hp || 100}, "maxHp" = ${w.maxHp || 100}, buffs = ${buffsStr}, combat = ${combatStr}, mp = ${w.mp || 50}, "maxMp" = ${w.maxMp || 50}, skills = ${skillsStr}, "pickaxeDurability" = ${w.pickaxeDurability}, "maxPickaxeDurability" = ${w.maxPickaxeDurability}, "pancinganDurability" = ${w.pancinganDurability}, "maxPancinganDurability" = ${w.maxPancinganDurability}, equipment = ${equipStr}
+      WHERE id = ${sender}
+    `.catch(e => console.error("[ECONOMY] Error updating user in background:", e.message));
+  };
+
+  const pending = pendingInserts.get(sender);
+  if (pending) {
+    pending.then(proceedSave);
+  } else {
+    proceedSave();
+  }
 }
 
 function levelUp(wallet) {

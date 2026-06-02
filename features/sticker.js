@@ -66,7 +66,7 @@ module.exports = {
         })
         .addOutputOptions([
           "-vcodec", "libwebp",
-          "-vf", "scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, format=rgba",
+          "-vf", "scale='min(320,iw)':min(320,ih):force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, format=rgba",
           "-loop", "0",
           "-ss", "00:00:00.0",
           "-t", "00:00:05.0",

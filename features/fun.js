@@ -138,7 +138,7 @@ module.exports = {
       const { simulateProgress } = require("./utils");
       const progress = await simulateProgress(sock, msg.key.remoteJid, msg, "🎨 AI sedang menggambar impianmu...");
       
-      const imageUrl = `https://widipe.com/promptmaker?text=${encodeURIComponent(prompt)}`;
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=800&nologo=true`;
       
       await progress.stop(true);
       await sock.sendMessage(msg.key.remoteJid, { 
