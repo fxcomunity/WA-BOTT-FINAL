@@ -53,7 +53,7 @@ initCache().catch(e => console.error("Failed to init economy cache:", e));
 const enchantsData = require('./enchantsData');
 
 const baseShop = [
-  { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role" },
+  { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role", itemKey: "badge_vip" },
   { id: 2, name: "Anti Warn 1x",          price: 300,   desc: "Hapus 1 warn kamu", type: "item", itemKey: "anti_warn" },
   { id: 3, name: "Bypass Slowmode",       price: 200,   desc: "Bypass slow mode 1 jam", type: "item", itemKey: "bypass_slowmode" },
   { id: 4, name: "Stamina Kecil (5 Mnt)", price: 500,   desc: "Reset CD Mancing/Nambang 5 Menit", type: "item", itemKey: "stamina_kecil" },
@@ -502,9 +502,10 @@ module.exports = {
 
     // Role
     if (item.type === "role") {
+      w.inventory[item.itemKey] = (w.inventory[item.itemKey] || 0) + 1;
       if (!isOwner) w.coins -= item.price;
       saveWallet(sender, w);
-      return sock.sendMessage(msg.key.remoteJid, { text: `✅ Lu berhasil beli ${item.name}!` }, { quoted: msg });
+      return sock.sendMessage(msg.key.remoteJid, { text: `✅ Lu berhasil beli ${item.name}!\nCek isi tas lu pake !inv` }, { quoted: msg });
     }
     
     saveWallet(sender, w);
@@ -846,6 +847,9 @@ module.exports = {
           cats.potion.push(str);
         } else if (itemId === "anti_warn") {
           str = `▪️ Anti Warn 1x: ${amount}\n`;
+          cats.other.push(str);
+        } else if (itemId === "badge_vip") {
+          str = `▪️ Badge VIP: ${amount}\n`;
           cats.other.push(str);
         } else if (itemId === "bypass_slowmode") {
           str = `▪️ Bypass Slowmode (1 Jam): ${amount}\n`;

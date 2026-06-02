@@ -464,16 +464,22 @@ async function startBot() {
     }
 
     // Cek otorisasi grup resmi
-    if (isCmd && !ownerCheck) {
-      const allowedGroups = config.allowedGroups || [];
+    const allowedGroups = config.allowedGroups || [];
+    if (allowedGroups.length > 0 && !ownerCheck) {
       let isAuthorized = false;
       
       if (isGroup) {
-        if (allowedGroups.includes(groupId)) {
+        // Di grup: hanya periksa jika itu adalah command
+        if (isCmd) {
+          if (allowedGroups.includes(groupId)) {
+            isAuthorized = true;
+          }
+        } else {
+          // Bukan command di grup, bypass check
           isAuthorized = true;
         }
       } else {
-        // DM/Private Chat: Cek apakah user adalah anggota salah satu grup resmi
+        // Di DM/Private Chat: periksa untuk SEMUA pesan (command maupun chat biasa)
         for (const groupJid of allowedGroups) {
           try {
             const metadata = await getGroupMetadata(sock, groupJid);
@@ -490,7 +496,7 @@ async function startBot() {
         }
       }
       
-      if (!isAuthorized && allowedGroups.length > 0) {
+      if (!isAuthorized) {
         return reply(sock, msg, "⚠️ *AKSES DITOLAK* ⚠️\n\nMaaf ngab, bot ini hanya dapat digunakan oleh anggota grup resmi JackBOT.\n\nSilakan bergabung ke grup resmi terlebih dahulu!");
       }
     }
@@ -1255,16 +1261,17 @@ async function startBot() {
         const stTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || sender;
         const stName = stTarget === sender ? (msg.pushName || stTarget.split("@")[0]) : stTarget.split("@")[0];
         
+        const stWallet = economy.getRawWallet(stTarget);
         let stRole = "👤 Member Biasa";
         if (config.owners.includes(stTarget.split("@")[0])) {
           stRole = "👑 Owner / Pencipta";
+        } else if (stWallet?.inventory?.badge_vip > 0) {
+          stRole = "🌟 Member VIP (Premium)";
         } else {
           const mData = await sock.groupMetadata(groupId);
           const stIsAdmin = mData.participants.find(p => p.id === stTarget)?.admin != null;
           if (stIsAdmin) stRole = "🛡️ Admin Grup";
         }
-        
-        const stWallet = economy.getRawWallet(stTarget);
         const stWarns = await warnSystem.getWarn(stTarget);
         const maxW = config.maxWarn;
         const stLimit = limitSystem.cek(stTarget, "download") ? "Tersedia" : "Habis";

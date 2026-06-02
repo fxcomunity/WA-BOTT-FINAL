@@ -112,6 +112,17 @@ module.exports = {
     const config = require('../config');
     if (config.owners.includes(sender.split('@')[0])) return true;
 
+    // Cek status VIP
+    try {
+      const economy = require('./economy');
+      const w = economy.getRawWallet(sender);
+      if (w && w.inventory && w.inventory.badge_vip > 0) {
+        return true;
+      }
+    } catch (e) {
+      console.error("[LIMIT] Gagal mengecek status VIP:", e.message);
+    }
+
     const d = await getLimit(sender);
     if (!d[type]) return true;
     if (d[type].used >= d[type].max) return false;
@@ -146,7 +157,17 @@ module.exports = {
 
     const config = require('../config');
     const isOwner = config.owners.includes(no);
-    const rank = isOwner ? '👑 Owner' : '👤 Member';
+    
+    let isVip = false;
+    try {
+      const economy = require('./economy');
+      const w = economy.getRawWallet(sender);
+      if (w && w.inventory && w.inventory.badge_vip > 0) {
+        isVip = true;
+      }
+    } catch (e) {}
+    
+    const rank = isOwner ? '👑 Owner' : (isVip ? '🌟 Member VIP' : '👤 Member');
 
     const dNow = new Date();
     const hr = dNow.getHours();
@@ -173,24 +194,24 @@ Hellow, ${name}! 👋
 🔰 Kasta: ${rank}
 ${isLid ? `🆔 ID Gaib: +${no}` : `📱 No Asli: +${no}`}
 💬 Status WA: ${statusWA}
-🌟 Tipe Akun: ${isOwner ? '♾️ Bebas Hambatan (VIP Jalur Dalem)' : d.status}
+🌟 Tipe Akun: ${isOwner || isVip ? '♾️ Bebas Hambatan (VIP)' : d.status}
 
 ━━━━━━━━━━━━━━━━━━━━
 📥 *Tukang Sedot (DL)*
-   ${isOwner ? '████████ ∞/∞' : `${barLimit(d.download.used, d.download.max)} ${d.download.used}/${d.download.max}`}
-   ⏱ Reset: ${isOwner ? '-' : sisaJam(d.download.resetAt)}
+   ${isOwner || isVip ? '████████ ∞/∞' : `${barLimit(d.download.used, d.download.max)} ${d.download.used}/${d.download.max}`}
+   ⏱ Reset: ${isOwner || isVip ? '-' : sisaJam(d.download.resetAt)}
 
 🤖 *Ngobrol AI*
-   ${isOwner ? '████████ ∞/∞' : `${barLimit(d.ai.used, d.ai.max)} ${d.ai.used}/${d.ai.max}`}
-   ⏱ Reset: ${isOwner ? '-' : sisaJam(d.ai.resetAt)}
+   ${isOwner || isVip ? '████████ ∞/∞' : `${barLimit(d.ai.used, d.ai.max)} ${d.ai.used}/${d.ai.max}`}
+   ⏱ Reset: ${isOwner || isVip ? '-' : sisaJam(d.ai.resetAt)}
 
 🎮 *Mabar / Kuis*
-   ${isOwner ? '████████ ∞/∞' : `${barLimit(d.kuis.used, d.kuis.max)} ${d.kuis.used}/${d.kuis.max}`}
-   ⏱ Reset: ${isOwner ? '-' : sisaJam(d.kuis.resetAt)}
+   ${isOwner || isVip ? '████████ ∞/∞' : `${barLimit(d.kuis.used, d.kuis.max)} ${d.kuis.used}/${d.kuis.max}`}
+   ⏱ Reset: ${isOwner || isVip ? '-' : sisaJam(d.kuis.resetAt)}
 
 🖼️ *Pabrik Sticker*
-   ${isOwner ? '████████ ∞/∞' : `${barLimit(d.sticker.used, d.sticker.max)} ${d.sticker.used}/${d.sticker.max}`}
-   ⏱ Reset: ${isOwner ? '-' : sisaJam(d.sticker.resetAt)}
+   ${isOwner || isVip ? '████████ ∞/∞' : `${barLimit(d.sticker.used, d.sticker.max)} ${d.sticker.used}/${d.sticker.max}`}
+   ⏱ Reset: ${isOwner || isVip ? '-' : sisaJam(d.sticker.resetAt)}
 ━━━━━━━━━━━━━━━━━━━━
 💡 Limit balik full tiap 24 jam ye.
     `.trim();
