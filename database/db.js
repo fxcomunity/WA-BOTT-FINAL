@@ -272,11 +272,22 @@ function runLocalQuery(strings, values) {
 
 // Wrapper fungsi query sql utama
 const sql = async (strings, ...values) => {
+  const queryText = strings.join('?').trim();
+  const isWrite = queryText.startsWith('INSERT') || queryText.startsWith('UPDATE') || queryText.startsWith('DELETE');
+
   if (useLocalFallback || !neonClient) {
     return runLocalQuery(strings, values);
   }
   try {
-    return await neonClient(strings, ...values);
+    const res = await neonClient(strings, ...values);
+    if (isWrite) {
+      try {
+        runLocalQuery(strings, values);
+      } catch (localErr) {
+        console.error("[DB] Gagal sinkronisasi data ke DB lokal:", localErr.message);
+      }
+    }
+    return res;
   } catch (err) {
     const errMsg = err.message || '';
     if (
