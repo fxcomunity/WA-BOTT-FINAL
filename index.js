@@ -936,35 +936,33 @@ async function startBot() {
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
-👇 *Silakan klik menu di bawah buat eksplor fitur JackBOT!* 👇`;
+👇 *Silakan balas dengan angka di bawah untuk membuka menu:* 👇
 
-        const rows = [];
-        if (ownerCheck) {
-          rows.push({ header: "", title: "Menu Khusus Presiden", description: "Perintah khusus presiden bot", id: "btn_owner" });
+${ownerCheck ? '👑 *1* : Menu Khusus Presiden (Owner)\n' : ''}👥 *2* : Menu Mentri Grup (Admin)
+👤 *3* : Menu Rakyat Utama (Member)
+⚔️ *4* : Menu Economy RPG
+🎮 *5* : Menu Game & Hiburan
+📥 *6* : Menu Downloader
+ℹ️ *7* : Info Developer
+🎵 *8* : Spotify Music
+🎙️ *9* : Voice Changer (Audio)
+🕵️ *10* : Menu OSINT & Track
+🔌 *11* : Daftar Plugin
+
+_Ketik *!menu [angka]* (contoh: *!menu 3*) atau balas pesan ini dengan angkanya saja._`;
+
+        if (fs.existsSync("./assets/public/menu.jpg")) {
+          await sock.sendMessage(msg.key.remoteJid, {
+            image: fs.readFileSync("./assets/public/menu.jpg"),
+            caption: helpMsg,
+            mentions: [sender]
+          }, { quoted: msg });
+        } else {
+          await sock.sendMessage(msg.key.remoteJid, {
+            text: helpMsg,
+            mentions: [sender]
+          }, { quoted: msg });
         }
-        rows.push(
-          { header: "", title: "Menu Mentri Grup", description: "Perintah khusus mentri grup", id: "btn_admin" },
-          { header: "", title: "Menu Rakyat Utama", description: "Perintah umum untuk semua rakyat", id: "btn_member" },
-          { header: "", title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
-          { header: "", title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
-          { header: "", title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
-          { header: "", title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
-          { header: "", title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
-          { header: "", title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
-          { header: "", title: "Daftar Plugin", description: "Fitur plugin tambahan", id: "btn_plugin" }
-        );
-
-        const buttons = [
-          {
-            name: "single_select",
-            params: {
-              title: "Pilih Kategori",
-              sections: [{ title: "Kategori Menu", highlight_label: "Pilihan", rows }]
-            }
-          }
-        ];
-
-        await sendInteractiveMessage(sock, msg.key.remoteJid, helpMsg, "JackBOT v3.0.0", buttons, msg, "./assets/public/menu.jpg");
         break;
       }
 
