@@ -951,18 +951,26 @@ ${ownerCheck ? '👑 *1* : Menu Khusus Presiden (Owner)\n' : ''}👥 *2* : Menu 
 
 _Ketik *!menu [angka]* (contoh: *!menu 3*) atau balas pesan ini dengan angkanya saja._`;
 
-        if (fs.existsSync("./assets/public/menu.jpg")) {
-          await sock.sendMessage(msg.key.remoteJid, {
-            image: fs.readFileSync("./assets/public/menu.jpg"),
-            caption: helpMsg,
-            mentions: [sender]
-          }, { quoted: msg });
-        } else {
-          await sock.sendMessage(msg.key.remoteJid, {
-            text: helpMsg,
-            mentions: [sender]
-          }, { quoted: msg });
+        const buttons = [];
+        if (ownerCheck) {
+          buttons.push({
+            name: "quick_reply",
+            params: { display_text: "👑 Menu Presiden (Owner)", id: "btn_owner" }
+          });
         }
+        buttons.push(
+          { name: "quick_reply", params: { display_text: "👥 Menu Mentri (Admin)", id: "btn_admin" } },
+          { name: "quick_reply", params: { display_text: "👤 Menu Rakyat (Member)", id: "btn_member" } },
+          { name: "quick_reply", params: { display_text: "⚔️ Menu RPG & Ekonomi", id: "btn_rpg" } },
+          { name: "quick_reply", params: { display_text: "🎮 Menu Game & Hiburan", id: "btn_game" } },
+          { name: "quick_reply", params: { display_text: "📥 Menu Downloader", id: "btn_downloader" } },
+          { name: "quick_reply", params: { display_text: "🎵 Spotify Music", id: "btn_spotify" } },
+          { name: "quick_reply", params: { display_text: "🎙️ Voice Changer", id: "btn_voice" } },
+          { name: "quick_reply", params: { display_text: "🕵️ Menu OSINT & Track", id: "btn_osint" } },
+          { name: "quick_reply", params: { display_text: "🔌 Daftar Plugin", id: "btn_plugin" } }
+        );
+
+        await sendInteractiveMessage(sock, msg.key.remoteJid, helpMsg, "JackBOT v3.0.0", buttons, msg, "./assets/public/menu.jpg");
         break;
       }
 
