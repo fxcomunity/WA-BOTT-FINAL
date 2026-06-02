@@ -936,20 +936,7 @@ async function startBot() {
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
-👇 *Silakan balas dengan angka di bawah untuk membuka menu:* 👇
-
-${ownerCheck ? '👑 *1* : Menu Khusus Presiden (Owner)\n' : ''}👥 *2* : Menu Mentri Grup (Admin)
-👤 *3* : Menu Rakyat Utama (Member)
-⚔️ *4* : Menu Economy RPG
-🎮 *5* : Menu Game & Hiburan
-📥 *6* : Menu Downloader
-ℹ️ *7* : Info Developer
-🎵 *8* : Spotify Music
-🎙️ *9* : Voice Changer (Audio)
-🕵️ *10* : Menu OSINT & Track
-🔌 *11* : Daftar Plugin
-
-_Ketik *!menu [angka]* (contoh: *!menu 3*) atau balas pesan ini dengan angkanya saja._`;
+👇 *Silakan klik tombol di bawah untuk membuka menu:* 👇`;
 
         const rows = [];
         if (ownerCheck) {
