@@ -3,6 +3,7 @@
 // !sc username             → cek username di berbagai platform
 
 const axios = require('axios');
+const google = require('googlethis');
 const { reply } = require('./utils');
 
 // ============================================
@@ -47,7 +48,7 @@ function getRiskText(level) {
 }
 
 // ============================================
-// !data — CEK EMAIL BREACH
+// !data — CEK EMAIL BREACH & GOOGLE
 // ============================================
 async function checkBreach(sock, msg, email) {
   if (!email) {
@@ -61,88 +62,83 @@ async function checkBreach(sock, msg, email) {
   }
 
   await sock.sendMessage(msg.key.remoteJid, { react: { text: '🔍', key: msg.key } });
-  await reply(sock, msg, `🔍 Lagi ngecek email *${email}*...\n_Tunggu sebentar ya bos!_`);
+  await reply(sock, msg, `🔍 Lagi ngecek email *${email}* ke Database Breach & Google OSINT...\n_Tunggu sebentar ya bos!_`);
 
   try {
+    // 1. Cek Breach Database
     const res = await axios.get(
       `https://hackmyip.com/api/breach?email=${encodeURIComponent(email)}`,
-      { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } }
+      { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' }, validateStatus: () => true }
     );
+    const data = res.data?.data || null;
 
-    const data = res.data?.data;
-
-    if (!data) throw new Error('Response kosong');
-
-    const breachCount = data.breaches || 0;
-    const services   = data.services || [];
-    const risk       = data.risk || {};
-    const passwords  = data.passwords || {};
-
-    // Kalau aman
-    if (breachCount === 0) {
-      await sock.sendMessage(msg.key.remoteJid, { react: { text: '✅', key: msg.key } });
-      return reply(sock, msg,
-        `╭━━• [ 🛡️ CEK DATA BREACH ] •━━╮\n` +
-        `┃\n` +
-        `┃ 📧 *Email:* ${data.email || email}\n` +
-        `┃ ✅ *Status:* AMAN SENTOSA!\n` +
-        `┃\n` +
-        `┃ Email lo tidak ditemukan di\n` +
-        `┃ database kebocoran manapun.\n` +
-        `┃\n` +
-        `┃ 💡 *Tips:* Tetep pake password\n` +
-        `┃ unik dan aktifkan 2FA ya!\n` +
-        `┃\n` +
-        `╰━━━━━━━━━━━━━━━━━━━━━━╯`
-      );
+    // 2. Cek Google Web Search (Dorking)
+    let googleResults = [];
+    try {
+      const gRes = await google.search(`"${email}"`, { page: 0, safe: false, additional_params: { hl: 'id' } });
+      googleResults = gRes.results || [];
+    } catch (e) {
+      console.log("[OSINT] Google search error:", e.message);
     }
 
-    // Kalau kena breach
-    await sock.sendMessage(msg.key.remoteJid, { react: { text: '⚠️', key: msg.key } });
+    let breachText = "";
+    if (!data || (data.breaches || 0) === 0) {
+      breachText = `┃ ✅ *Database Breach:* AMAN SENTOSA!\n┃ Tidak ditemukan di database kebocoran.\n`;
+    } else {
+      const breachCount = data.breaches || 0;
+      const services = data.services || [];
+      const risk = data.risk || {};
+      const passwords = data.passwords || {};
+      
+      const serviceList = services.length > 0
+        ? services.slice(0, 5).map((s, i) => `┃  ${i + 1}. ${s}`).join('\n')
+        : '┃  Data tidak tersedia';
 
-    const serviceList = services.length > 0
-      ? services.slice(0, 10).map((s, i) => `┃  ${i + 1}. ${s}`).join('\n')
-      : '┃  Data tidak tersedia';
+      const passInfo = passwords.total > 0
+        ? `┃ 🔑 *Password bocor:* ${passwords.total} (${passwords.plain_text || 0} plain text!)\n` : '';
 
-    const moreText = services.length > 10
-      ? `┃  ...dan ${services.length - 10} lainnya\n`
-      : '';
+      breachText = 
+        `┃ ⚠️ *Database Breach:* BOCOR! (${breachCount} kali)\n` +
+        `┃ ${getRiskEmoji(risk.level)} *Risk Level:* ${(risk.level || 'unknown').toUpperCase()}\n` +
+        `┃ 🚨 *Sumber Kebocoran Teratas:*\n` + serviceList + `\n` + passInfo;
+    }
 
-    const passInfo = passwords.total > 0
-      ? `┃ 🔑 *Password bocor:* ${passwords.total} (${passwords.plain_text || 0} plain text!)\n`
-      : '';
+    let googleText = "";
+    if (googleResults.length === 0) {
+      googleText = `┃ ✅ *Google OSINT:* Bersih!\n┃ Email ini tidak terlacak di publik (Google).`;
+    } else {
+      const topLinks = googleResults.slice(0, 5).map((r, i) => `┃  ${i + 1}. ${r.title.substring(0, 25)}...\n┃     └ ${r.url}`).join('\n');
+      googleText = `┃ 🔎 *Jejak Web Publik (Google OSINT):*\n┃ Ditemukan di ${googleResults.length} halaman web:\n${topLinks}`;
+    }
 
     const text =
-      `╭━━• [ ⚠️ CEK DATA BREACH ] •━━╮\n` +
+      `╭━━• [ 🌐 FULL OSINT EMAIL ] •━━╮\n` +
       `┃\n` +
-      `┃ 📧 *Email:* ${data.email || email}\n` +
-      `┃ ${getRiskEmoji(risk.level)} *Risk Level:* ${(risk.level || 'unknown').toUpperCase()}\n` +
-      `┃ 📊 *Risk Score:* ${risk.score || 0}/100\n` +
-      `┃ 💬 *Status:* ${getRiskText(risk.level)}\n` +
+      `┃ 📧 *Target:* ${email}\n` +
       `┃\n` +
-      `┃ 🚨 *Ditemukan di ${breachCount} kebocoran:*\n` +
-      serviceList + '\n' +
-      moreText +
+      `┣━━ [ 🛡️ DEEP WEB / BREACH ] ━━\n` +
+      breachText +
       `┃\n` +
-      passInfo +
-      `┃ 🔐 *Saran:*\n` +
-      `┃  • Ganti password sekarang!\n` +
-      `┃  • Aktifkan 2FA di semua akun\n` +
-      `┃  • Pakai password manager\n` +
+      `┣━━ [ 🌍 SURFACE WEB / GOOGLE ] ━━\n` +
+      googleText + `\n` +
       `┃\n` +
+      `┃ 🔐 *Saran Keamanan:*\n` +
+      `┃  • Segera ganti password!\n` +
+      `┃  • Aktifkan 2FA di semua akun.\n` +
       `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
+    await sock.sendMessage(msg.key.remoteJid, { react: { text: data && data.breaches > 0 ? '⚠️' : '✅', key: msg.key } });
     return reply(sock, msg, text);
 
   } catch (e) {
     console.error('checkBreach error:', e.message);
     await sock.sendMessage(msg.key.remoteJid, { react: { text: '❌', key: msg.key } });
-    return reply(sock, msg, `❌ Gagal ngecek breach bos! API lagi error atau timeout.\nCoba lagi nanti ya.`);
+    return reply(sock, msg, `❌ Gagal OSINT email bos! API lagi error atau koneksi terputus.`);
   }
 }
 
 // ============================================
-// !sc — USERNAME SEARCH DI BERBAGAI PLATFORM
+// !sc — USERNAME SEARCH DI SEMUA WEB & GOOGLE
 // ============================================
 async function searchUsername(sock, msg, username) {
   if (!username) {
@@ -153,76 +149,80 @@ async function searchUsername(sock, msg, username) {
   if (username.length < 2 || username.length > 30) {
     return reply(sock, msg, `❌ Username harus 2-30 karakter bos!`);
   }
-
   if (!/^[a-zA-Z0-9._\-]+$/.test(username)) {
     return reply(sock, msg, `❌ Username cuma boleh huruf, angka, titik, underscore, dan strip bos!`);
   }
 
   await sock.sendMessage(msg.key.remoteJid, { react: { text: '🔍', key: msg.key } });
   await reply(sock, msg,
-    `🔍 *Nyari username:* @${username}\n` +
-    `📡 Ngecek ${PLATFORMS.length} platform...\n` +
-    `_Tunggu ya, ini butuh waktu ~${Math.ceil(PLATFORMS.length / 3)} detik..._`
+    `🔍 *Scanning OSINT username:* @${username}\n` +
+    `📡 Menelusuri Sosmed & Semua Web via Google...\n` +
+    `_Tunggu ya bos, proses pencarian luas..._`
   );
 
-  // Cek semua platform secara parallel
-  const results = await Promise.allSettled(
-    PLATFORMS.map(async (platform) => {
-      const url = platform.url.replace('{}', encodeURIComponent(username));
-      try {
-        const res = await axios.get(url, {
-          timeout: 8000,
-          maxRedirects: 3,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
-          validateStatus: () => true, // jangan throw untuk status apapun
-        });
-        const found = platform.check(res);
-        return { name: platform.name, url: platform.url.replace('{}', username), found };
-      } catch {
-        return { name: platform.name, url: platform.url.replace('{}', username), found: false, error: true };
-      }
-    })
-  );
+  try {
+    // 1. Cek Social Media Platforms (Parallel)
+    const results = await Promise.allSettled(
+      PLATFORMS.map(async (platform) => {
+        const url = platform.url.replace('{}', encodeURIComponent(username));
+        try {
+          const res = await axios.get(url, {
+            timeout: 8000, maxRedirects: 3, validateStatus: () => true,
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+          });
+          return { name: platform.name, url: platform.url.replace('{}', username), found: platform.check(res) };
+        } catch {
+          return { name: platform.name, found: false, error: true };
+        }
+      })
+    );
 
-  const found    = [];
-  const notFound = [];
-  const error    = [];
+    const foundSocials = results.filter(r => r.value && r.value.found).map(r => r.value);
+    
+    // 2. Cek Google OSINT
+    let googleResults = [];
+    try {
+      const gRes = await google.search(`"${username}" OR inurl:"${username}"`, { page: 0, safe: false });
+      googleResults = gRes.results || [];
+    } catch (e) {
+      console.log("[OSINT] Google search error:", e.message);
+    }
 
-  for (const result of results) {
-    const val = result.value;
-    if (!val) continue;
-    if (val.error)       error.push(val);
-    else if (val.found)  found.push(val);
-    else                 notFound.push(val);
+    // Format Pesan Sosial Media
+    const socialList = foundSocials.length > 0
+      ? foundSocials.map(p => `┃ ✅ *${p.name}* : ${p.url}`).join('\n')
+      : '┃ ❌ Tidak ditemukan di platform sosmed utama.';
+
+    // Format Pesan Google
+    let googleText = "";
+    if (googleResults.length === 0) {
+      googleText = `┃ ❌ Tidak ada jejak website di Google.`;
+    } else {
+      const topLinks = googleResults.slice(0, 5).map((r, i) => `┃  ${i + 1}. ${r.title.substring(0, 30)}...\n┃     └ ${r.url}`).join('\n');
+      googleText = `┃ 🔎 Ditemukan di ${googleResults.length} hasil pencarian:\n${topLinks}`;
+    }
+
+    const text =
+      `╭━━• [ 🕵️ FULL OSINT USERNAME ] •━━╮\n` +
+      `┃\n` +
+      `┃ 👤 *Target:* @${username}\n` +
+      `┃\n` +
+      `┣━━ [ 📱 SOCIAL MEDIA ACCOUNTS ] ━━\n` +
+      socialList + `\n` +
+      `┃\n` +
+      `┣━━ [ 🌍 HASIL WEB GOOGLE ] ━━\n` +
+      googleText + `\n` +
+      `┃\n` +
+      `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    await sock.sendMessage(msg.key.remoteJid, { react: { text: foundSocials.length > 0 || googleResults.length > 0 ? '✅' : '❌', key: msg.key } });
+    return reply(sock, msg, text);
+
+  } catch (e) {
+    console.error('searchUsername error:', e.message);
+    await sock.sendMessage(msg.key.remoteJid, { react: { text: '❌', key: msg.key } });
+    return reply(sock, msg, `❌ Gagal OSINT username bos!`);
   }
-
-  const foundList = found.length > 0
-    ? found.map(p => `┃ ✅ *${p.name}*\n┃    └ ${p.url}`).join('\n')
-    : '┃ ❌ Tidak ditemukan di platform manapun.';
-
-  const notFoundList = notFound.length > 0
-    ? notFound.map(p => `┃ ❌ ${p.name}`).join('\n')
-    : '';
-
-  const text =
-    `╭━━• [ 🕵️ USERNAME SEARCH ] •━━╮\n` +
-    `┃\n` +
-    `┃ 🔎 *Query:* @${username}\n` +
-    `┃ ✅ *Ketemu:* ${found.length} platform\n` +
-    `┃ ❌ *Ga ada:* ${notFound.length} platform\n` +
-    `┃\n` +
-    `┣━━ [ 🟢 DITEMUKAN ] ━━\n` +
-    foundList + '\n' +
-    (notFoundList
-      ? `┃\n┣━━ [ 🔴 TIDAK ADA ] ━━\n` + notFoundList + '\n'
-      : '') +
-    `┃\n` +
-    `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-  await sock.sendMessage(msg.key.remoteJid, { react: { text: found.length > 0 ? '✅' : '❌', key: msg.key } });
-  return reply(sock, msg, text);
 }
 
 // ============================================
