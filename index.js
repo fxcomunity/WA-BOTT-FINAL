@@ -479,25 +479,31 @@ async function startBot() {
           isAuthorized = true;
         }
       } else {
-        // Di DM/Private Chat: periksa untuk SEMUA pesan (command maupun chat biasa)
-        for (const groupJid of allowedGroups) {
-          try {
-            const metadata = await getGroupMetadata(sock, groupJid);
-            if (metadata && metadata.participants) {
-              const found = metadata.participants.some(p => jidNormalizedUser(p.id) === jidNormalizedUser(sender));
-              if (found) {
-                isAuthorized = true;
-                break;
+        // Di DM/Private Chat: hanya batasi akses untuk perintah menu/help
+        const isMenuRelated = ["menu", "help"].includes(cmd) || cmd?.startsWith("btn_") || cmd?.startsWith("menu_");
+        if (isMenuRelated) {
+          for (const groupJid of allowedGroups) {
+            try {
+              const metadata = await getGroupMetadata(sock, groupJid);
+              if (metadata && metadata.participants) {
+                const found = metadata.participants.some(p => jidNormalizedUser(p.id) === jidNormalizedUser(sender));
+                if (found) {
+                  isAuthorized = true;
+                  break;
+                }
               }
+            } catch (e) {
+              console.error(`[AUTH] Gagal mengecek keanggotaan grup ${groupJid}:`, e.message);
             }
-          } catch (e) {
-            console.error(`[AUTH] Gagal mengecek keanggotaan grup ${groupJid}:`, e.message);
           }
+        } else {
+          // Semua chat biasa dan perintah selain menu selalu diperbolehkan
+          isAuthorized = true;
         }
       }
       
       if (!isAuthorized) {
-        return reply(sock, msg, "⚠️ *AKSES DITOLAK* ⚠️\n\nMaaf ngab, bot ini hanya dapat digunakan oleh anggota grup resmi JackBOT.\n\nSilakan bergabung ke grup resmi terlebih dahulu!");
+        return reply(sock, msg, "⚠️ *AKSES DITOLAK* ⚠️\n\nMaaf ngab, menu bot ini hanya dapat digunakan oleh anggota grup resmi JackBOT.\n\nSilakan bergabung ke grup resmi terlebih dahulu!");
       }
     }
 
