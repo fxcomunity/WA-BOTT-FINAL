@@ -5,7 +5,8 @@ const gearData = require('./gearData');
 const skillsData = require('./skillsData');
 
 const COMBAT_MAGIC_SKILLS = [
-  "ledakan_terkendali", "penyelarasan_kristal", "sentuhan_transmutasi", "deteksi_harta"
+  "ledakan_terkendali", "penyelarasan_kristal", "sentuhan_transmutasi", "deteksi_harta",
+  "petir_olimpus", "penghakiman_maat", "supernova_surya", "pusaran_samudra", "kehancuran_kosmis", "trisula_blast", "mantra_pembersih", "pembuatan_skill"
 ];
 
 function getFallbackDamage(pickaxeLevel) {
@@ -87,6 +88,12 @@ function calcSwordDamage(w, mData) {
 }
 
 function calcMagicDamage(w, magicInfo, mData) {
+  if (magicInfo.skillId === "pembuatan_skill") return 99999999;
+  if (["petir_olimpus", "penghakiman_maat", "supernova_surya", "pusaran_samudra", "kehancuran_kosmis", "trisula_blast", "mantra_pembersih"].includes(magicInfo.skillId)) {
+    w.mp -= magicInfo.mpCost;
+    return Math.floor(Math.random() * 200000) + 100000;
+  }
+  
   const lvl = magicInfo.level;
   let dmg = 25 + (lvl * 18) + Math.floor(Math.random() * 25);
   
@@ -143,13 +150,29 @@ function applyArmorReduction(w, incoming, mData) {
 }
 
 function applyMonsterAbility(w, mData) {
-  if (!mData?.ability) return '';
-  if (mData.ability === 'reduce_durability') {
+  let text = '';
+  if (mData?.ability === 'reduce_durability') {
     const dmg = Math.floor(Math.random() * 6) + 5;
     w.pickaxeDurability = Math.max(0, (w.pickaxeDurability || 0) - dmg);
-    return `\n⛏️ *${mData.name}* merusak pickaxe kamu! (-${dmg} durability)`;
+    text += `\n⛏️ *${mData.name}* merusak pickaxe kamu! (-${dmg} durability)`;
   }
-  return '';
+  if (mData?.abilities) {
+    for (const ab of mData.abilities) {
+      if (Math.random() < ab.chance) {
+        if (ab.type === "instant_kill") {
+           w.hp = 0;
+           text += `\n☠️ *${ab.name}:* ${ab.desc} (Kamu terbunuh instan!)`;
+        } else if (ab.type === "magic") {
+           const dmg = Math.floor(mData.damage[1] * 1.5);
+           w.hp -= dmg;
+           text += `\n✨ *${ab.name}:* ${ab.desc} (-${dmg} HP!)`;
+        } else if (ab.type === "stun" || ab.type === "defense_buff") {
+           text += `\n⚠️ *${ab.name}:* ${ab.desc}`;
+        }
+      }
+    }
+  }
+  return text;
 }
 
 function buildEncounterText(source, monster) {
@@ -232,6 +255,14 @@ async function serang(sock, msg, sender) {
     text += `\n🎉 *${combat.monsterName} TELAH DIKALAHKAN!*\n`;
     text += `💰 +${goldDrop} Koin\n📦 +1x ${mData.dropItem.replace(/_/g, " ").toUpperCase()}`;
     if (combat.monsterId === "lich_penambang") text += `\n✨ Kutukan Lich hilang!`;
+    
+    if (mData.tier >= 8 && mData.abilities && mData.abilities.length > 0) {
+      const skillName = mData.abilities[0].name;
+      if (!w.skills[skillName]) {
+         w.skills[skillName] = { level: 5 };
+         text += `\n✨ *PENGUASAAN DEWA:* Kamu berhasil menyerap skill dewa: *${skillName.replace(/_/g, " ").toUpperCase()}*!`;
+      }
+    }
     
     if (w.enchants && w.enchants["weapon_mending"]) {
       w.hp = Math.min(w.maxHp, w.hp + 5);

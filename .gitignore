@@ -11,3 +11,5 @@ yt-dlp.exe
 auth_info_backup/
 settings.json
 fix-modules.js
+database/local_db.json
+database/local_db.backup.json

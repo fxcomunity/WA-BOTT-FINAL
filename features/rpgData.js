@@ -7,7 +7,9 @@ const monsterTiers = {
   3: { id: 3, name: "Rare", encounterRate: 10 },
   4: { id: 4, name: "Epic", encounterRate: 4 },
   5: { id: 5, name: "Legend", encounterRate: 0.9 },
-  6: { id: 6, name: "Mythos", encounterRate: 0.1 }
+  6: { id: 6, name: "Mythos", encounterRate: 0.1 },
+  7: { id: 7, name: "Demigod", encounterRate: 0.05 },
+  8: { id: 8, name: "God", encounterRate: 0.01 }
 };
 
 const artifactTiers = {
@@ -16,8 +18,27 @@ const artifactTiers = {
   3: { id: 3, name: "Rare", dropRate: 8 },
   4: { id: 4, name: "Epic", dropRate: 4 },
   5: { id: 5, name: "Legend", dropRate: 2.5 },
-  6: { id: 6, name: "Mythos", dropRate: 0.5 }
+  6: { id: 6, name: "Mythos", dropRate: 0.5 },
+  7: { id: 7, name: "Demigod", dropRate: 0 },
+  8: { id: 8, name: "God", dropRate: 0 }
 };
+
+function getRank(level) {
+  if (level >= 999) return "God";
+  if (level >= 150) return "Demi God";
+  if (level >= 141) return "Petualang SSS";
+  if (level >= 121) return "Petualang SS";
+  if (level >= 101) return "Petualang S";
+  if (level >= 81) return "Petualang A";
+  if (level >= 71) return "Petualang B";
+  if (level >= 61) return "Petualang C";
+  if (level >= 51) return "Petualang D";
+  if (level >= 41) return "Petualang E";
+  if (level >= 31) return "Petualang F";
+  if (level >= 21) return "Cheff";
+  if (level >= 11) return "Penambang";
+  return "Pemula";
+}
 
 const monsters = [
   // COMMON
@@ -90,7 +111,29 @@ const monsters = [
   { id: "anomali_waktu", name: "Anomali Waktu Tambang", tier: 6, hp: 6000, maxHp: 6000, damage: [180, 280], 
     ability: "time_warp", dropGold: [12000, 12000], dropItem: "hourglass_anomaly" },
   { id: "bedrock_king", name: "The Bedrock King", tier: 6, hp: 10000, maxHp: 10000, damage: [250, 400], 
-    ability: "elemental_immunity", dropGold: [20000, 20000], dropItem: "crown_of_bedrock" }
+    ability: "elemental_immunity", dropGold: [20000, 20000], dropItem: "crown_of_bedrock" },
+
+  // DEMIGOD (Level 150)
+  { id: "hercules", name: "Hercules", tier: 7, level: 150, hp: 100000, maxHp: 100000, damage: [5000, 8000], 
+    abilities: [{ name: "Kekuatan Mutlak", chance: 0.3, type: "stun", desc: "Memukul dengan sangat keras hingga kamu stun." }], dropGold: [50000, 100000], dropItem: "gada_hercules" },
+  { id: "gatotkaca", name: "Gatotkaca", tier: 7, level: 150, hp: 150000, maxHp: 150000, damage: [4000, 7000], 
+    abilities: [{ name: "Otot Kawat Tulang Besi", chance: 0.3, type: "defense_buff", desc: "Meningkatkan pertahanan drastis." }], dropGold: [60000, 120000], dropItem: "sayap_baja" },
+
+  // GOD (Level 999, HP 9 Juta)
+  { id: "zeus", name: "Zeus (God of Thunder)", tier: 8, level: 999, hp: 9000000, maxHp: 9000000, damage: [50000, 100000], 
+    abilities: [{ name: "petir_olimpus", chance: 0.2, type: "magic", desc: "Petir menyambar kuat!" }], dropGold: [1000000, 5000000], dropItem: "petir_zeus" },
+  { id: "anubis", name: "Anubis (God of Death)", tier: 8, level: 999, hp: 9000000, maxHp: 9000000, damage: [60000, 120000], 
+    abilities: [{ name: "penghakiman_maat", chance: 0.2, type: "instant_kill", desc: "Menghakimi nyawamu!" }], dropGold: [1000000, 5000000], dropItem: "timbangan_maat" },
+  { id: "ra", name: "Ra (God of the Sun)", tier: 8, level: 999, hp: 9500000, maxHp: 9500000, damage: [70000, 150000], 
+    abilities: [{ name: "supernova_surya", chance: 0.2, type: "magic", desc: "Panas matahari membakar!" }], dropGold: [1000000, 5000000], dropItem: "mata_ra" },
+  { id: "poseidon", name: "Poseidon (God of the Sea)", tier: 8, level: 999, hp: 9200000, maxHp: 9200000, damage: [55000, 110000], 
+    abilities: [{ name: "pusaran_samudra", chance: 0.2, type: "magic", desc: "Tenggelam dalam badai!" }], dropGold: [1000000, 5000000], dropItem: "trisula_poseidon" },
+  { id: "sang_hyang_widhi", name: "Sang Hyang Widhi (God of Creator)", tier: 8, level: 999, hp: 9999999, maxHp: 9999999, damage: [90000, 200000], 
+    abilities: [{ name: "kehancuran_kosmis", chance: 0.1, type: "magic", desc: "Ledakan alam semesta!" }], dropGold: [2000000, 9000000], dropItem: "batu_pencipta_alam" },
+  { id: "bathara_guru", name: "Bathara Guru (God of Heavens)", tier: 8, level: 999, hp: 9000000, maxHp: 9000000, damage: [60000, 130000], 
+    abilities: [{ name: "trisula_blast", chance: 0.2, type: "magic", desc: "Tembakan energi!" }], dropGold: [1000000, 5000000], dropItem: "mahkota_khayangan" },
+  { id: "barong", name: "Barong (God of Spirits)", tier: 8, level: 999, hp: 9000000, maxHp: 9000000, damage: [50000, 100000], 
+    abilities: [{ name: "mantra_pembersih", chance: 0.2, type: "magic", desc: "Mantra suci pembersih!" }], dropGold: [1000000, 5000000], dropItem: "topeng_barong" }
 ];
 
 const artifacts = [
@@ -194,8 +237,9 @@ function rollFromPool(pool, tiers) {
   let random = Math.random() * 100;
   let selectedTier = 1;
   let cumulative = 0;
-  for (let t = 1; t <= 6; t++) {
-    cumulative += tiers[t].encounterRate;
+  for (let t = 1; t <= 8; t++) {
+    if (!tiers[t]) continue;
+    cumulative += tiers[t].encounterRate || 0;
     if (random <= cumulative) { selectedTier = t; break; }
   }
   const tierPool = pool.filter(m => m.tier === selectedTier);
@@ -215,8 +259,9 @@ function rollArtifact() {
   let selectedTier = 1;
   let cumulative = 0;
 
-  for (let t = 1; t <= 6; t++) {
-    cumulative += artifactTiers[t].dropRate;
+  for (let t = 1; t <= 8; t++) {
+    if (!artifactTiers[t]) continue;
+    cumulative += artifactTiers[t].dropRate || 0;
     if (random <= cumulative) {
       selectedTier = t;
       break;
@@ -238,4 +283,5 @@ module.exports = {
   rollArtifact,
   findMonster,
   enrichMonster,
+  getRank,
 };

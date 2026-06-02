@@ -3,7 +3,7 @@
 // WhatsApp Group Bot pake Baileys
 // ============================================
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, jidNormalizedUser } = require("atexovi-baileys");
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, jidNormalizedUser, generateWAMessageFromContent, prepareWAMessageMedia } = require("atexovi-baileys");
 const { Boom } = require("@hapi/boom");
 const pino = require("pino");
 const fs = require('fs');
@@ -146,6 +146,48 @@ const isOwner  = (sock, sender) => config.owners.includes(sender.split("@")[0]) 
 const reply = (sock, msg, text) =>
   sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
 
+const sendInteractiveMessage = async (sock, jid, text, footer, buttons, quotedMsg = null, imagePath = null) => {
+  try {
+    let headerParams = { title: "", hasMediaAttachment: false };
+    
+    if (imagePath && fs.existsSync(imagePath)) {
+      const mediaMsg = await prepareWAMessageMedia({ image: fs.readFileSync(imagePath) }, { upload: sock.waUploadToServer });
+      headerParams = {
+        title: "",
+        hasMediaAttachment: true,
+        imageMessage: mediaMsg.imageMessage
+      };
+    }
+
+    const messageContent = {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: {
+            deviceListMetadata: {},
+            deviceListMetadataVersion: 2
+          },
+          interactiveMessage: {
+            body: { text },
+            footer: { text: footer || "" },
+            header: headerParams,
+            nativeFlowMessage: {
+              buttons: buttons.map(b => ({
+                name: b.name || "quick_reply",
+                buttonParamsJson: JSON.stringify(b.params || {})
+              }))
+            }
+          }
+        }
+      }
+    };
+    const msgObj = generateWAMessageFromContent(jid, messageContent, { quoted: quotedMsg });
+    await sock.relayMessage(jid, msgObj.message, { messageId: msgObj.key.id });
+  } catch (e) {
+    console.error("Error sending interactive message:", e);
+    await sock.sendMessage(jid, { text: text }, { quoted: quotedMsg });
+  }
+};
+
 // ============================================
 // MAIN BOT
 // ============================================
@@ -172,7 +214,7 @@ async function startBot() {
   // ============================================
   // KONEKSI
   // ============================================
-  sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
+  sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       require("qrcode-terminal").generate(qr, { small: true });
     }
@@ -184,6 +226,21 @@ async function startBot() {
     } else if (connection === "open") {
       console.log("✅ JackBOT berhasil terhubung!");
       scheduler.start(sock);
+
+      // Auto unfollow semua newsletter
+      try {
+        if (sock.getNewsletters && sock.unsubscribeNewsletter) {
+          const newsletters = await sock.getNewsletters();
+          if (newsletters && newsletters.length > 0) {
+            for (const nl of newsletters) {
+              await sock.unsubscribeNewsletter(nl.id);
+              console.log("✅ Unfollowed newsletter:", nl.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.log("ℹ️ Gagal atau tidak support unfollow newsletter otomatis.");
+      }
     }
   });
 
@@ -350,7 +407,7 @@ async function startBot() {
       sender = jidNormalizedUser(sock.user.id);
     }
 
-    const isMenuFallback = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].includes(body);
+    const isMenuFallback = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"].includes(body);
     let isCmd = false;
     let args = [];
     let cmd = "";
@@ -390,8 +447,8 @@ async function startBot() {
 
     const ownerCheck = isOwner(sock, sender);
     const adminCheck = await isAdmin(sock, groupId, sender);
-    // Super Owner — hanya +62895404147521 / LID owner yg bisa !self / !public
-    const isSuperOwner = sender.split('@')[0] === '62895404147521' || sender.split('@')[0] === '129003956510974';
+    // Super Owner — hanya pemilik terdaftar di config.owners yang bisa !self / !public
+    const isSuperOwner = ownerCheck;
 
     // MODE SELF: Abaikan semua command jika bukan dari owner
     if (isSelfMode && !ownerCheck && isCmd) {
@@ -566,8 +623,8 @@ async function startBot() {
         process.exit(0);
 
       case "pengumuman":
-        if (sender.split("@")[0] !== "129003956510974") {
-          return reply(sock, msg, "❌ Cuma nomor +129003956510974 yang bisa memakai command ini!");
+        if (!ownerCheck) {
+          return reply(sock, msg, "❌ Cuma Presiden (owner) yang bisa memakai command ini!");
         }
         
         const teksPengumuman = args.join(" ") || "Bot akan melakukan maintenance. Tolong maaf atas ketidaknyamanannya.";
@@ -750,6 +807,55 @@ async function startBot() {
       // ---------- SEMUA MEMBER ----------
       case "help":
       case "menu": {
+        const categoryInput = args[0]?.toLowerCase();
+        if (categoryInput) {
+          if (["1", "owner", "presiden"].includes(categoryInput)) {
+            if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa liat detail menu ini!");
+            const txt = getHelpText(ownerCheck, adminCheck, "owner") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["2", "admin", "mentri"].includes(categoryInput)) {
+            if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Cuma Mentri yg bisa liat ini bos!");
+            const txt = getHelpText(ownerCheck, adminCheck, "admin") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["3", "member", "rakyat"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "member") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["4", "rpg", "economy"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt });
+          }
+          if (["5", "game", "hiburan"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt });
+          }
+          if (["6", "downloader", "download"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["7", "dev", "developer", "info"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["8", "spotify", "music"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "spotify") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["9", "voice", "audio"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "voice") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["10", "osint", "tracking"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "osint") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["11", "plugin", "plugins"].includes(categoryInput)) {
+            return plugins.listPlugins(sock, msg);
+          }
+        }
+
         const name = msg.pushName || sender.split("@")[0];
         
         const dNow = new Date();
@@ -779,132 +885,113 @@ async function startBot() {
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
-👇 *Klik menu di bawah buat eksplor fitur mematikan dari JackBOT!* 👇`;
-        
-        try {
-          const menuPayload = {
-            footer: "JackBOT v3.0.0",
-            interactiveButtons: [
-              {
-                name: "single_select",
-                buttonParamsJson: JSON.stringify({
-                  title: "Pilih Kategori",
-                  sections: [
-                    {
-                      title: "Kategori Menu",
-                      rows: [
-                        { title: "Menu Khusus Presiden", description: "Perintah khusus presiden bot", id: "btn_owner" },
-                        { title: "Menu Mentri Grup", description: "Perintah khusus mentri grup", id: "btn_admin" },
-                        { title: "Menu Rakyat Utama", description: "Perintah umum untuk semua rakyat", id: "btn_member" },
-                        { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
-                        { title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
-                        { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
-                        { title: "Developer Info", description: "Informasi website & developer", id: "btn_dev" },
-                        { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
-                        { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
-                        { title: "Menu OSINT & Tracking", description: "Cek data breach & username stalker", id: "btn_osint" },
-                        { title: "Menu Plugin Tools", description: "Daftar semua plugin bot", id: "btn_plugin" }
-                      ]
-                    }
-                  ]
-                })
-              }
-            ]
-          };
+👇 *Silakan klik menu di bawah buat eksplor fitur JackBOT!* 👇`;
 
-          // Cek kalo owner naruh file video/gambar lokal
-          if (fs.existsSync('./assets/public/menu.mp4')) {
-            menuPayload.video = fs.readFileSync('./assets/public/menu.mp4');
-            menuPayload.caption = helpMsg;
-            menuPayload.gifPlayback = true; // Auto muter kaya GIF
-          } else if (fs.existsSync('./assets/public/menu.jpg')) {
-            menuPayload.image = fs.readFileSync('./assets/public/menu.jpg');
-            menuPayload.caption = helpMsg;
-          } else {
-            // Kalo gaada file, pke text aja biar kenceng
-            menuPayload.text = helpMsg;
-          }
-
-          await sock.sendMessage(msg.key.remoteJid, menuPayload, { quoted: msg });
-        } catch(e) {
-          console.log("Error sending interactive menu:", e);
-          await sock.sendMessage(msg.key.remoteJid, { text: helpMsg }, { quoted: msg });
+        const buttons = [];
+        if (ownerCheck) {
+          buttons.push({ name: "quick_reply", params: { display_text: "👑 Presiden", id: "btn_owner" } });
         }
+        buttons.push(
+          { name: "quick_reply", params: { display_text: "🛡️ Mentri", id: "btn_admin" } },
+          { name: "quick_reply", params: { display_text: "👤 Rakyat", id: "btn_member" } },
+          { name: "quick_reply", params: { display_text: "⚔️ RPG & Ekonomi", id: "btn_rpg" } },
+          { name: "quick_reply", params: { display_text: "🎮 Game & Fun", id: "btn_game" } },
+          { name: "quick_reply", params: { display_text: "📥 Downloader", id: "btn_downloader" } },
+          { name: "quick_reply", params: { display_text: "🎵 Spotify Music", id: "btn_spotify" } },
+          { name: "quick_reply", params: { display_text: "🎙️ Voice Changer", id: "btn_voice" } },
+          { name: "quick_reply", params: { display_text: "🕵️ OSINT & Track", id: "btn_osint" } },
+          { name: "quick_reply", params: { display_text: "🔌 Plugins", id: "btn_plugin" } }
+        );
+
+        await sendInteractiveMessage(sock, msg.key.remoteJid, helpMsg, "JackBOT v3.0.0", buttons, msg, "./assets/public/menu.jpg");
         break;
       }
 
-      case "btn_owner": {
+      case "1":
+      case "btn_owner":
+      case "menu_1": {
         if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa liat detail menu ini!");
         const txt = getHelpText(ownerCheck, adminCheck, "owner") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
-      case "1":
-      case "btn_admin": {
+      case "2":
+      case "btn_admin":
+      case "menu_2": {
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Cuma Mentri yg bisa liat ini bos!");
         const txt = getHelpText(ownerCheck, adminCheck, "admin") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
-      
-      case "2":
-      case "btn_member": {
-        const txt = getHelpText(ownerCheck, adminCheck, "member") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
-        break;
-      }
-      
+
       case "3":
-      case "btn_game": {
-        const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt });
-        break;
-      }
-      
-      case "btn_rpg": {
-        const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt });
-        break;
-      }
-      
-      case "btn_downloader": {
-        const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+      case "btn_member":
+      case "menu_3": {
+        const txt = getHelpText(ownerCheck, adminCheck, "member") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
       case "4":
-      case "btn_dev":
+      case "btn_rpg":
       case "menu_4": {
+        const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt });
+        break;
+      }
+
+      case "5":
+      case "btn_game":
+      case "menu_5": {
+        const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt });
+        break;
+      }
+
+      case "6":
+      case "btn_downloader":
+      case "menu_6": {
+        const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        break;
+      }
+
+      case "7":
+      case "btn_dev":
+      case "menu_7": {
         const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
-      case "5":
+      case "8":
       case "btn_spotify":
-      case "menu_5": {
+      case "menu_8": {
         const txt = getHelpText(ownerCheck, adminCheck, "spotify") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
-      case "6":
+      case "9":
       case "btn_voice":
-      case "menu_6": {
+      case "menu_9": {
         const txt = getHelpText(ownerCheck, adminCheck, "voice") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
-      case "btn_osint": {
+      case "10":
+      case "btn_osint":
+      case "menu_10": {
         const txt = getHelpText(ownerCheck, adminCheck, "osint") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
-      case "btn_plugin": {
+      case "11":
+      case "btn_plugin":
+      case "menu_11": {
         await plugins.listPlugins(sock, msg);
         break;
       }
@@ -1410,7 +1497,7 @@ Selamat bersenang-senang! 🎉`;
 
       case "imagine":
         if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit harian kamu habis! Minta owner buat nambah.");
-        await fun.imagine(sock, msg, args.join(" "));
+        await utils.generateImage(sock, msg, args.join(" "));
         break;
 
       case "tts":

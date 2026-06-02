@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { downloadMediaMessage } = require('atexovi-baileys');
+const { downloadMediaMessage, generateWAMessageFromContent } = require('atexovi-baileys');
 const FormData = require('form-data');
 
 async function uploadUguu(buffer) {
@@ -52,36 +52,47 @@ module.exports = {
 Silakan klik tombol di bawah ini:
 └───────────────┈ ⳹`;
 
-    const pluginPayload = {
-      text: text,
-      footer: "JackBOT v3.0",
-      interactiveButtons: [
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "🎮 Fake FF",
-            id: "!fakeff"
-          })
-        },
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "🗜️ Kompres Image",
-            id: "!kompres"
-          })
-        },
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "✨ Enhance HD",
-            id: "!hd"
-          })
+    const messageContent = {
+      viewOnceMessage: {
+        interactiveMessage: {
+          body: { text },
+          footer: { text: "JackBOT v3.0" },
+          header: {
+            title: "",
+            hasMediaAttachment: false
+          },
+          nativeFlowMessage: {
+            buttons: [
+              {
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🎮 Fake FF",
+                  id: "!fakeff"
+                })
+              },
+              {
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🗜️ Kompres Image",
+                  id: "!kompres"
+                })
+              },
+              {
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "✨ Enhance HD",
+                  id: "!hd"
+                })
+              }
+            ]
+          }
         }
-      ]
+      }
     };
 
     try {
-      await sock.sendMessage(msg.key.remoteJid, pluginPayload, { quoted: msg });
+      const msgObj = generateWAMessageFromContent(msg.key.remoteJid, messageContent, { quoted: msg });
+      await sock.relayMessage(msg.key.remoteJid, msgObj.message, { messageId: msgObj.key.id });
     } catch(e) {
       // Fallback text if client doesn't support interactive buttons
       const fallbackText = `*✦ ──『 🔌 DAFTAR PLUGIN 』── ✦*

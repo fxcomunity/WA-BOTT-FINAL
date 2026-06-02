@@ -202,6 +202,30 @@ const skills = [
       { level: 4, mpCost: 45, cooldownMs: 30 * 60000, reqLevel: 25, reqGold: 120000, reqItem: { id: "inti_golem_titan", amount: 1 }, desc: "6 Golem, 2.5 menit buff, hasil 6x lipat." },
       { level: 5, mpCost: 40, cooldownMs: 20 * 60000, reqLevel: 28, reqGold: 250000, reqItem: { id: "heart_of_golem", amount: 1 }, desc: "8 Golem, 3 menit buff, hasil 8x lipat, golem cari rare mat." }
     ]
+  },
+
+  // ==========================================
+  // GOD SKILLS & CREATOR (Owner Cheat)
+  // ==========================================
+  
+  // God Skills
+  { id: "petir_olimpus", name: "Petir Olimpus", type: "active", source: "Kalahkan Zeus", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Petir legendaris penyapu bersih." }] },
+  { id: "penghakiman_maat", name: "Penghakiman Maat", type: "active", source: "Kalahkan Anubis", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Menghukum musuh dengan damage mematikan." }] },
+  { id: "supernova_surya", name: "Supernova Surya", type: "active", source: "Kalahkan Ra", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Bakaran matahari tanpa akhir." }] },
+  { id: "pusaran_samudra", name: "Pusaran Samudra", type: "active", source: "Kalahkan Poseidon", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Badai lautan yang menenggelamkan monster." }] },
+  { id: "kehancuran_kosmis", name: "Kehancuran Kosmis", type: "active", source: "Kalahkan Sang Hyang Widhi", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Ledakan alam semesta." }] },
+  { id: "trisula_blast", name: "Trisula Blast", type: "active", source: "Kalahkan Bathara Guru", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Tembakan energi dari trisula khayangan." }] },
+  { id: "mantra_pembersih", name: "Mantra Pembersih", type: "active", source: "Kalahkan Barong", levels: [{ level: 5, mpCost: 500, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "God Skill: Menghapus aura kejahatan musuh." }] },
+
+  // Creator Skill
+  { 
+    id: "pembuatan_skill", 
+    name: "God Of Creator", 
+    type: "active", 
+    source: "Khusus Owner",
+    levels: [
+      { level: 5, mpCost: 0, cooldownMs: 0, reqLevel: 999, reqGold: 0, desc: "Instant Kill! Hapus musuh dari eksistensi." }
+    ]
   }
 ];
 

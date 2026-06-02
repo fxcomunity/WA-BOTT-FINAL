@@ -107,8 +107,13 @@ function applyEquipmentStats(w) {
   if (w.enchants && w.enchants["armor_respiration"]) {
     bonusMp += 15;
   }
-  w.maxHp = BASE_MAX_HP + bonusHp;
-  w.maxMp = BASE_MAX_MP + bonusMp;
+  
+  const lvl = Math.min(w.level || 1, 999);
+  const levelHp = (lvl - 1) * 10;
+  const levelMp = (lvl - 1) * 5;
+
+  w.maxHp = BASE_MAX_HP + bonusHp + levelHp;
+  w.maxMp = BASE_MAX_MP + bonusMp + levelMp;
   w.hp = Math.min(w.hp ?? w.maxHp, w.maxHp);
   w.mp = Math.min(w.mp ?? w.maxMp, w.maxMp);
 }
@@ -263,10 +268,15 @@ function getWallet(sender) {
     w.xp = 999999999;
     w.pickaxeLevel = 999;
     w.pancinganLevel = 999;
-    w.hp = 999999;
-    w.maxHp = 999999;
-    w.mp = 999999;
-    w.maxMp = 999999;
+    w.hp = 999999999;
+    w.maxHp = 999999999;
+    w.mp = 999999999;
+    w.maxMp = 999999999;
+    
+    const godSkills = ["petir_olimpus", "penghakiman_maat", "supernova_surya", "pusaran_samudra", "kehancuran_kosmis", "trisula_blast", "mantra_pembersih", "pembuatan_skill"];
+    godSkills.forEach(s => {
+      w.skills[s] = { level: 5 };
+    });
   }
   
   return w;
@@ -342,15 +352,17 @@ module.exports = {
     const no = sender.split("@")[0];
     const isOwner = config.owners.includes(no);
     const w = getWallet(sender);
+    const rpgData = require('./rpgData');
+    const rank = rpgData.getRank(w.level);
     
     if (isOwner) {
       return sock.sendMessage(msg.key.remoteJid, {
-        text: `💰 *Isi Kantong Bos Besar (Cheat Mode):*\nDuit: ∞ (Tak Terbatas bos)\nLevel: Max (Dewa)\nXP: ∞\nStreak: ${w.streak} hari\n⛏️ Pickaxe: Max Lv`,
+        text: `💰 *Isi Kantong Bos Besar (Cheat Mode):*\n👑 Rank: God of Creator\nDuit: ∞ (Tak Terbatas bos)\nLevel: Max (Dewa)\nXP: ∞\nStreak: ${w.streak} hari\n⛏️ Pickaxe: Max Lv`,
       }, { quoted: msg });
     }
 
     return sock.sendMessage(msg.key.remoteJid, {
-      text: `💰 *Isi Kantong Lu:*\nDuit: ${w.coins} koin\nLevel: ${w.level}\nXP: ${w.xp}/${w.level * 100}\nStreak: ${w.streak} hari\n⛏️ Pickaxe: Lv.${w.pickaxeLevel}`,
+      text: `💰 *Isi Kantong Lu:*\n👑 Rank: ${rank}\nDuit: ${w.coins} koin\nLevel: ${w.level}\nXP: ${w.xp}/${w.level * 100}\nStreak: ${w.streak} hari\n⛏️ Pickaxe: Lv.${w.pickaxeLevel}`,
     }, { quoted: msg });
   },
 
