@@ -33,17 +33,8 @@ module.exports = {
     );
     await sql`DELETE FROM link_strikes WHERE id = ${sender}`;
 
-    const strDate = formatTimestamp();
     const tag = `@${sender.split("@")[0]}`;
-
-    const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (PROMOSI) ] •━━╮
-┃
-┃ 👤 *Target:* ${tag}
-┃ 📝 *Pelanggaran:* ${reason}
-┃ ⏰ *Waktu Eksekusi:* ${strDate}
-┃ 💀 *Hukuman:* Kick langsung (zero tolerance)
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+    const kickMsg = `Mampus Lo Bangsat ${tag} siapa suruh ga baca RULES GRUB, Tolol`;
     return sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
   },
 
@@ -66,13 +57,7 @@ module.exports = {
       );
       await sql`DELETE FROM link_strikes WHERE id = ${sender}`;
 
-      const kickMsg = `╭━━• [ 🚷 *MAMPUS KENA KICK* (ANTI-LINK) ] •━━╮
-┃
-┃ 👤 *Target:* ${tag}
-┃ 📝 *Alasan:* ${reason} (${max}x peringatan)
-┃ ⏰ *Waktu Eksekusi:* ${strDate}
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+      const kickMsg = `Mampus Lo Bangsat ${tag} siapa suruh ga baca RULES GRUB, Tolol`;
       return sock.sendMessage(groupId, { text: kickMsg, mentions: [sender] });
     }
 
