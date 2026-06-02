@@ -463,23 +463,16 @@ async function startBot() {
       return;
     }
 
-    // Cek otorisasi grup resmi (Hanya membatasi penggunaan di grup chat non-resmi)
-    const allowedGroups = config.allowedGroups || [];
-    if (isGroup && allowedGroups.length > 0 && !ownerCheck) {
-      if (isCmd) {
-        if (!allowedGroups.includes(groupId)) {
-          return reply(sock, msg, "⚠️ *AKSES DITOLAK* ⚠️\n\nMaaf ngab, bot ini hanya dapat digunakan di grup resmi JackBOT.");
-        }
-      }
-    }
-
     // Tambah statistik
     if (isGroup && config.features.statistics) statistics.track(groupId, sender);
 
     // Tambah poin ekonomi per pesan
     if (isGroup && config.features.economy) economy.addCoins(sender, config.activeReward);
 
-    // Ambil & simpan nama WA user otomatis ke limit system
+    // Registrasi ekonomi & limit otomatis untuk user baru saat mereka berinteraksi
+    if (config.features.economy) {
+      economy.getWallet(sender);
+    }
     limitSystem.setName(sender, msg.pushName || sender.split("@")[0]);
 
     // ============================================
