@@ -9,6 +9,14 @@ const pino = require("pino");
 const fs = require('fs');
 const config = require("./config");
 
+// Global exception/rejection handlers to prevent process crashes on unexpected errors
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 function validateConfig() {
   if (config.features.aiChatbot && !config.hasValidApiKeys()) {
     console.warn("⚠️ [CONFIG] aiChatbot dinonaktifkan — tidak ada API key valid di .env");
@@ -1525,6 +1533,8 @@ Selamat bersenang-senang! 🎉`;
         const freeRAM = Math.round(os.freemem() / 1024 / 1024);
         const usedRAM = totalRAM - freeRAM;
 
+        const ownerNum = config.owners[0];
+        const botNum = sock.user.id.split(':')[0];
         const text = `🚀 *SYSTEM STATUS & BOT INFO* 🚀\n\n` +
                      `🏓 *PONG!*\n` +
                      `⚡ *Kecepatan Respon:* ${pingEnd - pingStart} ms\n` +
@@ -1534,11 +1544,14 @@ Selamat bersenang-senang! 🎉`;
                      `┃ 🏷️ *Nama BOT:* JackBOT\n` +
                      `┃ 📦 *Version:* v3.0.0\n` +
                      `┃ 🌐 *Hosting BOT:* https://yurahostingg.my.id\n` +
-                     `┃ 👑 *Nomor Owner:* +62 895-4041-47521 (陈嘉杰 | Val)\n` +
-                     `┃ 📱 *Nomor BOT:* +62 895-3152-6042 (Vall Dev)\n` +
+                     `┃ 👑 *Nomor Owner:* @${ownerNum.split("@")[0]}\n` +
+                     `┃ 📱 *Nomor BOT:* @${botNum.split("@")[0]}\n` +
                      `┃ 📡 *DNS:* 8.8.8.8 (Google Primary) | 8.8.4.4 (Google Secondary) | 1.1.1.1 (Cloudflare)`;
 
-        await reply(sock, msg, text);
+        await sock.sendMessage(groupId, { 
+          text: text, 
+          mentions: [ownerNum + "@s.whatsapp.net", botNum + "@s.whatsapp.net"] 
+        }, { quoted: msg });
         break;
       }
 
