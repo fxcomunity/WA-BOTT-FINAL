@@ -496,7 +496,48 @@ async function startBot() {
     // ANTI LINK — promo/invite = kick langsung, sosial/lain = warn dulu
     // Admin grup & owner bot dikecualikan (bebas kirim link apapun)
     // ============================================
-    if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && !isCmd) {
+    let shouldCheckLink = !isCmd;
+    if (isCmd) {
+      const downloaderMap = {
+        yt: [/youtube\.com/i, /youtu\.be/i],
+        tt: [/tiktok\.com/i, /douyin\.com/i],
+        ig: [/instagram\.com/i, /instagr\.am/i],
+        fb: [/facebook\.com/i, /fb\.watch/i, /fb\.com/i],
+        tw: [/twitter\.com/i, /x\.com/i],
+        x: [/twitter\.com/i, /x\.com/i],
+        spotifyplay: [/spotify\.com/i],
+        spplay: [/spotify\.com/i],
+        spotifysearch: [/spotify\.com/i],
+        spotifys: [/spotify\.com/i],
+        sps: [/spotify\.com/i],
+        pinterest: [/pinterest\.com/i, /pin\.it/i],
+        gambar: [/pinterest\.com/i, /pin\.it/i],
+        pin: [/pinterest\.com/i, /pin\.it/i]
+      };
+
+      const violation = moderation.analyzeViolation(body);
+      if (violation.action !== "none") {
+        if (["tanya", "translate", "tr", "qr", "menfess"].includes(cmd)) {
+          if (violation.action === "kick") {
+            shouldCheckLink = true;
+          }
+        } else {
+          const allowedPatterns = downloaderMap[cmd];
+          if (allowedPatterns) {
+            const { extractLinks } = require("./features/antiLink");
+            const links = extractLinks(body);
+            const hasInvalidLink = links.some(link => !allowedPatterns.some(pattern => pattern.test(link)));
+            if (hasInvalidLink) {
+              shouldCheckLink = true;
+            }
+          } else {
+            shouldCheckLink = true;
+          }
+        }
+      }
+    }
+
+    if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && shouldCheckLink) {
       const violation = moderation.analyzeViolation(body);
       if (violation.action !== "none") {
         try {
