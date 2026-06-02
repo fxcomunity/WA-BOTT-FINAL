@@ -89,7 +89,7 @@ module.exports = {
     
     try {
       const axios = require('axios');
-      const apiUrl = `https://siputzx-bart.hf.space/?q=${encodeURIComponent(text)}`;
+      const apiUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}`;
       const res = await axios.get(apiUrl, { responseType: 'arraybuffer' });
       const buffer = Buffer.from(res.data, 'binary');
 
@@ -103,6 +103,7 @@ module.exports = {
           console.error(err);
           await sock.sendMessage(groupId, { text: "❌ Gagal bos buat stiker brat ngab!" }, { quoted: msg });
           try { fs.unlinkSync(tmpIn); } catch (e) {}
+          try { fs.unlinkSync(tmpOut); } catch (e) {}
         })
         .on('end', async () => {
           const webpBuffer = fs.readFileSync(tmpOut);
@@ -114,7 +115,7 @@ module.exports = {
         })
         .addOutputOptions([
           "-vcodec", "libwebp",
-          "-vf", "scale='min(512,iw)':min'(512,ih)':force_original_aspect_ratio=decrease,fps=15, pad=512:512:-1:-1:color=white@0.0, format=rgba",
+          "-vf", "scale='min(512,iw)':'min(512,ih)':force_original_aspect_ratio=decrease,fps=15, pad=512:512:-1:-1:color=white@0.0, format=rgba",
           "-loop", "0",
           "-preset", "default",
           "-an",

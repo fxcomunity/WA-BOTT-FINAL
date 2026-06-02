@@ -54,8 +54,8 @@ const enchantsData = require('./enchantsData');
 
 const baseShop = [
   { id: 1, name: "Badge VIP",             price: 500,   desc: "Status VIP di grup", type: "role" },
-  { id: 2, name: "Anti Warn 1x",          price: 300,   desc: "Hapus 1 warn kamu", type: "item" },
-  { id: 3, name: "Bypass Slowmode",       price: 200,   desc: "Bypass slow mode 1 jam", type: "item" },
+  { id: 2, name: "Anti Warn 1x",          price: 300,   desc: "Hapus 1 warn kamu", type: "item", itemKey: "anti_warn" },
+  { id: 3, name: "Bypass Slowmode",       price: 200,   desc: "Bypass slow mode 1 jam", type: "item", itemKey: "bypass_slowmode" },
   { id: 4, name: "Stamina Kecil (5 Mnt)", price: 500,   desc: "Reset CD Mancing/Nambang 5 Menit", type: "item", itemKey: "stamina_kecil" },
   { id: 5, name: "Stamina Sedang (10 Mnt)",price: 900,  desc: "Reset CD Mancing/Nambang 10 Menit", type: "item", itemKey: "stamina_sedang" },
   { id: 6, name: "Stamina Besar (20 Mnt)",price: 1500,  desc: "Reset CD Mancing/Nambang 20 Menit", type: "item", itemKey: "stamina_besar" },
@@ -814,7 +814,7 @@ module.exports = {
     }
     text += `\n🎒 *ISI TAS LU*\n\n`;
     
-    let cats = { fishing: [], mining: [], hunting: [], artifact: [], potion: [], other: [] };
+    let cats = { fishing: [], mining: [], hunting: [], artifact: [], potion: [], enchant: [], other: [] };
     const rpgData = require('./rpgData');
     let isEmpty = true;
     for (const [itemId, amount] of Object.entries(w.inventory)) {
@@ -834,9 +834,22 @@ module.exports = {
         } else if (artifactData) {
           str = `▪️ ${artifactData.name} (${rpgData.artifactTiers[artifactData.tier]?.name}): ${amount}\n`;
           cats.artifact.push(str);
+        } else if (itemId.startsWith("buku_")) {
+          const enchantsData = require('./enchantsData');
+          const enchId = itemId.replace("buku_", "");
+          const ench = enchantsData.enchants.find(e => e.id === enchId);
+          const name = ench ? `Buku ${ench.name} (${ench.tier})` : itemId.replace(/_/g, " ").toUpperCase();
+          str = `▪️ ${name}: ${amount}\n`;
+          cats.enchant.push(str);
         } else if (itemId.includes("potion")) {
           str = `▪️ ${itemId.replace(/_/g, " ").toUpperCase()}: ${amount}\n`;
           cats.potion.push(str);
+        } else if (itemId === "anti_warn") {
+          str = `▪️ Anti Warn 1x: ${amount}\n`;
+          cats.other.push(str);
+        } else if (itemId === "bypass_slowmode") {
+          str = `▪️ Bypass Slowmode (1 Jam): ${amount}\n`;
+          cats.other.push(str);
         } else if (gearData.getGear(itemId)) {
           const g = gearData.getGear(itemId);
           str = `▪️ ${g.name}: ${amount}\n`;
@@ -856,6 +869,7 @@ module.exports = {
       if (cats.hunting.length > 0) { text += `🔪 *DAGANGAN HUNTING (HUNTING)*\n${cats.hunting.join('')}\n`; }
       if (cats.artifact.length > 0) { text += `🔮 *ARTEFAK SAKTI (ARTIFACT)*\n${cats.artifact.join('')}\n`; }
       if (cats.potion.length > 0) { text += `🧪 *RAMUAN (POTION)*\n${cats.potion.join('')}\n`; }
+      if (cats.enchant.length > 0) { text += `📘 *BUKU SIHIR (ENCHANT)*\n${cats.enchant.join('')}\n`; }
       if (cats.other.length > 0) { text += `📦 *LAIN-LAIN*\n${cats.other.join('')}\n`; }
     }
 
@@ -1073,11 +1087,35 @@ module.exports = {
     }
 
     const itemName = args[0].toLowerCase();
-    
     const qty = w.inventory[itemName] || 0;
     if (qty <= 0) return sock.sendMessage(msg.key.remoteJid, { text: `❌ Ngigo lu njir? Lu kaga punya ${itemName} di tas!` }, { quoted: msg });
-    
-    if (itemName === "stamina_kecil") {
+
+    if (itemName === "anti_warn") {
+      const warnSystem = require('./warnSystem');
+      const currentWarns = await warnSystem.getWarn(sender);
+      if (currentWarns <= 0) {
+        return sock.sendMessage(msg.key.remoteJid, { text: `❌ SP lu masih 0 ngab! Ngapain pake anti-warn.` }, { quoted: msg });
+      }
+      w.inventory[itemName] -= 1;
+      const newWarns = currentWarns - 1;
+      const { sql } = require('../database/db');
+      if (newWarns === 0) {
+        await sql`DELETE FROM warns WHERE id = ${sender}`;
+      } else {
+        await sql`UPDATE warns SET "warnCount" = ${newWarns} WHERE id = ${sender}`;
+      }
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `✅ Berhasil pakai *Anti Warn 1x*!\nJumlah peringatan (SP) lu berkurang 1. SP lu sekarang: ${newWarns} SP.` }, { quoted: msg });
+    } else if (itemName === "bypass_slowmode") {
+      w.inventory[itemName] -= 1;
+      const durationMs = 60 * 60000; // 1 Jam
+      w.buffs["bypass_slowmode"] = {
+        name: "Bypass Slowmode",
+        expiresAt: Date.now() + durationMs
+      };
+      saveWallet(sender, w);
+      return sock.sendMessage(msg.key.remoteJid, { text: `✅ Berhasil pakai *Bypass Slowmode*!\nKamu bebas nge-spam/chat tanpa terkena slow mode selama 1 jam.` }, { quoted: msg });
+    } else if (itemName === "stamina_kecil") {
       w.inventory[itemName] -= 1;
       w.lastMancing = Math.max(0, w.lastMancing - (5 * 60000));
       w.lastNambang = Math.max(0, w.lastNambang - (5 * 60000));

@@ -94,6 +94,11 @@ module.exports = {
   // === KATA KASAR ===
   badWords: ["anjing", "bangsat", "brengsek", "bajingan"],
 
+  // === GRUP WHITELIST ===
+  allowedGroups: [
+    // Tambahkan JID Grup di sini, misalnya "120363000000000000@g.us"
+  ],
+
   // === LINK WHITELIST ===
   allowedLinks: [
     "chat.whatsapp.com/KnkESJgEUKT5PEki4SpDD0",

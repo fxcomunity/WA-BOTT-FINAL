@@ -16,8 +16,13 @@ module.exports = {
 
     // Cek slow mode
     if (slowMode.active) {
-      if (lastMsg[sender] && now - lastMsg[sender] < slowMode.delay * 1000) return true;
-      lastMsg[sender] = now;
+      const economy = require('./economy');
+      const wallet = economy.getWallet ? economy.getWallet(sender) : null;
+      const hasBypass = wallet && wallet.buffs && wallet.buffs["bypass_slowmode"] && Date.now() < wallet.buffs["bypass_slowmode"].expiresAt;
+      if (!hasBypass) {
+        if (lastMsg[sender] && now - lastMsg[sender] < slowMode.delay * 1000) return true;
+        lastMsg[sender] = now;
+      }
     }
 
     // Cek flood

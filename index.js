@@ -422,7 +422,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen",
         ...audioEffects.effectsList
       ];
 
@@ -453,6 +453,38 @@ async function startBot() {
     // MODE SELF: Abaikan semua command jika bukan dari owner
     if (isSelfMode && !ownerCheck && isCmd) {
       return;
+    }
+
+    // Cek otorisasi grup resmi
+    if (isCmd && !ownerCheck) {
+      const allowedGroups = config.allowedGroups || [];
+      let isAuthorized = false;
+      
+      if (isGroup) {
+        if (allowedGroups.includes(groupId)) {
+          isAuthorized = true;
+        }
+      } else {
+        // DM/Private Chat: Cek apakah user adalah anggota salah satu grup resmi
+        for (const groupJid of allowedGroups) {
+          try {
+            const metadata = await getGroupMetadata(sock, groupJid);
+            if (metadata && metadata.participants) {
+              const found = metadata.participants.some(p => jidNormalizedUser(p.id) === jidNormalizedUser(sender));
+              if (found) {
+                isAuthorized = true;
+                break;
+              }
+            }
+          } catch (e) {
+            console.error(`[AUTH] Gagal mengecek keanggotaan grup ${groupJid}:`, e.message);
+          }
+        }
+      }
+      
+      if (!isAuthorized && allowedGroups.length > 0) {
+        return reply(sock, msg, "⚠️ *AKSES DITOLAK* ⚠️\n\nMaaf ngab, bot ini hanya dapat digunakan oleh anggota grup resmi JackBOT.\n\nSilakan bergabung ke grup resmi terlebih dahulu!");
+      }
     }
 
     // Tambah statistik
@@ -1657,11 +1689,31 @@ Selamat bersenang-senang! 🎉`;
             return reply(sock, msg, "❌ Balas pesan View Once (Sekali Lihat) dengan command !rvo");
           }
           
-          let viewOnceInner = quotedMsg.viewOnceMessage?.message || quotedMsg.viewOnceMessageV2?.message || quotedMsg.viewOnceMessageV2Extension?.message || quotedMsg;
+          let tempMsg = quotedMsg;
+          let isViewOnce = false;
+          while (tempMsg) {
+            if (tempMsg.viewOnceMessage || tempMsg.viewOnceMessageV2 || tempMsg.viewOnceMessageV2Extension) {
+              isViewOnce = true;
+            }
+            if (tempMsg.ephemeralMessage?.message) {
+              tempMsg = tempMsg.ephemeralMessage.message;
+            } else if (tempMsg.viewOnceMessage?.message) {
+              tempMsg = tempMsg.viewOnceMessage.message;
+            } else if (tempMsg.viewOnceMessageV2?.message) {
+              tempMsg = tempMsg.viewOnceMessageV2.message;
+            } else if (tempMsg.viewOnceMessageV2Extension?.message) {
+              tempMsg = tempMsg.viewOnceMessageV2Extension.message;
+            } else if (tempMsg.documentWithCaptionMessage?.message) {
+              tempMsg = tempMsg.documentWithCaptionMessage.message;
+            } else {
+              break;
+            }
+          }
           
-          let mediaType = Object.keys(viewOnceInner).find(k => k === 'imageMessage' || k === 'videoMessage' || k === 'audioMessage');
-          
-          let isViewOnce = quotedMsg.viewOnceMessage || quotedMsg.viewOnceMessageV2 || quotedMsg.viewOnceMessageV2Extension || (mediaType && viewOnceInner[mediaType]?.viewOnce);
+          let mediaType = Object.keys(tempMsg || {}).find(k => k === 'imageMessage' || k === 'videoMessage' || k === 'audioMessage');
+          if (mediaType && tempMsg[mediaType]?.viewOnce) {
+            isViewOnce = true;
+          }
           
           if (!isViewOnce || !mediaType) {
             return reply(sock, msg, "❌ Balas pesan View Once (Sekali Lihat) dengan command !rvo");
@@ -1669,13 +1721,14 @@ Selamat bersenang-senang! 🎉`;
           
           await reply(sock, msg, "🔓 Membuka pesan rahasia...");
           
+          const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid;
           const fakeMsg = {
             key: {
               remoteJid: msg.key.remoteJid,
               id: msg.message.extendedTextMessage.contextInfo.stanzaId,
-              participant: msg.message.extendedTextMessage.contextInfo.participant
+              participant: quotedParticipant
             },
-            message: viewOnceInner
+            message: tempMsg
           };
           
           const buffer = await downloadMediaMessage(
@@ -1685,7 +1738,7 @@ Selamat bersenang-senang! 🎉`;
             { logger: console, reuploadRequest: sock.updateMediaMessage }
           );
           
-          const caption = viewOnceInner[mediaType]?.caption || "";
+          const caption = tempMsg[mediaType]?.caption || "";
           
           if (mediaType === 'imageMessage') {
             await sock.sendMessage(groupId, { image: buffer, caption: `🔓 *Anti View Once*\n\n📝 Caption: ${caption}` }, { quoted: msg });
@@ -1707,24 +1760,36 @@ Selamat bersenang-senang! 🎉`;
         try {
           const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
           
-          if (!quotedMsg || (!quotedMsg.imageMessage && !quotedMsg.videoMessage && !quotedMsg.extendedTextMessage)) {
+          let tempMsg = quotedMsg;
+          while (tempMsg) {
+            if (tempMsg.ephemeralMessage?.message) {
+              tempMsg = tempMsg.ephemeralMessage.message;
+            } else if (tempMsg.documentWithCaptionMessage?.message) {
+              tempMsg = tempMsg.documentWithCaptionMessage.message;
+            } else {
+              break;
+            }
+          }
+          
+          if (!tempMsg || (!tempMsg.imageMessage && !tempMsg.videoMessage && !tempMsg.extendedTextMessage)) {
             return reply(sock, msg, "❌ Balas status WA (foto/video/teks) dengan command !sw");
           }
 
-          const isImage = quotedMsg.imageMessage;
-          const isVideo = quotedMsg.videoMessage;
-          const isText = quotedMsg.extendedTextMessage;
+          const isImage = tempMsg.imageMessage;
+          const isVideo = tempMsg.videoMessage;
+          const isText = tempMsg.extendedTextMessage;
           
           const caption = isImage?.caption || isVideo?.caption || isText?.text || "";
           
           if (isImage || isVideo) {
+            const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid;
             const fakeMsg = {
               key: {
                 remoteJid: msg.key.remoteJid,
                 id: msg.message.extendedTextMessage.contextInfo.stanzaId,
-                participant: msg.message.extendedTextMessage.contextInfo.participant
+                participant: quotedParticipant
               },
-              message: quotedMsg
+              message: tempMsg
             };
             
             const buffer = await downloadMediaMessage(
@@ -1814,6 +1879,11 @@ Selamat bersenang-senang! 🎉`;
       case "enhancer":
         if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
         await plugins.enhancer(sock, msg);
+        break;
+
+      case "meigen":
+        if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
+        await plugins.meigen(sock, msg, args.join(" "));
         break;
 
       default:

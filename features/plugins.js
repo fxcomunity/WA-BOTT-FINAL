@@ -58,6 +58,11 @@ module.exports = {
 │    ↳ Perjelas/Enhance gambar HD
 └───────────────┈ ⳹
 
+┌──❖ *S E A R C H*
+│ ⚡ *!meigen* [kata kunci]
+│    ↳ Cari AI Prompt dari meigen.ai
+└───────────────┈ ⳹
+
 _Silakan ketik perintah di atas secara langsung untuk menggunakan fiturnya._`;
     await sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
   },
@@ -200,6 +205,59 @@ _Silakan ketik perintah di atas secara langsung untuk menggunakan fiturnya._`;
       console.error(e);
       await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
       await sock.sendMessage(msg.key.remoteJid, { text: '❌ Gagal memproses gambar (enhancer)' }, { quoted: msg });
+    }
+  },
+
+  meigen: async (sock, msg, text) => {
+    if (!text) {
+      return sock.sendMessage(msg.key.remoteJid, { text: `Gunakan: !meigen <kata kunci>` }, { quoted: msg });
+    }
+
+    try {
+      await sock.sendMessage(msg.key.remoteJid, { react: { text: "⏳", key: msg.key } });
+      
+      const res = await axios.get(`https://www.meigen.ai/api/search?q=${encodeURIComponent(text)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 30000
+      });
+      
+      const json = res.data;
+
+      if (!json.success || !json.data?.length) {
+        await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
+        return sock.sendMessage(msg.key.remoteJid, { text: 'Prompt tidak ditemukan' }, { quoted: msg });
+      }
+
+      const data = json.data[Math.floor(Math.random() * json.data.length)];
+
+      let caption = `— meigen search —
+
+❀ Query: ${text}
+❀ Author: ${data.author_display_name}
+❀ Username: @${data.author_username}
+❀ Model: ${data.model}
+
+❀ Stats
+• Likes: ${data.likes}
+• Views: ${data.views}
+• Favorites: ${data.favorites_count}
+
+❀ Prompt
+${data.text.length > 1500 ? data.text.slice(0, 1500) + '...' : data.text}`;
+
+      await sock.sendMessage(msg.key.remoteJid, {
+        image: { url: data.thumbnail_url },
+        caption: caption,
+        mentions: [`${data.author_username}@s.whatsapp.net`]
+      }, { quoted: msg });
+      
+      await sock.sendMessage(msg.key.remoteJid, { react: { text: "✅", key: msg.key } });
+    } catch (error) {
+      console.error(error);
+      await sock.sendMessage(msg.key.remoteJid, { react: { text: "❌", key: msg.key } });
+      await sock.sendMessage(msg.key.remoteJid, { text: `Error: ${error.message}` }, { quoted: msg });
     }
   }
 };
