@@ -235,6 +235,31 @@ async function startBot() {
       console.log("✅ JackBOT berhasil terhubung!");
       scheduler.start(sock);
 
+      // Kirim info koneksi ke grup "BROAD CAST SERVER BOT"
+      setTimeout(async () => {
+        try {
+          const groups = await sock.groupFetchAllParticipating();
+          const targetGroup = Object.values(groups).find(g => g.subject === "BROAD CAST SERVER BOT");
+          if (targetGroup) {
+            const dNow = new Date();
+            const wibTime = dNow.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') + " WIB";
+            const todayDate = dNow.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const uptimeMsg = `🤖 *JackBOT Terhubung!*
+            
+📅 *Tanggal:* ${todayDate}
+🕒 *Waktu:* ${wibTime}
+🚀 *Status:* Online & Siap digunakan!
+📢 *Server:* Aktif`;
+            await sock.sendMessage(targetGroup.id, { text: uptimeMsg });
+            console.log(`✅ Berhasil mengirim notifikasi koneksi ke grup BROAD CAST SERVER BOT (${targetGroup.id})`);
+          } else {
+            console.log("⚠️ Grup 'BROAD CAST SERVER BOT' tidak ditemukan di daftar grup.");
+          }
+        } catch (err) {
+          console.error("❌ Gagal mengirim notifikasi koneksi ke grup BROAD CAST SERVER BOT:", err);
+        }
+      }, 5000);
+
       // Auto unfollow semua newsletter
       try {
         if (sock.getNewsletters && sock.unsubscribeNewsletter) {
@@ -430,7 +455,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log",
         ...audioEffects.effectsList
       ];
 
@@ -666,6 +691,25 @@ async function startBot() {
         saveSettings();
         await reply(sock, msg, "🔊 *Mode PUBLIC Aktif!*\nBot sekarang kembali melayani semua member grup. (Tersimpan permanen)");
         break;
+
+      case "log": {
+        const isGroup = msg.key.remoteJid.endsWith("@g.us");
+        const senderJid = sender;
+        const groupJid = msg.key.remoteJid;
+        
+        let responseText = `📝 *[ LOG / DETEKSI JID ]*\n\n`;
+        responseText += `👤 *WhatsApp User:* @${senderJid.split("@")[0]}\n`;
+        responseText += `💬 *User JID:* \`${senderJid}\`\n\n`;
+        if (isGroup) {
+          responseText += `🏢 *Group JID:* \`${groupJid}\`\n`;
+        } else {
+          responseText += `🏢 *Chat Type:* Private Chat (PC)\n`;
+        }
+        
+        await sock.sendMessage(groupId, { text: responseText, mentions: [senderJid] }, { quoted: msg });
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+        break;
+      }
 
       case "lock":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Yeee lu bukan mentri, gabisa ngunci grup bos!");
@@ -941,6 +985,7 @@ async function startBot() {
 │ 📆 Date : ${strHariTanggal}
 │ 🕒 Time : ${strJam}
 │ 🤖 Mode : ${isSelfMode ? 'Self (!public)' : 'Public (!self)'}
+│ 📝 Log  : Cek JID/WA (!log)
 └───────────────┈ ⳹
 
 ┌──❖ *C O M M U N I T Y*
