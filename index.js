@@ -496,6 +496,16 @@ async function startBot() {
     // ANTI LINK — promo/invite = kick langsung, sosial/lain = warn dulu
     // Admin grup & owner bot dikecualikan (bebas kirim link apapun)
     // ============================================
+    let adminNumbers = [];
+    if (isGroup) {
+      try {
+        const groupAdmins = await getGroupAdmins(sock, groupId);
+        adminNumbers = groupAdmins.map(jid => jid.split("@")[0]);
+      } catch (e) {
+        console.error("Gagal mengambil list admin untuk whitelist nomor:", e);
+      }
+    }
+
     let shouldCheckLink = !isCmd;
     if (isCmd) {
       const downloaderMap = {
@@ -515,7 +525,7 @@ async function startBot() {
         pin: [/pinterest\.com/i, /pin\.it/i]
       };
 
-      const violation = moderation.analyzeViolation(body);
+      const violation = moderation.analyzeViolation(body, adminNumbers);
       if (violation.action !== "none") {
         if (["tanya", "translate", "tr", "qr", "menfess"].includes(cmd)) {
           if (violation.action === "kick") {
@@ -538,7 +548,7 @@ async function startBot() {
     }
 
     if (isGroup && config.features.antiLink && !adminCheck && !ownerCheck && shouldCheckLink) {
-      const violation = moderation.analyzeViolation(body);
+      const violation = moderation.analyzeViolation(body, adminNumbers);
       if (violation.action !== "none") {
         try {
           const botId = jidNormalizedUser(sock.user.id);

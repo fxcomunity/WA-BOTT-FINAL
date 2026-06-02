@@ -71,27 +71,39 @@ function isSocialLink(link) {
   return socialDomains.some(d => lower.includes(d));
 }
 
-function classifyText(text) {
+function classifyText(text, extraWhitelist = []) {
   if (!text || typeof text !== "string") return { action: "none" };
 
   const normalized = normalizeText(text);
+
+  // Custom check that includes extraWhitelist (e.g. admin phone numbers)
+  const isLocalWhitelisted = (l) => {
+    if (isWhitelisted(l)) return true;
+    if (Array.isArray(extraWhitelist) && extraWhitelist.some(ew => ew && l.toLowerCase().includes(ew.toLowerCase()))) return true;
+    return false;
+  };
+
   const links = extractLinks(normalized);
 
   // Cek jika teks mengandung pola invite secara langsung (meskipun tidak terdeteksi link regex utuh)
   const hasPromoDirect = promoPatterns.some(p => p.test(normalized));
-  if (hasPromoDirect && !isWhitelisted(normalized)) {
+  if (hasPromoDirect && !isLocalWhitelisted(normalized)) {
     return { action: "kick", reason: "Nyebar link promosi / invite grup (bypass detected)" };
   }
 
   if (links.length === 0) return { action: "none" };
 
   // Hanya link whitelist → aman
-  const blocked = links.filter(l => !isWhitelisted(l));
+  const blocked = links.filter(l => !isLocalWhitelisted(l));
   if (blocked.length === 0) return { action: "none" };
 
   // Ada link promo non-whitelist → kick langsung
   for (const link of blocked) {
-    if (isPromoLink(link)) {
+    const isPromoLinkLocal = (l) => {
+      if (isLocalWhitelisted(l)) return false;
+      return promoPatterns.some(p => p.test(l));
+    };
+    if (isPromoLinkLocal(link)) {
       return { action: "kick", reason: "Nyebar link promosi / invite grup" };
     }
   }

@@ -10,12 +10,12 @@ function formatTimestamp() {
 }
 
 module.exports = {
-  analyzeViolation(text) {
-    return antiLink.classifyText(text);
+  analyzeViolation(text, extraWhitelist = []) {
+    return antiLink.classifyText(text, extraWhitelist);
   },
 
-  hasBlockedLink(text) {
-    return antiLink.classifyText(text).action !== "none";
+  hasBlockedLink(text, extraWhitelist = []) {
+    return antiLink.classifyText(text, extraWhitelist).action !== "none";
   },
 
   async getLinkStrikes(sender) {
