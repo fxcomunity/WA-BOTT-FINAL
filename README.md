@@ -146,5 +146,5 @@ Semua bahasa error, info, dan respon bot udah dikonversi 100% jadi bahasa Gen-Z 
 
 Proyek ini tidak akan terwujud tanpa dedikasi spiritual kepada **Allah SWT**, visi kreatif dari **Muhammad Rizki Sumantri**, serta bantuan pengembangan dari asisten AI (**Antigravity** & **Claude**).
 
-Detail lengkap kontribusi dan tim pengembang dapat Anda lihat di file **[CREDITS.md](file:///c:/Users/annas/Videos/wa-bot/CREDITS.md)**.
+Detail lengkap kontribusi dan tim pengembang dapat Anda lihat di file **[CONTRIBUTING.md](file:///c:/Users/annas/Videos/wa-bot/CONTRIBUTING.md)**.
 
