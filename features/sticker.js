@@ -7,6 +7,30 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const WebP = require('node-webpmux');
+
+async function addExif(webpBuffer, packname, author) {
+  try {
+    const img = new WebP.Image();
+    await img.load(webpBuffer);
+    const json = {
+      "sticker-pack-id": "com.jackbot",
+      "sticker-pack-name": packname,
+      "sticker-pack-publisher": author,
+      "emojis": [""]
+    };
+    let exifAttr = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);
+    let jsonBuffer = Buffer.from(JSON.stringify(json), 'utf8');
+    let exif = Buffer.concat([exifAttr, jsonBuffer]);
+    exif.writeUIntLE(jsonBuffer.length, 14, 4);
+    img.exif = exif;
+    return await img.save(null);
+  } catch (err) {
+    console.error("Error adding exif:", err.message);
+    return webpBuffer;
+  }
+}
+
 module.exports = {
   async createSticker(sock, msg, groupId) {
     try {
@@ -57,12 +81,13 @@ module.exports = {
           try { fs.unlinkSync(tmpOut); } catch (e) {}
         })
         .on('end', async () => {
-          const webpBuffer = fs.readFileSync(tmpOut);
+          let webpBuffer = fs.readFileSync(tmpOut);
+          webpBuffer = await addExif(webpBuffer, "JackBOT", "陈嘉杰 | Val");
           await sock.sendMessage(groupId, { sticker: webpBuffer }, { quoted: msg });
           
           // Cleanup
-          fs.unlinkSync(tmpIn);
-          fs.unlinkSync(tmpOut);
+          try { fs.unlinkSync(tmpIn); } catch (e) {}
+          try { fs.unlinkSync(tmpOut); } catch (e) {}
         })
         .addOutputOptions([
           "-vcodec", "libwebp",
@@ -106,7 +131,8 @@ module.exports = {
           try { fs.unlinkSync(tmpOut); } catch (e) {}
         })
         .on('end', async () => {
-          const webpBuffer = fs.readFileSync(tmpOut);
+          let webpBuffer = fs.readFileSync(tmpOut);
+          webpBuffer = await addExif(webpBuffer, "JackBOT", "陈嘉杰 | Val");
           await sock.sendMessage(groupId, { sticker: webpBuffer }, { quoted: msg });
           try {
             fs.unlinkSync(tmpIn);
