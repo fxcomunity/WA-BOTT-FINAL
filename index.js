@@ -55,6 +55,7 @@ const fun         = require("./features/fun");
 const audioEffects = require("./features/audioEffects");
 const plugins     = require("./features/plugins");
 const osint       = require("./features/osint");
+const komikTracker = require("./features/komikTracker");
 
 // ============================================
 // FUNGSI CEK ADMIN (DENGAN CACHE ANTI TIMEOUT)
@@ -455,7 +456,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik",
         ...audioEffects.effectsList
       ];
 
@@ -1914,6 +1915,26 @@ Selamat bersenang-senang! 🎉`;
       case "meigen":
         if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
         await plugins.meigen(sock, msg, args.join(" "));
+        break;
+
+      case "track":
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa pake fitur ini!");
+        await komikTracker.manualCheck(sock, msg);
+        break;
+
+      case "tracklist":
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa pake fitur ini!");
+        await komikTracker.trackList(sock, msg);
+        break;
+
+      case "addtrack":
+        if (!ownerCheck) return reply(sock, msg, "❌ Cuma Presiden yang bisa pake fitur ini!");
+        await komikTracker.addTrack(sock, msg, args.join(" "));
+        break;
+
+      case "komik":
+        if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit kamu habis hari ini ngab!");
+        await komikTracker.searchComic(sock, msg, args.join(" "));
         break;
 
       default:
