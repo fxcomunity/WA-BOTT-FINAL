@@ -350,8 +350,25 @@ async function startBot() {
       }
     }
     
+    // Unwrap message dari viewOnce, ephemeral, dll. untuk pemrosesan command & button reply
+    if (msg.message) {
+      let mtype = Object.keys(msg.message)[0];
+      if (mtype === 'viewOnceMessage' || mtype === 'viewOnceMessageV2' || mtype === 'viewOnceMessageV2Extension') {
+        msg.message = msg.message[mtype].message;
+        mtype = Object.keys(msg.message)[0];
+      }
+      if (mtype === 'ephemeralMessage') {
+        msg.message = msg.message.ephemeralMessage.message;
+        mtype = Object.keys(msg.message)[0];
+      }
+      if (mtype === 'documentWithCaptionMessage') {
+        msg.message = msg.message.documentWithCaptionMessage.message;
+        mtype = Object.keys(msg.message)[0];
+      }
+    }
+    
     // Handle Anti-Delete (REVOKE)
-    if (msg.message.protocolMessage && msg.message.protocolMessage.type === 0) { // 0 is REVOKE
+    if (msg.message && msg.message.protocolMessage && msg.message.protocolMessage.type === 0) { // 0 is REVOKE
       const deletedKey = msg.message.protocolMessage.key;
       const originalMsg = messageCache.get(deletedKey.id);
       
