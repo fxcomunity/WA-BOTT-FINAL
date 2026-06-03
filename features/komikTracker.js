@@ -244,8 +244,35 @@ function formatNotif(comic, data, isNew) {
   );
 }
 
+// Helper to find target group JID based on source name
+async function getTargetGroupJid(sock, sourceName) {
+  try {
+    const groups = await sock.groupFetchAllParticipating();
+    const groupList = Object.values(groups);
+    
+    let targetSubject = "";
+    const nameLower = sourceName.toLowerCase();
+    
+    if (nameLower.includes("komikcast")) {
+      targetSubject = "KOMIK - KOMIKCAST";
+    } else if (nameLower.includes("shinigami")) {
+      targetSubject = "KOMIK - SHINIGAMI";
+    } else if (nameLower.includes("mangadex")) {
+      targetSubject = "KOMIK - MANGA DEK";
+    }
+    
+    if (!targetSubject) return null;
+    
+    const targetGroup = groupList.find(g => g.subject.toUpperCase().trim() === targetSubject.toUpperCase().trim());
+    return targetGroup ? targetGroup.id : null;
+  } catch (e) {
+    console.error("[TRACKER] Gagal mengambil target group JID:", e.message);
+    return null;
+  }
+}
+
 // ============================================
-// CEK SEMUA KOMIK & KIRIM NOTIF KE OWNER
+// CEK SEMUA KOMIK & KIRIM NOTIF KE GRUP & OWNER
 // ============================================
 async function checkAllComics(sock) {
   const ownerId = config.owners[0] + '@s.whatsapp.net';
@@ -266,9 +293,19 @@ async function checkAllComics(sock) {
         console.log(`[TRACKER] 🔔 Update baru: ${comic.title} — ${data.chapter} (${data.source})`);
         lastNotified[comic.title] = data.chapter;
 
-        await sock.sendMessage(ownerId, {
-          text: formatNotif(comic, data, true),
-        });
+        const notifMsg = formatNotif(comic, data, true);
+
+        // Kirim ke grup spesifik berdasarkan source
+        const groupJid = await getTargetGroupJid(sock, data.source);
+        if (groupJid) {
+          console.log(`[TRACKER] Mengirim update ke grup: ${data.source} -> ${groupJid}`);
+          await sock.sendMessage(groupJid, { text: notifMsg });
+        } else {
+          console.log(`[TRACKER] Grup untuk ${data.source} tidak ditemukan di WhatsApp.`);
+        }
+
+        // Selalu kirim ke Owner sebagai backup/notifikasi utama
+        await sock.sendMessage(ownerId, { text: notifMsg });
 
         // Delay 2 detik antar notif biar ga spam
         await new Promise(r => setTimeout(r, 2000));
