@@ -981,6 +981,24 @@ async function startBot() {
         const strHariTanggal = `${hariArr[dNow.getDay()]}, ${dNow.getDate()} ${bulanArr[dNow.getMonth()]} ${dNow.getFullYear()}`;
         const strJam = dNow.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') + " WIB";
 
+        let menuKategoriTerdifinisi = `┌──❖ *K A T E G O R I  M E N U*\n`;
+        if (ownerCheck) {
+          menuKategoriTerdifinisi += `│ 1️⃣ *Owner* ➯ !menu 1\n`;
+        }
+        if (adminCheck || ownerCheck) {
+          menuKategoriTerdifinisi += `│ 2️⃣ *Admin* ➯ !menu 2\n`;
+        }
+        menuKategoriTerdifinisi += `│ 3️⃣ *Member* ➯ !menu 3\n`;
+        menuKategoriTerdifinisi += `│ 4️⃣ *RPG Economy* ➯ !menu 4\n`;
+        menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu komik\n`;
+        menuKategoriTerdifinisi += `│ 6️⃣ *Downloader* ➯ !menu 6\n`;
+        menuKategoriTerdifinisi += `│ 7️⃣ *Developer* ➯ !menu 7\n`;
+        menuKategoriTerdifinisi += `│ 8️⃣ *Spotify* ➯ !menu 8\n`;
+        menuKategoriTerdifinisi += `│ 9️⃣ *Voice Changer* ➯ !menu 9\n`;
+        menuKategoriTerdifinisi += `│ 🔟 *OSINT* ➯ !menu 10\n`;
+        menuKategoriTerdifinisi += `│ 1️⃣1️⃣ *Plugins* ➯ !menu 11\n`;
+        menuKategoriTerdifinisi += `└───────────────┈ ⳹`;
+
         const helpMsg = `*✦ ──『 🤖 JACKBOT V3.0 』── ✦*
 
 👋 Yow kak *${name}*, ${ucapan}!
@@ -997,7 +1015,9 @@ async function startBot() {
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
-👇 *Silakan klik tombol di bawah untuk membuka menu:* 👇`;
+${menuKategoriTerdifinisi}
+
+_Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol di bawah tidak muncul._`;
 
         const rows = [];
         if (ownerCheck) {
