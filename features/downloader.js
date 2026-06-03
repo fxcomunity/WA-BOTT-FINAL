@@ -3,6 +3,26 @@ const utils = require('./utils');
 
 const devCaption = `╭━━• [ 📥 *DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
+async function resolveDomainViaDoH(domain) {
+  try {
+    const dnsRes = await axios.get('https://cloudflare-dns.com/dns-query', {
+      params: { name: domain, type: 'A' },
+      headers: { 'Accept': 'application/dns-json' },
+      timeout: 5000
+    });
+    const answers = dnsRes.data?.Answer;
+    if (!answers || answers.length === 0) return null;
+    for (const ans of answers) {
+      if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+        return ans.data;
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 module.exports = {
   youtube: async (sock, msg, args) => { 
     const groupId = msg.key.remoteJid;
@@ -306,45 +326,101 @@ module.exports = {
       const fs = require('fs');
       const path = require('path');
 
-      // Fetch HTML
-      const res = await axios.get(link, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-        },
-        timeout: 25000
-      });
-
-      const $ = cheerio.load(res.data);
       const imageUrls = [];
       const seen = new Set();
+      let title = '';
+      const https = require('https');
 
-      // Coba cari di readerarea komikcast/shinigami
-      const readerImages = $('#readerarea img, .reader-area img');
-      if (readerImages.length > 0) {
-        readerImages.each((i, el) => {
-          let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
-          if (src) {
-            src = src.trim();
-            if (src.startsWith('http') && !seen.has(src)) {
-              seen.add(src);
-              imageUrls.push(src);
+      // Bypass Komikcast React SPA API using DoH resolver
+      if (link.includes('v2.komikcast.fit')) {
+        const kcMatch = link.match(/v2\.komikcast\.fit\/series\/([a-zA-Z0-9_\-]+)\/chapter\/([a-zA-Z0-9_\-]+)/i);
+        if (kcMatch) {
+          const seriesSlug = kcMatch[1];
+          const chapterSlug = kcMatch[2];
+          const domain = 'be.komikcast.cc';
+          
+          try {
+            const ip = await resolveDomainViaDoH(domain);
+            if (ip) {
+              const agent = new https.Agent({
+                servername: domain,
+                rejectUnauthorized: false
+              });
+              const apiUrl = `https://${ip}/series/${seriesSlug}/chapters/${chapterSlug}`;
+              const apiRes = await axios.get(apiUrl, {
+                headers: {
+                  'Host': domain,
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                  'Accept': 'application/json'
+                },
+                httpsAgent: agent,
+                timeout: 15000
+              });
+              
+              if (apiRes.data?.data?.data?.images) {
+                const images = apiRes.data.data.data.images;
+                images.forEach(img => {
+                  if (img && img.startsWith('http') && !seen.has(img)) {
+                    seen.add(img);
+                    imageUrls.push(img);
+                  }
+                });
+                const chIndex = apiRes.data.data.chapterIndex || chapterSlug;
+                title = `${seriesSlug.replace(/-/g, ' ')} - Chapter ${chIndex}`;
+              }
             }
+          } catch (apiErr) {
+            console.error("[KOMIKCAST BYPASS ERROR]:", apiErr.message);
           }
-        });
+        }
       }
 
-      // Fallback ke entry-content / post-content
+      // Fallback ke scraping HTML biasa jika bukan komikcast atau bypass gagal
       if (imageUrls.length === 0) {
-        $('.entry-content img, .post-content img').each((i, el) => {
-          let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
-          if (src) {
-            src = src.trim();
-            if (src.startsWith('http') && !seen.has(src)) {
-              seen.add(src);
-              imageUrls.push(src);
-            }
-          }
+        // Fetch HTML
+        const res = await axios.get(link, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+          },
+          timeout: 25000
         });
+
+        const $ = cheerio.load(res.data);
+
+        // Coba cari di readerarea komikcast/shinigami
+        const readerImages = $('#readerarea img, .reader-area img');
+        if (readerImages.length > 0) {
+          readerImages.each((i, el) => {
+            let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
+            if (src) {
+              src = src.trim();
+              if (src.startsWith('http') && !seen.has(src)) {
+                seen.add(src);
+                imageUrls.push(src);
+              }
+            }
+          });
+        }
+
+        // Fallback ke entry-content / post-content
+        if (imageUrls.length === 0) {
+          $('.entry-content img, .post-content img').each((i, el) => {
+            let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
+            if (src) {
+              src = src.trim();
+              if (src.startsWith('http') && !seen.has(src)) {
+                seen.add(src);
+                imageUrls.push(src);
+              }
+            }
+          });
+        }
+
+        // Ambil Judul Chapter
+        title = $('h1.entry-title').text().trim() 
+                    || $('.headpost h1').text().trim() 
+                    || $('.chapter-title').text().trim() 
+                    || 'Chapter Komik';
       }
 
       if (imageUrls.length === 0) {
@@ -352,12 +428,6 @@ module.exports = {
         return sock.sendMessage(groupId, { text: "❌ Tidak menemukan gambar di chapter komik tersebut. Pastikan link benar dan dari situs yang didukung!" }, { quoted: msg });
       }
 
-      // Ambil Judul Chapter
-      let title = $('h1.entry-title').text().trim() 
-                  || $('.headpost h1').text().trim() 
-                  || $('.chapter-title').text().trim() 
-                  || 'Chapter Komik';
-      
       title = title.replace(/[^a-zA-Z0-9\s-_]/g, '').trim(); // Bersihkan nama file
 
       await progress.update(`⏳ Mengunduh ${imageUrls.length} halaman gambar...`);
