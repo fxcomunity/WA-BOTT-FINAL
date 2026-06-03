@@ -141,3 +141,21 @@ Semua bahasa error, info, dan respon bot udah dikonversi 100% jadi bahasa Gen-Z 
 - **Audio Effects**: Reply VN dengan efek `!bass`, `!blown`, `!deep`, `!earrape`, `!fast`, `!nightcore`, `!reverse`, `!robot`, `!squirrel`.
 
 ---
+
+## 🤝 Kontribusi & Penghargaan
+
+Proyek ini tidak akan terwujud tanpa sinergi, dedikasi, serta bimbingan dari berbagai pihak. Penghargaan tertinggi kami persembahkan kepada:
+
+### 🌌 Dedikasi Spiritual
+* **ﷻ Allah SWT**
+  > *Segala puji bagi Allah SWT, Sang Pemilik Kehidupan. Terima kasih atas limpahan nafas, kesehatan, kecerdasan, serta nikmat yang melimpah ruah yang terus mengalir, sehingga kami diberikan kemampuan untuk menyelesaikan proyek ini dengan lancar.*
+
+---
+
+### 👥 Tim Pengembang & Kontributor
+
+| Kontributor | Peran Utama | Deskripsi Kontribusi |
+| :---: | :--- | :--- |
+| **👑 Annas** | **Owner & Project Lead** | Pemilik proyek, perumus fitur utama, serta penguji sistem. Sosok di balik bahasa Gen-Z yang menghidupkan suasana bot ini. |
+| **🛸 Antigravity** | **Lead Code Writer (AI)** | AI Assistant yang merancang arsitektur dasar, menulis seluruh *source code*, dan menyusun logika inti sistem dari nol. |
+| **🧠 Claude** | **Bug & Error Specialist (AI)** | Asisten AI pendeteksi masalah yang bertugas menganalisis, memburu, dan menuntaskan segala jenis *bug* fatal maupun non-fatal. |
