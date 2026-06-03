@@ -74,9 +74,29 @@ const TRACKED_COMICS = [
 ];
 
 // ============================================
-// STATE — simpan chapter terakhir yang sudah dinotif
+// STATE — simpan chapter terakhir yang sudah dinotif (dipersistenkan ke file)
 // ============================================
-const lastNotified = {};  // { comicTitle: "Chapter 123" }
+const fs = require('fs');
+const path = require('path');
+const lastNotifiedPath = path.join(__dirname, '..', 'last_notified_komik.json');
+
+let lastNotified = {};
+try {
+  if (fs.existsSync(lastNotifiedPath)) {
+    lastNotified = JSON.parse(fs.readFileSync(lastNotifiedPath, 'utf8'));
+    console.log("[TRACKER] Loaded last notified state from file:", lastNotified);
+  }
+} catch (err) {
+  console.error("[TRACKER] Error loading last notified state:", err.message);
+}
+
+function saveLastNotified() {
+  try {
+    fs.writeFileSync(lastNotifiedPath, JSON.stringify(lastNotified, null, 2), 'utf8');
+  } catch (err) {
+    console.error("[TRACKER] Error saving last notified state:", err.message);
+  }
+}
 
 // ============================================
 // HEADERS biar ga kedetect bot
@@ -92,28 +112,42 @@ const HEADERS = {
 // ============================================
 async function fetchFromKomikcast(slug) {
   try {
-    const url = `https://v2.komikcast.fit/series/${slug}/`;
-    const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
-    const $   = cheerio.load(res.data);
+    const domain = 'be.komikcast.cc';
+    const ip = await resolveDomainViaDoH(domain);
+    if (!ip) return null;
 
-    // Ambil chapter pertama di list (paling baru)
-    const firstChapter = $('.komik_info-chapters-item-title').first().text().trim()
-      || $('ul.chapter_list li').first().find('a').text().trim()
-      || $('.daftar_chapter .item').first().find('a').text().trim();
+    const agent = new https.Agent({
+      servername: domain,
+      rejectUnauthorized: false
+    });
 
-    const chapterUrl = $('.komik_info-chapters-item-title').first().closest('a').attr('href')
-      || $('ul.chapter_list li').first().find('a').attr('href')
-      || '';
+    const url = `https://${ip}/series/${slug}/chapters`;
+    const res = await axios.get(url, {
+      headers: {
+        'Host': domain,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+      },
+      httpsAgent: agent,
+      timeout: 10000
+    });
 
-    if (!firstChapter) return null;
+    const chapters = res.data?.data;
+    if (!chapters || chapters.length === 0) return null;
+
+    const newest = chapters[0];
+    const chIndex = newest.data?.index || 1;
+    const chSlug = newest.data?.slug || chIndex;
+    const chapterTitle = newest.data?.title ? `Chapter ${chIndex} - ${newest.data.title}` : `Chapter ${chIndex}`;
 
     return {
       source:     '📚 Komikcast',
-      chapter:    firstChapter,
-      url:        chapterUrl || `https://v2.komikcast.fit/series/${slug}/`,
+      chapter:    chapterTitle,
+      url:        `https://v2.komikcast.fit/series/${slug}/chapter/${chSlug}`,
       sourceUrl:  `https://v2.komikcast.fit/series/${slug}/`,
     };
   } catch (e) {
+    console.error("[KOMIKCAST TRACKER] Error:", e.message);
     return null;
   }
 }
@@ -329,6 +363,7 @@ async function fetchFromMangaDex(title) {
       url:       chUrl,
       sourceUrl: `https://mangadex.org/title/${mangaId}`,
       lang:      ch.translatedLanguage === 'id' ? '🇮🇩 Indonesia' : '🇬🇧 English',
+      mangaId:   mangaId, // Simpan MangaDex UUID untuk mapping link Shinigami
     };
   } catch (e) {
     console.error("[MANGADEX TRACKER] Error:", e.message);
@@ -363,16 +398,40 @@ function formatNotif(comic, data, isNew) {
   const badge  = isNew ? '🔔 *UPDATE BARU!*' : '📖 *Chapter Terbaru*';
   const lang   = data.lang ? `\n┃ 🌐 *Bahasa:* ${data.lang}` : '';
 
+  // Buat daftar link baca yang rapi
+  let bacaLinks = '';
+  
+  if (data.source.includes('MangaDex')) {
+    // Jika dari MangaDex, sertakan link alternatif Komikcast dan Shinigami jika ada
+    bacaLinks += `┃ 🔗 *MangaDex:* ${data.url}\n`;
+    if (comic.komikcast) {
+      bacaLinks += `┃ 🔗 *Komikcast:* https://v2.komikcast.fit/series/${comic.komikcast}/\n`;
+    }
+    // Shinigami menggunakan MangaDex UUID jika terdeteksi di data.mangaId
+    const shinigamiUuid = data.mangaId || (comic.shinigami && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(comic.shinigami) ? comic.shinigami : null);
+    if (shinigamiUuid) {
+      bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/series/${shinigamiUuid}\n`;
+    } else if (comic.shinigami) {
+      bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/manga/${comic.shinigami}\n`;
+    }
+  } else {
+    // Jika dari Komikcast atau Shinigami langsung
+    bacaLinks += `┃ 🔗 *Baca:* ${data.url}\n`;
+  }
+
+  // Bersihkan baris kosong di akhir bacaLinks
+  bacaLinks = bacaLinks.trim();
+
   return (
     `╭━━• [ ${badge} ] •━━╮\n` +
     `┃\n` +
     `┃ 📕 *${comic.title}*\n` +
     `┃ 📑 *Chapter:* ${data.chapter}\n` +
-    `┃ ${data.source}\n` +
+    `┃ 📡 *Sumber:* ${data.source}\n` +
     `┃ 🕐 *Update:* ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB` +
     lang + '\n' +
     `┃\n` +
-    `┃ 🔗 *Baca:* ${data.url}\n` +
+    bacaLinks + '\n' +
     `┃\n` +
     `╰━━━━━━━━━━━━━━━━━━━━━━╯`
   );
@@ -421,11 +480,22 @@ async function checkAllComics(sock) {
       }
 
       const prevChapter = lastNotified[comic.title];
-      const isNew       = prevChapter !== data.chapter;
+      
+      // Jika prevChapter belum ada (pertama kali running untuk komik ini),
+      // simpan ke state tanpa mengirimkan notifikasi untuk menghindari spam chapter lama.
+      if (prevChapter === undefined) {
+        lastNotified[comic.title] = data.chapter;
+        saveLastNotified();
+        console.log(`[TRACKER] 📝 Inisialisasi awal ${comic.title} -> ${data.chapter}`);
+        continue;
+      }
+
+      const isNew = prevChapter !== data.chapter;
 
       if (isNew) {
         console.log(`[TRACKER] 🔔 Update baru: ${comic.title} — ${data.chapter} (${data.source})`);
         lastNotified[comic.title] = data.chapter;
+        saveLastNotified();
 
         const notifMsg = formatNotif(comic, data, true);
 
@@ -437,9 +507,6 @@ async function checkAllComics(sock) {
         } else {
           console.log(`[TRACKER] Grup untuk ${data.source} tidak ditemukan di WhatsApp.`);
         }
-
-        // Selalu kirim ke Owner sebagai backup/notifikasi utama
-        await sock.sendMessage(ownerId, { text: notifMsg });
 
         // Delay 2 detik antar notif biar ga spam
         await new Promise(r => setTimeout(r, 2000));
