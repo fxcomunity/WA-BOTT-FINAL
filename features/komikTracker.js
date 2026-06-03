@@ -545,23 +545,31 @@ async function trackList(sock, msg) {
 
 async function searchKomikcast(query) {
   try {
-    const url = `https://v2.komikcast.fit/?s=${encodeURIComponent(query)}`;
-    const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
-    const $   = cheerio.load(res.data);
+    // Karena v2.komikcast.fit sekarang berupa React SPA (JavaScript rendered),
+    // scraping Cheerio statis akan mengembalikan 0 hasil.
+    // Sebagai solusinya, kita cari komik tersebut di MangaDex via DoH bypass,
+    // lalu mengubah judulnya menjadi slug Komikcast yang valid.
+    const mdResults = await searchMangaDex(query);
+    if (!mdResults || mdResults.length === 0) {
+      return [];
+    }
 
     const results = [];
-    $('.list-update_item').each((i, el) => {
-      if (i >= 5) return false;
-      const title   = $(el).find('.title').text().trim();
-      const link    = $(el).find('a').first().attr('href') || '';
-      const chapter = $(el).find('.chapter').text().trim() || '-';
-      const type    = $(el).find('.type').text().trim() || '-';
-      const rating  = $(el).find('.numscore').text().trim() || '-';
-      if (title) results.push({ title, link, chapter, type, rating });
-    });
+    for (const r of mdResults) {
+      const slug = generateShinigamiSlug(r.title); // Helper slug generator (sama persis dengan komikcast)
+      const link = `https://v2.komikcast.fit/komik/${slug}/`;
+      results.push({
+        title: r.title,
+        link: link,
+        chapter: r.status || '-',
+        type: r.type || '-',
+        rating: r.rating || '-'
+      });
+    }
 
     return results;
   } catch (e) {
+    console.error("[KOMIKCAST BYPASS] Error:", e.message);
     return null;
   }
 }
@@ -569,7 +577,7 @@ async function searchKomikcast(query) {
 async function searchShinigami(query) {
   try {
     // Karena g.shinigami.asia dilindungi Cloudflare Turnstile, kita cari komik tersebut
-    // di MangaDex atau Komikcast, lalu mengubah judulnya menjadi slug Shinigami yang valid.
+    // di MangaDex, lalu mengubah judulnya menjadi slug Shinigami yang valid.
     let sourceResults = [];
     
     // Coba MangaDex via DoH bypass dulu
@@ -581,19 +589,6 @@ async function searchShinigami(query) {
         type: r.type,
         rating: r.rating
       }));
-    }
-    
-    // Fallback ke Komikcast jika MangaDex tidak mengembalikan hasil
-    if (sourceResults.length === 0) {
-      const kcResults = await searchKomikcast(query);
-      if (kcResults && kcResults.length > 0) {
-        sourceResults = kcResults.map(r => ({
-          title: r.title,
-          status: r.chapter || '-',
-          type: r.type || '-',
-          rating: r.rating || '-'
-        }));
-      }
     }
 
     if (sourceResults.length === 0) {
