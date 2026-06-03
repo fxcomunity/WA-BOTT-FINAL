@@ -456,7 +456,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "libur", "cekholiday",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday",
         ...audioEffects.effectsList
       ];
 
@@ -942,6 +942,10 @@ async function startBot() {
             const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
+          if (["komik", "comic"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
           if (["7", "dev", "developer", "info"].includes(categoryInput)) {
             const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
@@ -1005,6 +1009,7 @@ async function startBot() {
           { header: "", title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
           { header: "", title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
           { header: "", title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
+          { header: "", title: "Menu Komik & Tracking", description: "Cari, baca & lacak komik terbaru", id: "btn_komik" },
           { header: "", title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
           { header: "", title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
           { header: "", title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
@@ -1071,6 +1076,13 @@ async function startBot() {
       case "btn_downloader":
       case "menu_6": {
         const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        break;
+      }
+
+      case "btn_komik":
+      case "menu_komik": {
+        const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
@@ -1707,6 +1719,13 @@ Selamat bersenang-senang! 🎉`;
         await downloader.tw(sock, msg, args);
         break;
 
+      case "kmk":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.komik(sock, msg, args);
+        break;
+
       case "limit":
       case "ceklimit":
         await limitSystem.showLimit(sock, msg, sender);
@@ -2199,8 +2218,34 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 │    ↳ Sedot video FB
 │ ⚡ *!tw / !x* [link]
 │    ↳ Sedot video Twitter/X
+│ ⚡ *!kmk* [link]
+│    ↳ Download chapter komik jadi PDF (Komikcast/Shinigami)
 │ ⚡ *!pin* [kata kunci]
 │    ↳ Nyari asupan Pinterest (dikirim ke DM)
+└───────────────┈ ⳹`;
+  }
+
+  if (kategori === "komik") {
+    return `*✦ ──『 📚 MENU KOMIK & TRACKING 』── ✦*
+
+┌──❖ *P E N C A R I A N*
+│ ⚡ *!komik* [judul]
+│    ↳ Cari komik di semua source (Komikcast, Shinigami, MangaDex)
+│ ⚡ *!komik KC* [judul]
+│    ↳ Cari komik khusus di Komikcast
+│ ⚡ *!komik SG* [judul]
+│    ↳ Cari komik khusus di Shinigami
+│ ⚡ *!komik MD* [judul]
+│    ↳ Cari komik khusus di MangaDex
+└───────────────┈ ⳹
+
+┌──❖ *P E L A C A K A N* (Owner Only)
+│ ⚡ *!tracklist*
+│    ↳ List komik yang sedang di-track/pantau
+│ ⚡ *!addtrack* [judul]
+│    ↳ Tambah komik ke daftar pelacakan otomatis
+│ ⚡ *!track*
+│    ↳ Jalankan pengecekan update manual sekarang
 └───────────────┈ ⳹`;
   }
   if (kategori === "spotify") {

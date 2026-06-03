@@ -286,5 +286,147 @@ module.exports = {
       console.log("Twitter Error:", error.message || error);
       await sock.sendMessage(groupId, { text: "❌ Gagal bos download Twitter/X. Link salah, diprivat, atau diblokir." }, { quoted: msg });
     }
+  },
+
+  komik: async (sock, msg, args) => {
+    const groupId = msg.key.remoteJid;
+    const link = args[0];
+    
+    if (!link || !link.startsWith('http')) {
+      return sock.sendMessage(groupId, { text: "❌ Masukkan link chapter komiknya bos!\nContoh: *!kmk https://v2.komikcast.fit/chapter/...*" }, { quoted: msg });
+    }
+
+    await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
+    const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Sedang mengunduh halaman komik...");
+
+    try {
+      const cheerio = require('cheerio');
+      const { PDFDocument } = require('pdf-lib');
+      const { Jimp } = require('jimp');
+      const fs = require('fs');
+      const path = require('path');
+
+      // Fetch HTML
+      const res = await axios.get(link, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+        },
+        timeout: 25000
+      });
+
+      const $ = cheerio.load(res.data);
+      const imageUrls = [];
+      const seen = new Set();
+
+      // Coba cari di readerarea komikcast/shinigami
+      const readerImages = $('#readerarea img, .reader-area img');
+      if (readerImages.length > 0) {
+        readerImages.each((i, el) => {
+          let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
+          if (src) {
+            src = src.trim();
+            if (src.startsWith('http') && !seen.has(src)) {
+              seen.add(src);
+              imageUrls.push(src);
+            }
+          }
+        });
+      }
+
+      // Fallback ke entry-content / post-content
+      if (imageUrls.length === 0) {
+        $('.entry-content img, .post-content img').each((i, el) => {
+          let src = $(el).attr('data-src') || $(el).attr('lazy-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
+          if (src) {
+            src = src.trim();
+            if (src.startsWith('http') && !seen.has(src)) {
+              seen.add(src);
+              imageUrls.push(src);
+            }
+          }
+        });
+      }
+
+      if (imageUrls.length === 0) {
+        await progress.stop(false);
+        return sock.sendMessage(groupId, { text: "❌ Tidak menemukan gambar di chapter komik tersebut. Pastikan link benar dan dari situs yang didukung!" }, { quoted: msg });
+      }
+
+      // Ambil Judul Chapter
+      let title = $('h1.entry-title').text().trim() 
+                  || $('.headpost h1').text().trim() 
+                  || $('.chapter-title').text().trim() 
+                  || 'Chapter Komik';
+      
+      title = title.replace(/[^a-zA-Z0-9\s-_]/g, '').trim(); // Bersihkan nama file
+
+      await progress.update(`⏳ Mengunduh ${imageUrls.length} halaman gambar...`);
+
+      const pdfDoc = await PDFDocument.create();
+
+      for (let i = 0; i < imageUrls.length; i++) {
+        const imgUrl = imageUrls[i];
+        try {
+          // Download image buffer
+          const imgRes = await axios.get(imgUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+            },
+            responseType: 'arraybuffer',
+            timeout: 25000
+          });
+
+          const imgBuffer = Buffer.from(imgRes.data);
+
+          // Gunakan Jimp untuk konversi ke JPEG agar seragam dan support WebP
+          const img = await Jimp.read(imgBuffer);
+          const jpegBuffer = await img.getBuffer('image/jpeg');
+
+          // Embed ke PDF
+          const embedImg = await pdfDoc.embedJpg(new Uint8Array(jpegBuffer));
+          const page = pdfDoc.addPage([embedImg.width, embedImg.height]);
+          page.drawImage(embedImg, {
+            x: 0,
+            y: 0,
+            width: embedImg.width,
+            height: embedImg.height,
+          });
+
+          // Update progress sesekali agar user tahu
+          if ((i + 1) % 10 === 0 || i === imageUrls.length - 1) {
+            await progress.update(`⏳ Menyusun PDF: ${i + 1}/${imageUrls.length} halaman...`);
+          }
+        } catch (imgErr) {
+          console.error(`Gagal download halaman ${i + 1}: ${imgUrl}`, imgErr.message);
+          // Lewati halaman yang rusak/gagal download
+        }
+      }
+
+      // Save PDF
+      const pdfBytes = await pdfDoc.save();
+      
+      // Simpan sementara di workspace
+      const tempPath = path.join(__dirname, '..', `temp_${Date.now()}.pdf`);
+      fs.writeFileSync(tempPath, pdfBytes);
+
+      await progress.stop(true);
+      await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
+
+      // Kirim dokumen PDF ke WA
+      await sock.sendMessage(groupId, {
+        document: fs.readFileSync(tempPath),
+        mimetype: 'application/pdf',
+        fileName: `${title}.pdf`,
+        caption: `╭━━• [ 📥 *KOMIK DOWNLOADER* ] •━━╮\n┃\n┃ 📕 *Judul:* ${title}\n┃ 📑 *Total:* ${imageUrls.length} Halaman\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`
+      }, { quoted: msg });
+
+      // Hapus file temp
+      fs.unlinkSync(tempPath);
+
+    } catch (error) {
+      await progress.stop(false);
+      console.error("Komik download error:", error);
+      await sock.sendMessage(groupId, { text: `❌ Gagal mengunduh komik. Error: ${error.message}` }, { quoted: msg });
+    }
   }
 };
