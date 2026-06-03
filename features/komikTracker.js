@@ -3,6 +3,7 @@
 // Fallback: Komikcast → Shinigami → MangaDex
 
 const axios  = require('axios');
+const https  = require('https');
 const cheerio = require('cheerio');
 const config  = require('../config');
 
@@ -148,18 +149,144 @@ async function fetchFromShinigami(slug) {
 }
 
 // ============================================
+// HELPERS UNTUK BYPASS BLOCK / INTERNET POSITIF
+// ============================================
+async function resolveDomainViaDoH(domain) {
+  // 1. Coba Cloudflare DoH
+  try {
+    const dnsRes = await axios.get('https://cloudflare-dns.com/dns-query', {
+      params: { name: domain, type: 'A' },
+      headers: { 'Accept': 'application/dns-json' },
+      timeout: 3000
+    });
+    
+    const answers = dnsRes.data?.Answer;
+    if (answers && answers.length > 0) {
+      for (const ans of answers) {
+        if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+          return ans.data;
+        }
+      }
+      if (answers[0].type === 5) {
+        const cname = answers[0].data;
+        const cnameRes = await axios.get('https://cloudflare-dns.com/dns-query', {
+          params: { name: cname, type: 'A' },
+          headers: { 'Accept': 'application/dns-json' },
+          timeout: 3000
+        });
+        const cnameAnswers = cnameRes.data?.Answer;
+        if (cnameAnswers) {
+          for (const ans of cnameAnswers) {
+            if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+              return ans.data;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Silent fail to move to next DoH provider
+  }
+
+  // 2. Coba Google DoH
+  try {
+    const dnsRes = await axios.get('https://dns.google/resolve', {
+      params: { name: domain, type: 'A' },
+      timeout: 3000
+    });
+    
+    const answers = dnsRes.data?.Answer;
+    if (answers && answers.length > 0) {
+      for (const ans of answers) {
+        if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+          return ans.data;
+        }
+      }
+      if (answers[0].type === 5) {
+        const cname = answers[0].data;
+        const cnameRes = await axios.get('https://dns.google/resolve', {
+          params: { name: cname, type: 'A' },
+          timeout: 3000
+        });
+        const cnameAnswers = cnameRes.data?.Answer;
+        if (cnameAnswers) {
+          for (const ans of cnameAnswers) {
+            if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+              return ans.data;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Silent fail
+  }
+
+  // 3. Coba Direct IP Google DoH (8.8.8.8) - bypass DNS hijacking
+  try {
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const dnsRes = await axios.get('https://8.8.8.8/resolve', {
+      params: { name: domain, type: 'A' },
+      httpsAgent: agent,
+      timeout: 3000
+    });
+    
+    const answers = dnsRes.data?.Answer;
+    if (answers && answers.length > 0) {
+      for (const ans of answers) {
+        if (ans.type === 1 && /^\d+\.\d+\.\d+\.\d+$/.test(ans.data)) {
+          return ans.data;
+        }
+      }
+    }
+  } catch (e) {
+    // Silent fail
+  }
+
+  // 4. Hardcoded Fallback IP untuk domain populer
+  if (domain === 'api.mangadex.org') {
+    console.log("[DoH] Using hardcoded IP fallback for api.mangadex.org: 45.129.229.2");
+    return '45.129.229.2';
+  }
+
+  return null;
+}
+
+function generateShinigamiSlug(title) {
+  return title.toLowerCase()
+    .replace(/'/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+$/, '')
+    .replace(/^-+/, '');
+}
+
+// ============================================
 // SOURCE 3: MANGADEX (Official API - free, no key)
 // ============================================
 async function fetchFromMangaDex(title) {
   try {
+    const domain = 'api.mangadex.org';
+    const ip = await resolveDomainViaDoH(domain);
+    if (!ip) return null;
+
+    const agent = new https.Agent({
+      servername: domain,
+      rejectUnauthorized: false
+    });
+
     // Cari manga dulu
-    const searchRes = await axios.get('https://api.mangadex.org/manga', {
+    const searchRes = await axios.get(`https://${ip}/manga`, {
       params: {
         title,
         limit:                    5,
         availableTranslatedLanguage: ['id', 'en'],
         order:                    { relevance: 'desc' },
       },
+      headers: {
+        'Host': domain,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      },
+      httpsAgent: agent,
       timeout: 10000,
     });
 
@@ -172,7 +299,7 @@ async function fetchFromMangaDex(title) {
       || title;
 
     // Ambil chapter terbaru
-    const chapterRes = await axios.get(`https://api.mangadex.org/manga/${mangaId}/feed`, {
+    const chapterRes = await axios.get(`https://${ip}/manga/${mangaId}/feed`, {
       params: {
         limit:                       1,
         translatedLanguage:          ['id', 'en'],
@@ -180,6 +307,11 @@ async function fetchFromMangaDex(title) {
         contentRating:               ['safe', 'suggestive', 'erotica'],
         includes:                    ['scanlation_group'],
       },
+      headers: {
+        'Host': domain,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      },
+      httpsAgent: agent,
       timeout: 10000,
     });
 
@@ -198,6 +330,7 @@ async function fetchFromMangaDex(title) {
       lang:      ch.translatedLanguage === 'id' ? '🇮🇩 Indonesia' : '🇬🇧 English',
     };
   } catch (e) {
+    console.error("[MANGADEX TRACKER] Error:", e.message);
     return null;
   }
 }
@@ -435,30 +568,70 @@ async function searchKomikcast(query) {
 
 async function searchShinigami(query) {
   try {
-    const url = `https://g.shinigami.asia/?s=${encodeURIComponent(query)}`;
-    const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
-    const $   = cheerio.load(res.data);
+    // Karena g.shinigami.asia dilindungi Cloudflare Turnstile, kita cari komik tersebut
+    // di MangaDex atau Komikcast, lalu mengubah judulnya menjadi slug Shinigami yang valid.
+    let sourceResults = [];
+    
+    // Coba MangaDex via DoH bypass dulu
+    const mdResults = await searchMangaDex(query);
+    if (mdResults && mdResults.length > 0) {
+      sourceResults = mdResults.map(r => ({
+        title: r.title,
+        status: r.status,
+        type: r.type,
+        rating: r.rating
+      }));
+    }
+    
+    // Fallback ke Komikcast jika MangaDex tidak mengembalikan hasil
+    if (sourceResults.length === 0) {
+      const kcResults = await searchKomikcast(query);
+      if (kcResults && kcResults.length > 0) {
+        sourceResults = kcResults.map(r => ({
+          title: r.title,
+          status: r.chapter || '-',
+          type: r.type || '-',
+          rating: r.rating || '-'
+        }));
+      }
+    }
+
+    if (sourceResults.length === 0) {
+      return [];
+    }
 
     const results = [];
-    $('.bsx, .bs').each((i, el) => {
-      if (i >= 5) return false;
-      const title   = $(el).find('.bigor .tt, .ntitle, a').first().text().trim();
-      const link    = $(el).find('a').first().attr('href') || '';
-      const chapter = $(el).find('.epxs, .chapter').text().trim() || '-';
-      const type    = $(el).find('.typeflag, .type').text().trim() || '-';
-      const rating  = $(el).find('.numscore, .rating').text().trim() || '-';
-      if (title) results.push({ title, link, chapter, type, rating });
-    });
+    for (const r of sourceResults) {
+      const slug = generateShinigamiSlug(r.title);
+      const link = `https://g.shinigami.asia/manga/${slug}`;
+      results.push({
+        title: r.title,
+        link: link,
+        chapter: r.status || '-', // Tampilkan status/chapter terakhir
+        type: r.type || '-',
+        rating: r.rating || '-'
+      });
+    }
 
     return results;
   } catch (e) {
+    console.error("[SHINIGAMI BYPASS] Error:", e.message);
     return null;
   }
 }
 
 async function searchMangaDex(query) {
   try {
-    const res = await axios.get('https://api.mangadex.org/manga', {
+    const domain = 'api.mangadex.org';
+    const ip = await resolveDomainViaDoH(domain);
+    if (!ip) return null;
+
+    const agent = new https.Agent({
+      servername: domain,
+      rejectUnauthorized: false
+    });
+
+    const res = await axios.get(`https://${ip}/manga`, {
       params: {
         title:                       query,
         limit:                       5,
@@ -466,6 +639,11 @@ async function searchMangaDex(query) {
         order:                       { relevance: 'desc' },
         includes:                    ['cover_art'],
       },
+      headers: {
+        'Host': domain,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      },
+      httpsAgent: agent,
       timeout: 10000,
     });
 
@@ -485,6 +663,7 @@ async function searchMangaDex(query) {
 
     return results;
   } catch (e) {
+    console.error("[MANGADEX SEARCH] Error:", e.message);
     return null;
   }
 }
