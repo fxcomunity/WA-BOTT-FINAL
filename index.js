@@ -951,7 +951,7 @@ async function startBot() {
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
           if (["8", "spotify", "music"].includes(categoryInput)) {
-            const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+            const txt = getHelpText(ownerCheck, adminCheck, "spotify") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
           if (["9", "voice", "audio"].includes(categoryInput)) {
@@ -1007,9 +1007,9 @@ async function startBot() {
           { title: "Menu Mentri Grup", description: "Perintah khusus mentri grup", id: "btn_admin" },
           { title: "Menu Rakyat Utama", description: "Perintah umum untuk semua rakyat", id: "btn_member" },
           { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
-          { title: "Menu Game & Hiburan", description: "Game interaktif & tebak-tebakan", id: "btn_game" },
-          { title: "Menu Downloader & Music", description: "Download TikTok, IG, YT, Spotify, dll", id: "btn_downloader" },
           { title: "Menu Komik & Tracking", description: "Cari, baca & lacak komik terbaru", id: "btn_komik" },
+          { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
+          { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
           { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
           { title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
           { title: "Daftar Plugin", description: "Fitur plugin tambahan", id: "btn_plugin" }
@@ -1097,7 +1097,7 @@ async function startBot() {
       case "8":
       case "btn_spotify":
       case "menu_8": {
-        const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
+        const txt = getHelpText(ownerCheck, adminCheck, "spotify") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
@@ -2221,9 +2221,13 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 │    ↳ Download chapter komik jadi PDF (Komikcast/Shinigami)
 │ ⚡ *!pin* [kata kunci]
 │    ↳ Nyari asupan Pinterest (dikirim ke DM)
-└───────────────┈ ⳹
+└───────────────┈ ⳹`;
+  }
 
-┌──❖ *S P O T I F Y  M U S I C*
+  if (kategori === "spotify") {
+    return `*✦ ──『 🎵 ANAK INDIE (SPOTIFY) 』── ✦*
+
+┌──❖ *M U S I C*
 │ ⚡ *!spotifyplay* [judul]
 │    ↳ Langsung sedot MP3 lagu kesukaan lu
 │      (Contoh: !spplay Payung Teduh)
