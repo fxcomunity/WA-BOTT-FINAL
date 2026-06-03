@@ -144,18 +144,7 @@ Semua bahasa error, info, dan respon bot udah dikonversi 100% jadi bahasa Gen-Z 
 
 ## 🤝 Kontribusi & Penghargaan
 
-Proyek ini tidak akan terwujud tanpa sinergi, dedikasi, serta bimbingan dari berbagai pihak. Penghargaan tertinggi kami persembahkan kepada:
+Proyek ini tidak akan terwujud tanpa dedikasi spiritual kepada **Allah SWT**, visi kreatif dari **Muhammad Rizki Sumantri**, serta bantuan pengembangan dari asisten AI (**Antigravity** & **Claude**).
 
-### 🌌 Dedikasi Spiritual
-* **ﷻ Allah SWT**
-  > *Segala puji bagi Allah SWT, Sang Pemilik Kehidupan. Terima kasih atas limpahan nafas, kesehatan, kecerdasan, serta nikmat yang melimpah ruah yang terus mengalir, sehingga kami diberikan kemampuan untuk menyelesaikan proyek ini dengan lancar.*
+Detail lengkap kontribusi dan tim pengembang dapat Anda lihat di file **[CREDITS.md](file:///c:/Users/annas/Videos/wa-bot/CREDITS.md)**.
 
----
-
-### 👥 Tim Pengembang & Kontributor
-
-| Kontributor | Peran Utama | Deskripsi Kontribusi |
-| :---: | :--- | :--- |
-| **👑 Muhammad Rizki Sumantri** ([fxcomunity](https://github.com/fxcomunity)) | **Owner & Project Lead** | Pemilik proyek, perumus fitur utama, serta penguji sistem. Sosok di balik bahasa Gen-Z yang menghidupkan suasana bot ini. |
-| **🛸 Antigravity** | **Lead Code Writer (AI)** | AI Assistant yang merancang arsitektur dasar, menulis seluruh *source code*, dan menyusun logika inti sistem dari nol. |
-| **🧠 Claude** | **Bug & Error Specialist (AI)** | Asisten AI pendeteksi masalah yang bertugas menganalisis, memburu, dan menuntaskan segala jenis *bug* fatal maupun non-fatal. |
