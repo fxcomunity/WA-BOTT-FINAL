@@ -92,7 +92,7 @@ const HEADERS = {
 // ============================================
 async function fetchFromKomikcast(slug) {
   try {
-    const url = `https://v2.komikcast.fit/komik/${slug}/`;
+    const url = `https://v2.komikcast.fit/series/${slug}/`;
     const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
     const $   = cheerio.load(res.data);
 
@@ -110,8 +110,8 @@ async function fetchFromKomikcast(slug) {
     return {
       source:     '📚 Komikcast',
       chapter:    firstChapter,
-      url:        chapterUrl || `https://v2.komikcast.fit/komik/${slug}/`,
-      sourceUrl:  `https://v2.komikcast.fit/komik/${slug}/`,
+      url:        chapterUrl || `https://v2.komikcast.fit/series/${slug}/`,
+      sourceUrl:  `https://v2.komikcast.fit/series/${slug}/`,
     };
   } catch (e) {
     return null;
@@ -123,7 +123,8 @@ async function fetchFromKomikcast(slug) {
 // ============================================
 async function fetchFromShinigami(slug) {
   try {
-    const url = `https://g.shinigami.asia/manga/${slug}`;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    const url = isUuid ? `https://g.shinigami.asia/series/${slug}` : `https://g.shinigami.asia/manga/${slug}`;
     const res = await axios.get(url, { headers: HEADERS, timeout: 10000 });
     const $   = cheerio.load(res.data);
 
@@ -140,8 +141,8 @@ async function fetchFromShinigami(slug) {
     return {
       source:    '⚔️ Shinigami',
       chapter:   firstChapter,
-      url:       chapterUrl || `https://g.shinigami.asia/manga/${slug}`,
-      sourceUrl: `https://g.shinigami.asia/manga/${slug}`,
+      url:       chapterUrl || url,
+      sourceUrl: url,
     };
   } catch (e) {
     return null;
@@ -557,7 +558,7 @@ async function searchKomikcast(query) {
     const results = [];
     for (const r of mdResults) {
       const slug = generateShinigamiSlug(r.title); // Helper slug generator (sama persis dengan komikcast)
-      const link = `https://v2.komikcast.fit/komik/${slug}/`;
+      const link = `https://v2.komikcast.fit/series/${slug}/`;
       results.push({
         title: r.title,
         link: link,
@@ -577,13 +578,14 @@ async function searchKomikcast(query) {
 async function searchShinigami(query) {
   try {
     // Karena g.shinigami.asia dilindungi Cloudflare Turnstile, kita cari komik tersebut
-    // di MangaDex, lalu mengubah judulnya menjadi slug Shinigami yang valid.
+    // di MangaDex, lalu mengubah judulnya menjadi slug/ID Shinigami yang valid.
     let sourceResults = [];
     
     // Coba MangaDex via DoH bypass dulu
     const mdResults = await searchMangaDex(query);
     if (mdResults && mdResults.length > 0) {
       sourceResults = mdResults.map(r => ({
+        id: r.id,
         title: r.title,
         status: r.status,
         type: r.type,
@@ -597,8 +599,7 @@ async function searchShinigami(query) {
 
     const results = [];
     for (const r of sourceResults) {
-      const slug = generateShinigamiSlug(r.title);
-      const link = `https://g.shinigami.asia/manga/${slug}`;
+      const link = `https://g.shinigami.asia/series/${r.id}`;
       results.push({
         title: r.title,
         link: link,
@@ -653,7 +654,7 @@ async function searchMangaDex(query) {
       const rating  = attr.contentRating || '-';
       const link    = `https://mangadex.org/title/${m.id}`;
       const year    = attr.year || '-';
-      results.push({ title, link, status, type, rating, year });
+      results.push({ id: m.id, title, link, status, type, rating, year });
     }
 
     return results;
