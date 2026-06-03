@@ -156,6 +156,6 @@ Proyek ini tidak akan terwujud tanpa sinergi, dedikasi, serta bimbingan dari ber
 
 | Kontributor | Peran Utama | Deskripsi Kontribusi |
 | :---: | :--- | :--- |
-| **👑 Annas** | **Owner & Project Lead** | Pemilik proyek, perumus fitur utama, serta penguji sistem. Sosok di balik bahasa Gen-Z yang menghidupkan suasana bot ini. |
+| **👑 Muhammad Rizki Sumantri** ([fxcomunity](https://github.com/fxcomunity)) | **Owner & Project Lead** | Pemilik proyek, perumus fitur utama, serta penguji sistem. Sosok di balik bahasa Gen-Z yang menghidupkan suasana bot ini. |
 | **🛸 Antigravity** | **Lead Code Writer (AI)** | AI Assistant yang merancang arsitektur dasar, menulis seluruh *source code*, dan menyusun logika inti sistem dari nol. |
 | **🧠 Claude** | **Bug & Error Specialist (AI)** | Asisten AI pendeteksi masalah yang bertugas menganalisis, memburu, dan menuntaskan segala jenis *bug* fatal maupun non-fatal. |
