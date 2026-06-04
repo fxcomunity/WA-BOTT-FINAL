@@ -107,14 +107,14 @@ const isAdmin = async (sock, groupId, sender) => {
 // ============================================
 // SETTINGS / STATE
 // ============================================
-const settingsPath = './settings.json';
+const settingsPath = './bot_settings.json';
 
 let botSettings = { isSelfMode: false };
 if (fs.existsSync(settingsPath)) {
   try {
     botSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   } catch(e) {
-    console.error("Gagal bos membaca settings.json:", e);
+    console.error("Gagal bos membaca bot_settings.json:", e);
   }
 } else {
   fs.writeFileSync(settingsPath, JSON.stringify(botSettings, null, 2));
@@ -127,7 +127,7 @@ const saveSettings = () => {
   try {
     fs.writeFileSync(settingsPath, JSON.stringify(botSettings, null, 2));
   } catch(e) {
-    console.error("Gagal bos menyimpan settings:", e);
+    console.error("Gagal bos menyimpan bot_settings.json:", e);
   }
 };
 
@@ -150,13 +150,33 @@ const getGroupMetadata = async (sock, groupId) => {
   return meta;
 };
 
-const isOwner  = (sock, sender) => config.owners.includes(sender.split("@")[0]) || sender.split("@")[0] === sock.user.id.split(":")[0];
+const isOwner  = (sock, sender) => {
+  if (!sender) return false;
+  const cleanSender = jidNormalizedUser(sender).split("@")[0];
+  const cleanBot = sock?.user?.id ? jidNormalizedUser(sock.user.id).split("@")[0] : "";
+  return config.owners.includes(cleanSender) || cleanSender === cleanBot;
+};
 
 const reply = (sock, msg, text) =>
   sock.sendMessage(msg.key.remoteJid, { text }, { quoted: msg });
 
 const sendInteractiveMessage = async (sock, jid, text, footer, buttons, quotedMsg = null, imagePath = null) => {
   try {
+    // Jika tidak menggunakan menu interaktif (karena keterbatasan di akun WA personal/bukan business)
+    if (!config.useInteractiveMenu) {
+      if (imagePath && fs.existsSync(imagePath)) {
+        await sock.sendMessage(jid, {
+          image: fs.readFileSync(imagePath),
+          caption: text + (footer ? `\n\n_${footer}_` : "")
+        }, { quoted: quotedMsg });
+      } else {
+        await sock.sendMessage(jid, {
+          text: text + (footer ? `\n\n_${footer}_` : "")
+        }, { quoted: quotedMsg });
+      }
+      return;
+    }
+
     let headerParams = { title: "", hasMediaAttachment: false };
     
     if (imagePath && fs.existsSync(imagePath)) {
@@ -193,7 +213,20 @@ const sendInteractiveMessage = async (sock, jid, text, footer, buttons, quotedMs
     await sock.relayMessage(jid, msgObj.message, { messageId: msgObj.key.id });
   } catch (e) {
     console.error("Error sending interactive message:", e);
-    await sock.sendMessage(jid, { text: text }, { quoted: quotedMsg });
+    try {
+      if (imagePath && fs.existsSync(imagePath)) {
+        await sock.sendMessage(jid, {
+          image: fs.readFileSync(imagePath),
+          caption: text + (footer ? `\n\n_${footer}_` : "")
+        }, { quoted: quotedMsg });
+      } else {
+        await sock.sendMessage(jid, {
+          text: text + (footer ? `\n\n_${footer}_` : "")
+        }, { quoted: quotedMsg });
+      }
+    } catch (err) {
+      console.error("Error sending fallback menu message:", err);
+    }
   }
 };
 
@@ -336,7 +369,7 @@ async function startBot() {
           const buffer = await downloadMediaMessage(mediaObj, 'buffer', {}, { 
             logger: require('pino')({ level: 'silent' }) 
           });
-          const sender = msg.key.participant || msg.key.remoteJid;
+          const sender = jidNormalizedUser(msg.key.participant || msg.key.remoteJid);
           const caption = `📸 *ANTI VIEW-ONCE* 📸\n\nKetahuan kirim foto/video 1x lihat nih @${sender.split("@")[0]}! 😜`;
           
           if (mediaType === 'image') {
@@ -374,8 +407,8 @@ async function startBot() {
       
       if (originalMsg) {
         const devNumber = config.owners[0] + "@s.whatsapp.net";
-        const deleter = msg.key.participant || msg.key.remoteJid;
-        const sender = deletedKey.participant || deletedKey.remoteJid;
+        const deleter = jidNormalizedUser(msg.key.participant || msg.key.remoteJid);
+        const sender = jidNormalizedUser(deletedKey.participant || deletedKey.remoteJid);
         
         let groupName = deletedKey.remoteJid;
         if (deletedKey.remoteJid.endsWith('@g.us')) {
@@ -456,6 +489,8 @@ async function startBot() {
     let sender = msg.key.participant || msg.key.remoteJid;
     if (msg.key.fromMe) {
       sender = jidNormalizedUser(sock.user.id);
+    } else {
+      sender = jidNormalizedUser(sender);
     }
 
     const isMenuFallback = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"].includes(body);
@@ -1807,7 +1842,7 @@ Selamat bersenang-senang! 🎉`;
           
           await reply(sock, msg, "🔓 Membuka pesan rahasia...");
           
-          const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid;
+          const quotedParticipant = jidNormalizedUser(msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid);
           const fakeMsg = {
             key: {
               remoteJid: msg.key.remoteJid,
@@ -1868,7 +1903,7 @@ Selamat bersenang-senang! 🎉`;
           const caption = isImage?.caption || isVideo?.caption || isText?.text || "";
           
           if (isImage || isVideo) {
-            const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid;
+            const quotedParticipant = jidNormalizedUser(msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid);
             const fakeMsg = {
               key: {
                 remoteJid: msg.key.remoteJid,

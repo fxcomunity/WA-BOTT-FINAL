@@ -48,6 +48,7 @@ module.exports = {
   prefix: "!",
   botName: "JackBOT",
   botVersion: "3.0.0",
+  useInteractiveMenu: false, // Set to true if you want to use interactive buttons/dropdowns, but note it might not display on many WA clients.
 
   // === MODERASI ===
   maxWarn: 3,
