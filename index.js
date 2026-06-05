@@ -1000,7 +1000,7 @@ async function startBot() {
             const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
-          if (["komik", "comic"].includes(categoryInput)) {
+          if (["5", "komik", "comic"].includes(categoryInput)) {
             const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
@@ -1048,7 +1048,7 @@ async function startBot() {
         }
         menuKategoriTerdifinisi += `│ 3️⃣ *Member* ➯ !menu 3\n`;
         menuKategoriTerdifinisi += `│ 4️⃣ *RPG Economy* ➯ !menu 4\n`;
-        menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu komik\n`;
+        menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu 5\n`;
         menuKategoriTerdifinisi += `│ 6️⃣ *Downloader* ➯ !menu 6\n`;
         menuKategoriTerdifinisi += `│ 7️⃣ *Developer* ➯ !menu 7\n`;
         menuKategoriTerdifinisi += `│ 8️⃣ *Spotify* ➯ !menu 8\n`;
@@ -1149,7 +1149,9 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
         break;
       }
 
+      case "5":
       case "btn_komik":
+      case "menu_5":
       case "menu_komik": {
         const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
         await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
