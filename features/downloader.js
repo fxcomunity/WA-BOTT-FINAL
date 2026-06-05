@@ -545,7 +545,7 @@ module.exports = {
       return false;
     }
     
-    const choice = body.trim().toUpperCase();
+    const choice = body.trim().charAt(0).toUpperCase();
     if (choice !== 'A' && choice !== 'B') {
       return false;
     }
