@@ -407,12 +407,17 @@ function formatNotif(comic, data, isNew) {
     if (comic.komikcast) {
       bacaLinks += `┃ 🔗 *Komikcast:* https://v2.komikcast.fit/series/${comic.komikcast}/\n`;
     }
-    // Shinigami menggunakan MangaDex UUID jika terdeteksi di data.mangaId
-    const shinigamiUuid = data.mangaId || (comic.shinigami && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(comic.shinigami) ? comic.shinigami : null);
-    if (shinigamiUuid) {
-      bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/series/${shinigamiUuid}\n`;
-    } else if (comic.shinigami) {
-      bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/manga/${comic.shinigami}\n`;
+    // Shinigami menggunakan MangaDex chapter UUID jika terdeteksi di data.url
+    const mangaDexChapterUuid = data.url.includes('/chapter/') ? data.url.split('/chapter/')[1]?.split('/')[0] : null;
+    if (mangaDexChapterUuid) {
+      bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/chapter/${mangaDexChapterUuid}\n`;
+    } else {
+      const shinigamiUuid = data.mangaId || (comic.shinigami && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(comic.shinigami) ? comic.shinigami : null);
+      if (shinigamiUuid) {
+        bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/series/${shinigamiUuid}\n`;
+      } else if (comic.shinigami) {
+        bacaLinks += `┃ 🔗 *Shinigami:* https://g.shinigami.asia/manga/${comic.shinigami}\n`;
+      }
     }
   } else {
     // Jika dari Komikcast atau Shinigami langsung
