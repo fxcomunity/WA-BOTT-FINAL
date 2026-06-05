@@ -1703,11 +1703,11 @@ Selamat bersenang-senang! 🎉`;
 
       case "sad":
         if (!limitSystem.cek(sender, "ai")) {
-          return reply(sock, msg, "❌ Limit AI lu udah abis ngab! Ketik !limit buat ngecek sisa jatah preman lu.");
+          return reply(sock, msg, "❌ Limit lu udah abis ngab! Ketik !limit buat ngecek sisa jatah preman lu.");
         }
         await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
         try {
-          const prompt = "Hasilkan satu kutipan/kalimat filosofi sedih dalam bahasa Indonesia dengan nada sangat sarkas, sinis, realistis, dan menggunakan bahasa kasar/ceplas-ceplos (seperti kata-kata 'bangsat', 'goblok', 'bajingan', 'brengsek', 'kegiles', 'sampah', dll.) untuk menyindir drama kesedihan/nasib manusia. Format output HANYA terdiri dari dua bagian (tanpa pembuka, tanpa penutup, tanpa penjelasan):\n1. Kutipan filosofi kasarnya diapit tanda kutip dua.\n2. Di baris baru setelah kutipan, tulis judul filosofi yang kasar/sarkas dengan format bold (contoh: *Filosofi Ekspektasi Goblok*, *Filosofi Proses yang Brengsek*).\n\nHasilkan kutipan baru yang sejenis dengan contoh di atas.";
+          const prompt = "Hasilkan satu kutipan/kalimat filosofi sedih dalam bahasa Indonesia dengan nada sangat sarkas, sinis, realistis, dan menggunakan bahasa kasar/ceplas-ceplos (seperti kata-kata 'bangsat', 'goblok', 'bajingan', 'brengsek', 'kegiles', 'sampah', dll.) untuk menyindir drama kesedihan/nasib manusia. Format output HANYA terdiri dari dua bagian (tanpa pembuka, tanpa penutup, tanpa penjelasan):\n1. Kutipan filosofi kasarnya diapit tanda kutip dua.\n2. Di baris baru setelah kutipan, tulis judul filosofi yang kasar/sarkas dengan format bold (contoh: *Filosofi Ekspektasi Goblok*, *Filosofi Proses yang Brengsek*).\n\nCatatan Penting: Jangan pernah menyertakan kata 'AI', 'kecerdasan buatan', 'asisten', 'bot', atau referensi teknologi/robot/komputer lainnya di dalam kutipan maupun judul filosofinya. Semuanya harus murni buatan manusia dan sejenis dengan contoh di atas.";
           const sadQuote = await aiChatbot.ask(prompt);
           await reply(sock, msg, sadQuote);
           await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
@@ -2213,7 +2213,6 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 │ ⚡ *!afk* [alasan]
 │    ↳ Pasang status sibuk/molor
 │ ⚡ *!sad*
-│    ↳ Dapatkan quote sedih via AI
 │ ⚡ *bot, [tanya]*
 │    ↳ Ngobrol random sama AI (gue)
 └───────────────┈ ⳹
