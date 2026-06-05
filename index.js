@@ -1707,7 +1707,7 @@ Selamat bersenang-senang! 🎉`;
         }
         await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
         try {
-          const prompt = "Berikan satu kalimat atau quote sedih (sad quote) dalam bahasa Indonesia, atau kalimat yang merupakan kebalikan dari kebahagiaan. Hasil HANYA berupa kalimat/quote tersebut secara langsung tanpa tanda kutip, tanpa penjelasan, dan tanpa kata pengantar.";
+          const prompt = "Berikan satu kalimat atau quote sedih (sad quote) dalam bahasa Indonesia yang menyindir (sarkas/roasting) pengguna yang sedang galau/sedih, dengan bahasa yang agak kasar/ceplas-ceplos (seperti mengejek drama kesedihan atau nasib jomblo/miskin/menyedihkan mereka). Hasil HANYA berupa kalimat tersebut secara langsung tanpa tanda kutip, tanpa penjelasan, dan tanpa kata pengantar.";
           const sadQuote = await aiChatbot.ask(prompt);
           await reply(sock, msg, sadQuote);
           await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
