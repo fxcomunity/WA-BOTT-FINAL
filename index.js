@@ -508,7 +508,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday", "sad",
         ...audioEffects.effectsList
       ];
 
@@ -908,7 +908,7 @@ async function startBot() {
         break;
 
       case "del":
-      case "delete":
+      case "delete": {
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const quotedMsgForDel = msg.message?.extendedTextMessage?.contextInfo;
         if (!quotedMsgForDel?.stanzaId) return reply(sock, msg, "❌ Balas pesan yang ingin dihapus dengan !del");
@@ -918,11 +918,15 @@ async function startBot() {
           if (rawBotId.includes(':')) rawBotId = rawBotId.split(':')[0] + '@s.whatsapp.net';
           else if (!rawBotId.includes('@')) rawBotId = rawBotId + '@s.whatsapp.net';
           const botId = rawBotId;
+          const rawParticipant = quotedMsgForDel.participant || (quotedMsgForDel.fromMe ? botId : msg.key.remoteJid);
+          const participant = rawParticipant ? jidNormalizedUser(rawParticipant) : botId;
+          const fromMe = participant === botId;
+          
           const key = {
             remoteJid: msg.key.remoteJid,
-            fromMe: jidNormalizedUser(quotedMsgForDel.participant) === botId,
+            fromMe: fromMe,
             id: quotedMsgForDel.stanzaId,
-            participant: quotedMsgForDel.participant
+            participant: participant
           };
           await sock.sendMessage(msg.key.remoteJid, { delete: key });
         } catch (e) {
@@ -930,6 +934,7 @@ async function startBot() {
           await reply(sock, msg, "❌ Gagal bos ngapus pesan. Pastiin bot adalah admin.");
         }
         break;
+      }
 
       case "resetwarn":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
@@ -1696,6 +1701,22 @@ Selamat bersenang-senang! 🎉`;
         await fun.getQuote(sock, msg);
         break;
 
+      case "sad":
+        if (!limitSystem.cek(sender, "ai")) {
+          return reply(sock, msg, "❌ Limit AI lu udah abis ngab! Ketik !limit buat ngecek sisa jatah preman lu.");
+        }
+        await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
+        try {
+          const prompt = "Berikan satu kalimat atau quote sedih (sad quote) dalam bahasa Indonesia, atau kalimat yang merupakan kebalikan dari kebahagiaan. Hasil HANYA berupa kalimat/quote tersebut secara langsung tanpa tanda kutip, tanpa penjelasan, dan tanpa kata pengantar.";
+          const sadQuote = await aiChatbot.ask(prompt);
+          await reply(sock, msg, sadQuote);
+          await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
+        } catch (err) {
+          console.error("Sad Command Error:", err);
+          await reply(sock, msg, "❌ Gagal menghasilkan sad quote. Coba beberapa saat lagi.");
+        }
+        break;
+
       case "fakta":
         await fun.getFakta(sock, msg);
         break;
@@ -1885,7 +1906,7 @@ Selamat bersenang-senang! 🎉`;
               id: msg.message.extendedTextMessage.contextInfo.stanzaId,
               participant: quotedParticipant
             },
-            message: tempMsg
+            message: quotedMsg
           };
           
           const buffer = await downloadMediaMessage(
@@ -2191,6 +2212,8 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 │    ↳ Bikin stiker gaya album BRAT
 │ ⚡ *!afk* [alasan]
 │    ↳ Pasang status sibuk/molor
+│ ⚡ *!sad*
+│    ↳ Dapatkan quote sedih via AI
 │ ⚡ *bot, [tanya]*
 │    ↳ Ngobrol random sama AI (gue)
 └───────────────┈ ⳹
