@@ -125,18 +125,19 @@ module.exports = {
             `Silakan pilih salah satu opsi format unduhan:\n` +
             `*A.* Gambar (Kirim semua foto asli secara terpisah)\n` +
             `*B.* Video (Kirim dalam bentuk video slideshow)\n\n` +
-            `_Balas chat ini dengan mengetik *A* atau *B*._`;
+            `_Balas pesan ini dengan mengetik *A* atau *B*._`;
             
-          console.log(`[TIKTOK] Menyimpan sesi download untuk JID: ${sender}`);
-          pendingTikTokDownloads.set(sender, {
+          const sentMsg = await sock.sendMessage(groupId, { text: questionText }, { quoted: msg });
+          console.log(`[TIKTOK] Menyimpan sesi download untuk JID: ${sender} dengan ID Pesan: ${sentMsg.key.id}`);
+
+          pendingTikTokDownloads.set(sentMsg.key.id, {
             videoData,
             link,
             groupId,
+            sender,
             quotedMsg: msg,
             timestamp: Date.now()
           });
-          
-          await sock.sendMessage(groupId, { text: questionText }, { quoted: msg });
           return;
         }
 
@@ -535,22 +536,41 @@ module.exports = {
   },
   
   handlePendingTikTok: async (sock, msg, sender, body) => {
-    const sessionKey = sender;
-    console.log(`[TIKTOK] Menerima input: "${body}" dari JID: ${sessionKey}. Daftar sesi aktif:`, [...pendingTikTokDownloads.keys()]);
-    if (!pendingTikTokDownloads.has(sessionKey)) return false;
-    
-    const session = pendingTikTokDownloads.get(sessionKey);
-    if (Date.now() - session.timestamp > 300000) {
-      pendingTikTokDownloads.delete(sessionKey);
-      return false;
-    }
-    
     const choice = body.trim().charAt(0).toUpperCase();
     if (choice !== 'A' && choice !== 'B') {
       return false;
     }
+
+    const quotedMsgId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+    let sessionKey = null;
+
+    console.log(`[TIKTOK] Menerima input: "${body}" dari JID: ${sender}. Quoted Msg ID: ${quotedMsgId}. Daftar sesi aktif:`, [...pendingTikTokDownloads.keys()]);
+
+    if (quotedMsgId && pendingTikTokDownloads.has(quotedMsgId)) {
+      sessionKey = quotedMsgId;
+    } else {
+      // Fallback: cari berdasarkan sender JID
+      for (const [key, value] of pendingTikTokDownloads.entries()) {
+        if (value.sender === sender && (Date.now() - value.timestamp < 300000)) {
+          sessionKey = key;
+          break;
+        }
+      }
+    }
+
+    if (!sessionKey) {
+      console.log(`[TIKTOK] Tidak ada sesi aktif yang cocok untuk JID: ${sender} atau Quoted Msg ID: ${quotedMsgId}`);
+      return false;
+    }
     
+    const session = pendingTikTokDownloads.get(sessionKey);
+    // Hapus sesi agar tidak bisa dipicu berulang-ulang
     pendingTikTokDownloads.delete(sessionKey);
+    
+    if (Date.now() - session.timestamp > 300000) {
+      console.log(`[TIKTOK] Sesi ditemukan tetapi sudah kedaluwarsa.`);
+      return false;
+    }
     
     const { videoData, groupId, quotedMsg } = session;
     const title = videoData.title || "TikTok Video";
