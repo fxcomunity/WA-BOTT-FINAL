@@ -1707,8 +1707,12 @@ Selamat bersenang-senang! 🎉`;
         }
         await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
         try {
-          const prompt = "Hasilkan satu kutipan/kalimat filosofi sedih dalam bahasa Indonesia dengan nada sangat sarkas, sinis, realistis, dan menggunakan bahasa kasar/ceplas-ceplos (seperti kata-kata 'bangsat', 'goblok', 'bajingan', 'brengsek', 'kegiles', 'sampah', dll.) untuk menyindir drama kesedihan/nasib manusia. Format output HANYA terdiri dari dua bagian (tanpa pembuka, tanpa penutup, tanpa penjelasan):\n1. Kutipan filosofi kasarnya diapit tanda kutip dua.\n2. Di baris baru setelah kutipan, tulis judul filosofi yang kasar/sarkas dengan format bold (contoh: *Filosofi Ekspektasi Goblok*, *Filosofi Proses yang Brengsek*).\n\nCatatan Penting: Jangan pernah menyertakan kata 'AI', 'kecerdasan buatan', 'asisten', 'bot', atau referensi teknologi/robot/komputer lainnya di dalam kutipan maupun judul filosofinya. Semuanya harus murni buatan manusia dan sejenis dengan contoh di atas.";
-          const sadQuote = await aiChatbot.ask(prompt);
+          const prompt = "Hasilkan satu kutipan/kalimat filosofi sedih dalam bahasa Indonesia dengan nada sangat sarkas, sinis, realistis, dan menggunakan bahasa kasar/ceplas-ceplos (seperti kata-kata 'bangsat', 'goblok', 'bajingan', 'brengsek', 'kegiles', 'sampah', dll.) untuk menyindir drama kesedihan/nasib manusia. Hasil HANYA berupa kalimat kutipan tersebut secara langsung diapit tanda kutip dua, tanpa judul filosofi di bawahnya (dilarang menulis judul filosofi seperti *Filosofi Ekspektasi Goblok* atau sejenisnya), tanpa simbol garis strip em-dash seperti '—' (gunakan koma atau titik biasa), tanpa penjelasan, tanpa kata pengantar/penutup, dan jangan pernah menyertakan kata 'AI', 'bot', atau sejenisnya.";
+          let sadQuote = await aiChatbot.ask(prompt);
+          sadQuote = sadQuote.split('\n')
+            .filter(line => line.trim() && !line.includes('*Filosofi') && !line.toLowerCase().includes('filosofi'))
+            .join('\n');
+          sadQuote = sadQuote.replace(/—/g, ', ').replace(/--/g, ', ');
           await reply(sock, msg, sadQuote);
           await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
         } catch (err) {
