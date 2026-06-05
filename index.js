@@ -1707,7 +1707,7 @@ Selamat bersenang-senang! 🎉`;
         }
         await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } }).catch(() => {});
         try {
-          const prompt = "Berikan satu kalimat atau quote sedih (sad quote) dalam bahasa Indonesia yang menyindir (sarkas/roasting) pengguna yang sedang galau/sedih, dengan bahasa yang agak kasar/ceplas-ceplos (seperti mengejek drama kesedihan atau nasib jomblo/miskin/menyedihkan mereka). Hasil HANYA berupa kalimat tersebut secara langsung tanpa tanda kutip, tanpa penjelasan, dan tanpa kata pengantar.";
+          const prompt = "Hasilkan satu kutipan/kalimat filosofi sedih dalam bahasa Indonesia dengan nada sangat sarkas, sinis, realistis, dan menggunakan bahasa kasar/ceplas-ceplos (seperti kata-kata 'bangsat', 'goblok', 'bajingan', 'brengsek', 'kegiles', 'sampah', dll.) untuk menyindir drama kesedihan/nasib manusia. Format output HANYA terdiri dari dua bagian (tanpa pembuka, tanpa penutup, tanpa penjelasan):\n1. Kutipan filosofi kasarnya diapit tanda kutip dua.\n2. Di baris baru setelah kutipan, tulis judul filosofi yang kasar/sarkas dengan format bold (contoh: *Filosofi Ekspektasi Goblok*, *Filosofi Proses yang Brengsek*).\n\nHasilkan kutipan baru yang sejenis dengan contoh di atas.";
           const sadQuote = await aiChatbot.ask(prompt);
           await reply(sock, msg, sadQuote);
           await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } }).catch(() => {});
