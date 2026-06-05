@@ -693,6 +693,13 @@ async function startBot() {
     }
 
     // ============================================
+    // HANDLE PENDING TIKTOK SELECTION (A / B)
+    // ============================================
+    if (downloader.handlePendingTikTok && await downloader.handlePendingTikTok(sock, msg, sender, body)) {
+      return;
+    }
+
+    // ============================================
     // AUTO-DOWNLOADER (TikTok & Instagram)
     // ============================================
     if (!isCmd && config.features.downloader) {

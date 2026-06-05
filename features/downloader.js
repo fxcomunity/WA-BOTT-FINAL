@@ -1,6 +1,8 @@
 const axios = require('axios');
 const utils = require('./utils');
 
+const pendingTikTokDownloads = new Map();
+
 const devCaption = `╭━━• [ 📥 *DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
 async function resolveDomainViaDoH(domain) {
@@ -95,6 +97,14 @@ module.exports = {
       return sock.sendMessage(groupId, { text: "❌ Mana link TikTok-nya bos? Contoh:\n!tt https://vt.tiktok.com/xxxx/" }, { quoted: msg });
     }
 
+    const { jidNormalizedUser } = require('atexovi-baileys');
+    let sender = msg.key.participant || msg.key.remoteJid;
+    if (msg.key.fromMe) {
+      sender = jidNormalizedUser(sock.user.id);
+    } else {
+      sender = jidNormalizedUser(sender);
+    }
+
     await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } });
     const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses video TikTok...");
 
@@ -103,11 +113,34 @@ module.exports = {
       
       if (data.code === 0 && data.data) {
         const videoData = data.data;
-        const videoUrl = videoData.play;
         const title = videoData.title || "TikTok Video";
         const author = videoData.author?.nickname || "Unknown";
 
-        const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+        // Cek jika link berupa slideshow/gambar
+        if (videoData.images && videoData.images.length > 0) {
+          await progress.stop(true);
+          
+          const questionText = `⚠️ *[ TIKTOK DOWNLOADER ]* ⚠️\n\n` +
+            `Link TikTok ini dideteksi berisi *Slideshow/Gambar* (bukan video mentah biasa).\n\n` +
+            `Silakan pilih salah satu opsi format unduhan:\n` +
+            `*A.* Gambar (Kirim semua foto asli secara terpisah)\n` +
+            `*B.* Video (Kirim dalam bentuk video slideshow)\n\n` +
+            `_Balas chat ini dengan mengetik *A* atau *B*._`;
+            
+          pendingTikTokDownloads.set(sender, {
+            videoData,
+            link,
+            groupId,
+            quotedMsg: msg,
+            timestamp: Date.now()
+          });
+          
+          await sock.sendMessage(groupId, { text: questionText }, { quoted: msg });
+          return;
+        }
+
+        const videoUrl = videoData.play;
+        const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 📁 *Tipe File:* Video\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
         await progress.stop(true);
         await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: caption }, { quoted: msg });
@@ -498,5 +531,67 @@ module.exports = {
       console.error("Komik download error:", error);
       await sock.sendMessage(groupId, { text: `❌ Gagal mengunduh komik. Error: ${error.message}` }, { quoted: msg });
     }
+  },
+  
+  handlePendingTikTok: async (sock, msg, sender, body) => {
+    const sessionKey = sender;
+    if (!pendingTikTokDownloads.has(sessionKey)) return false;
+    
+    const session = pendingTikTokDownloads.get(sessionKey);
+    if (Date.now() - session.timestamp > 300000) {
+      pendingTikTokDownloads.delete(sessionKey);
+      return false;
+    }
+    
+    const choice = body.trim().toUpperCase();
+    if (choice !== 'A' && choice !== 'B') {
+      return false;
+    }
+    
+    pendingTikTokDownloads.delete(sessionKey);
+    
+    const { videoData, groupId, quotedMsg } = session;
+    const title = videoData.title || "TikTok Video";
+    const author = videoData.author?.nickname || "Unknown";
+    
+    await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } });
+    
+    if (choice === 'A') {
+      try {
+        const images = videoData.images;
+        if (!images || images.length === 0) {
+          await sock.sendMessage(groupId, { text: "❌ Tidak menemukan gambar pada data TikTok ini." }, { quoted: msg });
+          return true;
+        }
+        
+        const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 📁 *Tipe File:* Gambar\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+        
+        for (let i = 0; i < images.length; i++) {
+          const imgUrl = images[i];
+          if (i === 0) {
+            await sock.sendMessage(groupId, { image: { url: imgUrl }, caption: caption }, { quoted: quotedMsg });
+          } else {
+            await sock.sendMessage(groupId, { image: { url: imgUrl } });
+          }
+        }
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+      } catch (e) {
+        console.error("TikTok Images Send Error:", e);
+        await sock.sendMessage(groupId, { text: "❌ Gagal mengirim gambar TikTok." }, { quoted: msg });
+      }
+    } else if (choice === 'B') {
+      try {
+        const videoUrl = videoData.play;
+        const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 📁 *Tipe File:* Video\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+        
+        await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: caption }, { quoted: quotedMsg });
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+      } catch (e) {
+        console.error("TikTok Video Send Error:", e);
+        await sock.sendMessage(groupId, { text: "❌ Gagal mengirim video TikTok." }, { quoted: msg });
+      }
+    }
+    
+    return true;
   }
 };
