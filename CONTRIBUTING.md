@@ -6,7 +6,7 @@ Proyek **JackBOT (Baileys Edition)** tidak akan terwujud tanpa sinergi, dedikasi
 
 ## 🌌 Dedikasi Spiritual
 
-### **ﷻ Allah SWT** (The Ultimate Provider)
+### **ﷻ Allah SWT** (The Ultimate Provider & The God Of Creator)
 > *Segala puji bagi Allah SWT, Sang Pemilik Kehidupan. Terima kasih atas limpahan nafas, kesehatan, kecerdasan, serta nikmat yang melimpah ruah yang terus mengalir, sehingga kami senantiasa diberikan petunjuk, kelancaran, dan kemampuan untuk menyelesaikan pengembangan proyek ini.*
 
 ---
