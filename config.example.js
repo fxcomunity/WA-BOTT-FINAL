@@ -40,9 +40,17 @@ function hasValidApiKeys() {
 }
 
 module.exports = {
-  owners: [
-    // Tambahkan nomor WA atau LID Anda di sini, misalnya "6281234567890"
-  ],
+  owners: process.env.OWNER_NUMBERS
+    ? process.env.OWNER_NUMBERS.split(',').map(n => n.trim())
+    : [
+        // Tambahkan nomor WA atau LID Anda di sini, misalnya "6281234567890"
+      ],
+  // Contact numbers for developer info
+  devContact: process.env.DEV_CONTACTS
+    ? process.env.DEV_CONTACTS.split(',').map(n => n.trim())
+    : [
+        // Tambahkan nomor WA developer
+      ],
 
   // === PENGATURAN BOT ===
   prefix: "!",

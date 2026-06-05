@@ -264,7 +264,7 @@ module.exports = {
   fb: async (sock, msg, args) => {
     const groupId = msg.key.remoteJid;
     const link = args[0];
-    if (!link || !link.includes('facebook.com') && !link.includes('fb.watch') && !link.includes('fb.com')) {
+    if (!link || (!link.includes('facebook.com') && !link.includes('fb.watch') && !link.includes('fb.com'))) {
       return sock.sendMessage(groupId, { text: "❌ Link salah! Contoh: !fb https://www.facebook.com/watch/?v=123" }, { quoted: msg });
     }
 
@@ -509,6 +509,11 @@ module.exports = {
 
       // Save PDF
       const pdfBytes = await pdfDoc.save();
+      
+      if (pdfBytes.length > 95 * 1024 * 1024) {
+        await progress.stop(false);
+        return sock.sendMessage(groupId, { text: `⚠️ PDF terlalu besar (${Math.round(pdfBytes.length/1024/1024)}MB). Coba chapter yang lebih pendek.` }, { quoted: msg });
+      }
       
       // Simpan sementara di workspace
       const tempPath = path.join(__dirname, '..', `temp_${Date.now()}.pdf`);

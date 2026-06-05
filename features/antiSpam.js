@@ -44,6 +44,11 @@ module.exports = {
     delete mutedUsers[sender];
   },
 
+  isMuted(sender) {
+    const now = Date.now();
+    return mutedUsers[sender] && now < mutedUsers[sender];
+  },
+
   setSlowMode(delay) {
     slowMode.active = true;
     slowMode.delay = delay;

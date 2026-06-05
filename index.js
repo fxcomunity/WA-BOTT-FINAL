@@ -718,6 +718,8 @@ async function startBot() {
     // ============================================
     if (!isCmd) return;
 
+    if (antiSpam.isMuted && antiSpam.isMuted(sender) && !adminCheck && !ownerCheck) return;
+
     // --- GLOBAL COOLDOWN SYSTEM UNTUK SEMUA FITUR (30 DETIK PER USER) ---
     // Navigasi menu (btn_ prefix, list reply, angka menu) dikecualikan dari cooldown
     const isMenuNavigation = isButtonReply || isMenuFallback || cmd?.startsWith("btn_") || ["menu", "help"].includes(cmd);
@@ -753,14 +755,14 @@ async function startBot() {
         break;
 
       case "log": {
-        const isGroup = msg.key.remoteJid.endsWith("@g.us");
+        const isGroupChat = msg.key.remoteJid.endsWith("@g.us");
         const senderJid = sender;
         const groupJid = msg.key.remoteJid;
         
         let responseText = `📝 *[ LOG / DETEKSI JID ]*\n\n`;
         responseText += `👤 *WhatsApp User:* @${senderJid.split("@")[0]}\n`;
         responseText += `💬 *User JID:* \`${senderJid}\`\n\n`;
-        if (isGroup) {
+        if (isGroupChat) {
           responseText += `🏢 *Group JID:* \`${groupJid}\`\n`;
         } else {
           responseText += `🏢 *Chat Type:* Private Chat (PC)\n`;
@@ -945,6 +947,7 @@ async function startBot() {
         break;
 
       case "tagall":
+        if (!isGroup) return reply(sock, msg, "❌ Command ini cuma bisa dipakai di grup!");
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
         const meta = await sock.groupMetadata(groupId);
         const mentions = meta.participants.map(p => p.id);
@@ -991,11 +994,7 @@ async function startBot() {
           }
           if (["4", "rpg", "economy"].includes(categoryInput)) {
             const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
-            return sock.sendMessage(msg.key.remoteJid, { text: txt });
-          }
-          if (["5", "game", "hiburan"].includes(categoryInput)) {
-            const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
-            return sock.sendMessage(msg.key.remoteJid, { text: txt });
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
           if (["6", "downloader", "download"].includes(categoryInput)) {
             const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
@@ -1138,15 +1137,7 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       case "btn_rpg":
       case "menu_4": {
         const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt });
-        break;
-      }
-
-      case "5":
-      case "btn_game":
-      case "menu_5": {
-        const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt });
+        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
         break;
       }
 
@@ -1353,6 +1344,7 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
               break;
            }
            
+           if (!isGroup) return reply(sock, msg, "❌ Command ini cuma bisa dipakai di grup!");
            const groupInfo = await sock.groupMetadata(groupId);
            await reply(sock, msg, `📋 *Info Grup*\nNama: ${groupInfo.subject}\nMember: ${groupInfo.participants.length}\nDeskripsi: ${groupInfo.desc || "-"}\n\n_Ketik *!info rpg* untuk panduan lengkap bermain RPG tambang._`);
         }
@@ -1369,9 +1361,11 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
         } else if (stWallet?.inventory?.badge_vip > 0) {
           stRole = "🌟 Member VIP (Premium)";
         } else {
-          const mData = await sock.groupMetadata(groupId);
-          const stIsAdmin = mData.participants.find(p => p.id === stTarget)?.admin != null;
-          if (stIsAdmin) stRole = "🛡️ Admin Grup";
+          if (isGroup) {
+            const mData = await sock.groupMetadata(groupId);
+            const stIsAdmin = mData.participants.find(p => p.id === stTarget)?.admin != null;
+            if (stIsAdmin) stRole = "🛡️ Admin Grup";
+          }
         }
         const stWarns = await warnSystem.getWarn(stTarget);
         const maxW = config.maxWarn;
@@ -1975,10 +1969,27 @@ Selamat bersenang-senang! 🎉`;
 
       case "setlimit":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        const slTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-        const slType   = args[1]; // download/ai/kuis/sticker
-        const slMax    = parseInt(args[2]);
-        if (slTarget && slType && slMax) {
+        
+        let slTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        if (!slTarget) {
+          const phoneArg = args.find(a => {
+            const clean = a.replace(/[^0-9]/g, '');
+            return clean.length >= 9 && clean.length <= 15;
+          });
+          if (phoneArg) {
+            slTarget = phoneArg.replace(/[^0-9]/g, '') + "@s.whatsapp.net";
+          }
+        }
+        
+        const slType = args.find(a => ['download','ai','kuis','sticker'].includes(a.toLowerCase()))?.toLowerCase();
+        
+        const slMaxArg = args.find(a => {
+          const clean = a.replace(/[^0-9]/g, '');
+          return clean.length > 0 && clean.length <= 6 && !isNaN(parseInt(clean));
+        });
+        const slMax = slMaxArg ? parseInt(slMaxArg.replace(/[^0-9]/g, '')) : NaN;
+        
+        if (slTarget && slType && !isNaN(slMax)) {
           limitSystem.setCustomLimit(slTarget, slType, slMax);
           await reply(sock, msg, `✅ Limit ${slType} @${slTarget.split("@")[0]} diset ke ${slMax}.`);
         } else {
