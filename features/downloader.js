@@ -127,6 +127,7 @@ module.exports = {
             `*B.* Video (Kirim dalam bentuk video slideshow)\n\n` +
             `_Balas chat ini dengan mengetik *A* atau *B*._`;
             
+          console.log(`[TIKTOK] Menyimpan sesi download untuk JID: ${sender}`);
           pendingTikTokDownloads.set(sender, {
             videoData,
             link,
@@ -535,6 +536,7 @@ module.exports = {
   
   handlePendingTikTok: async (sock, msg, sender, body) => {
     const sessionKey = sender;
+    console.log(`[TIKTOK] Menerima input: "${body}" dari JID: ${sessionKey}. Daftar sesi aktif:`, [...pendingTikTokDownloads.keys()]);
     if (!pendingTikTokDownloads.has(sessionKey)) return false;
     
     const session = pendingTikTokDownloads.get(sessionKey);
