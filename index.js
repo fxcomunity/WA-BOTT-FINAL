@@ -1128,24 +1128,39 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       case "3":
       case "btn_member":
       case "menu_3": {
-        const txt = getHelpText(ownerCheck, adminCheck, "member") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "member");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "⚔️ RPG Economy", id: "btn_rpg" } },
+          { name: "quick_reply", params: { display_text: "📥 Downloader", id: "btn_downloader" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "4":
       case "btn_rpg":
       case "menu_4": {
-        const txt = getHelpText(ownerCheck, adminCheck, "rpg") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "rpg");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "⛏️ Nambang", id: "nambang" } },
+          { name: "quick_reply", params: { display_text: "🎣 Mancing", id: "mancing" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "6":
       case "btn_downloader":
       case "menu_6": {
-        const txt = getHelpText(ownerCheck, adminCheck, "downloader") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "downloader");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "🎵 Spotify", id: "btn_spotify" } },
+          { name: "quick_reply", params: { display_text: "🎙️ Voice Changer", id: "btn_voice" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
@@ -1153,40 +1168,58 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       case "btn_komik":
       case "menu_5":
       case "menu_komik": {
-        const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "komik");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "📋 Tracklist", id: "tracklist" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "7":
       case "btn_dev":
       case "menu_7": {
-        const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "dev");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "8":
       case "btn_spotify":
       case "menu_8": {
-        const txt = getHelpText(ownerCheck, adminCheck, "spotify") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "spotify");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "📥 Downloader", id: "btn_downloader" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "9":
       case "btn_voice":
       case "menu_9": {
-        const txt = getHelpText(ownerCheck, adminCheck, "voice") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "voice");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "📥 Downloader", id: "btn_downloader" } },
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
       case "10":
       case "btn_osint":
       case "menu_10": {
-        const txt = getHelpText(ownerCheck, adminCheck, "osint") + "\n\n_Ketik *!menu* untuk kembali._";
-        await sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+        const txt = getHelpText(ownerCheck, adminCheck, "osint");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
         break;
       }
 
