@@ -43,10 +43,41 @@ const khodam = [
   "Nyi Roro Kidul 🌊", "Bapak Lu 👨", "Biji Ketumbar 🌰", "Kecoak Terbang 🪳", "Kosong (Sama Kaya Otak Lu) 👻"
 ];
 
+const truthQuestions = [
+  "Siapa orang di grup ini yang paling lu pengen kick tapi gak enak ngomongnya?",
+  "Apa hal paling memalukan yang pernah lu lakuin pas lagi boker/di kamar mandi?",
+  "Pernah gak lu diem-diem nge-stalk chat mantan pake akun palsu? Ngaku lu!",
+  "Siapa orang terakhir yang lu kepoin profil WA-nya hari ini?",
+  "Pernah gak lu bohong ke temen lu demi bisa rebahan di rumah? Bohong apaan?",
+  "Apa rahasia paling memalukan yang gak ada satu pun orang di grup ini yang tau?",
+  "Kapan terakhir kali lu nangis bombay karena masalah sepele/galau gak jelas?",
+  "Siapa orang di grup ini yang menurut lu paling caper/sok asik?",
+  "Pernah gak lu minjem duit ke temen tapi pura-pura lupa bayar?"
+];
+
+const dareChallenges = [
+  "SS (Screenshot) chat terakhir lu sama emak lu, terus kirim ke grup ini!",
+  "Voice Note nyanyi lagu balonku ada lima tapi pake huruf vokal O semua selama 15 detik!",
+  "Chat mantan lu sekarang juga bilang 'Gue kangen, tapi boong', SS kirim kesini!",
+  "Kirim foto muka jelek lu sekarang tanpa filter/editan di grup ini!",
+  "Pura-pura kesurupan lewat Voice Note selama 10 detik!",
+  "Tag satu orang di grup ini yang menurut lu paling cakep/cantik, terus bilang 'Maukah kamu jadi babuku?'",
+  "SS riwayat pencarian (history) browser lu 5 menit terakhir, kirim ke grup!",
+  "Voice Note desah manja selama 5 detik, jangan malu-malu kucing!"
+];
+
 // Cooldown map for menfess (sender JID -> timestamp of last use)
 const menfessCooldown = {};
 
 module.exports = {
+  getTruth: async (sock, msg) => {
+    const t = truthQuestions[Math.floor(Math.random() * truthQuestions.length)];
+    await sock.sendMessage(msg.key.remoteJid, { text: `🎯 *TRUTH:* \n\n"${t}"` }, { quoted: msg });
+  },
+  getDare: async (sock, msg) => {
+    const d = dareChallenges[Math.floor(Math.random() * dareChallenges.length)];
+    await sock.sendMessage(msg.key.remoteJid, { text: `🔥 *DARE:* \n\n"${d}"` }, { quoted: msg });
+  },
   getQuote: async (sock, msg) => {
     const q = quotes[Math.floor(Math.random() * quotes.length)];
     await sock.sendMessage(msg.key.remoteJid, { text: `📜 *Quotes Brutal:*\n\n"${q}"` }, { quoted: msg });

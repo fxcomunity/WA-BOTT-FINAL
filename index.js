@@ -508,7 +508,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday", "sad",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday", "sad", "truth", "dare",
         ...audioEffects.effectsList
       ];
 
@@ -1009,7 +1009,11 @@ async function startBot() {
             const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
-          if (["7", "dev", "developer", "info"].includes(categoryInput)) {
+          if (["7", "game", "fun"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
+            return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
+          }
+          if (["dev", "developer", "info"].includes(categoryInput)) {
             const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
@@ -1055,12 +1059,14 @@ async function startBot() {
         menuKategoriTerdifinisi += `│ 4️⃣ *RPG Economy* ➯ !menu 4\n`;
         menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu 5\n`;
         menuKategoriTerdifinisi += `│ 6️⃣ *Downloader* ➯ !menu 6\n`;
-        menuKategoriTerdifinisi += `│ 7️⃣ *Developer* ➯ !menu 7\n`;
+        menuKategoriTerdifinisi += `│ 7️⃣ *Game & Fun* ➯ !menu 7\n`;
         menuKategoriTerdifinisi += `│ 8️⃣ *Spotify* ➯ !menu 8\n`;
         menuKategoriTerdifinisi += `│ 9️⃣ *Voice Changer* ➯ !menu 9\n`;
         menuKategoriTerdifinisi += `│ 🔟 *OSINT* ➯ !menu 10\n`;
         menuKategoriTerdifinisi += `│ 1️⃣1️⃣ *Plugins* ➯ !menu 11\n`;
         menuKategoriTerdifinisi += `└───────────────┈ ⳹`;
+
+        const devLinks = config.devContact.map(n => `│ 📞 No Dev : https://wa.me/${n}`).join('\n');
 
         const helpMsg = `*✦ ──『 🤖 JACKBOT V3.0 』── ✦*
 
@@ -1078,6 +1084,12 @@ async function startBot() {
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
+┌──❖ *D E V E L O P E R*
+${devLinks}
+│ 🌐 Web    : https://jack-scanner.biz.id
+│            https://fxcomunity.vercel.app/
+└───────────────┈ ⳹
+
 ${menuKategoriTerdifinisi}
 
 _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol di bawah tidak muncul._`;
@@ -1092,6 +1104,7 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
           { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
           { title: "Menu Komik & Tracking", description: "Cari, baca & lacak komik terbaru", id: "btn_komik" },
           { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
+          { title: "Game & Fun", description: "Kuis, Tebak Angka, Cek Khodam, Jodoh, dll", id: "btn_game" },
           { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
           { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
           { title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
@@ -1183,8 +1196,17 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       }
 
       case "7":
-      case "btn_dev":
+      case "btn_game":
       case "menu_7": {
+        const txt = getHelpText(ownerCheck, adminCheck, "game");
+        const buttons = [
+          { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
+        ];
+        await sendInteractiveMessage(sock, msg.key.remoteJid, txt, "JackBOT v3.0.0", buttons, msg);
+        break;
+      }
+
+      case "btn_dev": {
         const txt = getHelpText(ownerCheck, adminCheck, "dev");
         const buttons = [
           { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
@@ -1699,6 +1721,14 @@ Selamat bersenang-senang! 🎉`;
 
       case "quotes":
         await fun.getQuote(sock, msg);
+        break;
+
+      case "truth":
+        await fun.getTruth(sock, msg);
+        break;
+
+      case "dare":
+        await fun.getDare(sock, msg);
         break;
 
       case "sad":
@@ -2301,6 +2331,10 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
 │    ↳ Main tebak angka rahasia
 │ ⚡ *!jawab* [angka]
 │    ↳ Menjawab tebakan angka
+│ ⚡ *!truth*
+│    ↳ Dapatkan pertanyaan jujur
+│ ⚡ *!dare*
+│    ↳ Dapatkan tantangan berani
 └───────────────┈ ⳹
 
 ┌──❖ *H I B U R A N*
