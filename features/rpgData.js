@@ -242,8 +242,18 @@ function rollFromPool(pool, tiers) {
     cumulative += tiers[t].encounterRate || 0;
     if (random <= cumulative) { selectedTier = t; break; }
   }
-  const tierPool = pool.filter(m => m.tier === selectedTier);
-  return enrichMonster(tierPool[Math.floor(Math.random() * tierPool.length)]);
+  let tierPool = pool.filter(m => m.tier === selectedTier);
+  if (tierPool.length === 0) {
+    for (let t = selectedTier - 1; t >= 1; t--) {
+      tierPool = pool.filter(m => m.tier === t);
+      if (tierPool.length > 0) break;
+    }
+  }
+  if (tierPool.length === 0) {
+    tierPool = pool;
+  }
+  const chosen = tierPool[Math.floor(Math.random() * tierPool.length)];
+  return chosen ? enrichMonster(chosen) : null;
 }
 
 function rollMonster() {
@@ -268,7 +278,16 @@ function rollArtifact() {
     }
   }
 
-  const tierArtifacts = artifacts.filter(a => a.tier === selectedTier);
+  let tierArtifacts = artifacts.filter(a => a.tier === selectedTier);
+  if (tierArtifacts.length === 0) {
+    for (let t = selectedTier - 1; t >= 1; t--) {
+      tierArtifacts = artifacts.filter(a => a.tier === t);
+      if (tierArtifacts.length > 0) break;
+    }
+  }
+  if (tierArtifacts.length === 0) {
+    tierArtifacts = artifacts;
+  }
   return tierArtifacts[Math.floor(Math.random() * tierArtifacts.length)];
 }
 

@@ -167,10 +167,10 @@ module.exports = {
       return `[${filledStr}${emptyStr}] ${p}%`;
     };
 
-    let sentMsg = await sock.sendMessage(groupId, { text: `${textPrefix}\n\n⏳ *Memproses:*\n${buildBar(0)}` }, { quoted: msg });
+    let sentMsg = await sock.sendMessage(groupId, { text: `${textPrefix}\n\n⏳ *Memproses:*\n${buildBar(5)}` }, { quoted: msg });
     let stopped = false;
     
-    const frames = [12, 28, 45, 63, 85, 99];
+    const frames = [10, 35, 50, 75, 100];
     
     const editLoop = async () => {
       for (const p of frames) {
@@ -188,7 +188,7 @@ module.exports = {
     return {
       stop: async (success = true) => {
         stopped = true;
-        let text = success ? `✅ *Selesai!*\n[██████████] 100%` : `❌ *Gagal bos!*\n[▒▒▒▒▒▒▒▒▒▒] ERROR`;
+        let text = success ? `✅ *Selesai!*\n[██████████] 100%` : `❌ *Gagal bos!*\n[🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥] ERROR`;
         try {
           await sock.sendMessage(groupId, { text: `${textPrefix}\n\n${text}`, edit: sentMsg.key });
         } catch (e) {}
