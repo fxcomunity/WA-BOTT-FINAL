@@ -1009,12 +1009,12 @@ async function startBot() {
             const txt = getHelpText(ownerCheck, adminCheck, "komik") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
-          if (["7", "game", "fun"].includes(categoryInput)) {
-            const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
+          if (["7", "dev", "developer", "info"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
-          if (["dev", "developer", "info"].includes(categoryInput)) {
-            const txt = getHelpText(ownerCheck, adminCheck, "dev") + "\n\n_Ketik *!menu* untuk kembali._";
+          if (["game", "fun"].includes(categoryInput)) {
+            const txt = getHelpText(ownerCheck, adminCheck, "game") + "\n\n_Ketik *!menu* untuk kembali._";
             return sock.sendMessage(msg.key.remoteJid, { text: txt }, { quoted: msg });
           }
           if (["8", "spotify", "music"].includes(categoryInput)) {
@@ -1057,16 +1057,16 @@ async function startBot() {
         }
         menuKategoriTerdifinisi += `│ 3️⃣ *Member* ➯ !menu 3\n`;
         menuKategoriTerdifinisi += `│ 4️⃣ *RPG Economy* ➯ !menu 4\n`;
-        menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu 5\n`;
+        menuKategoriTerdifinisi += `│ 5️⃣ *Komik* ➯ !menu komik\n`;
         menuKategoriTerdifinisi += `│ 6️⃣ *Downloader* ➯ !menu 6\n`;
-        menuKategoriTerdifinisi += `│ 7️⃣ *Game & Fun* ➯ !menu 7\n`;
+        menuKategoriTerdifinisi += `│ 7️⃣ *Developer* ➯ !menu 7\n`;
         menuKategoriTerdifinisi += `│ 8️⃣ *Spotify* ➯ !menu 8\n`;
         menuKategoriTerdifinisi += `│ 9️⃣ *Voice Changer* ➯ !menu 9\n`;
         menuKategoriTerdifinisi += `│ 🔟 *OSINT* ➯ !menu 10\n`;
         menuKategoriTerdifinisi += `│ 1️⃣1️⃣ *Plugins* ➯ !menu 11\n`;
         menuKategoriTerdifinisi += `└───────────────┈ ⳹`;
 
-        const devLinks = config.devContact.map(n => `│ 📞 No Dev : https://wa.me/${n}`).join('\n');
+        const devLinks = `│ 📞 No Dev : https://wa.me/62895404147521\n│ 🤖 No Bot : https://wa.me/6282211516086`;
 
         const helpMsg = `*✦ ──『 🤖 JACKBOT V3.0 』── ✦*
 
@@ -1080,7 +1080,7 @@ async function startBot() {
 │ 📝 Log  : Cek JID/WA (!log)
 └───────────────┈ ⳹
 
-┌──❖ *C O M M U N I T Y*
+┌──❖ *G I T H U B  D E V*
 │ ➯ github.com/fxcomunity
 └───────────────┈ ⳹
 
@@ -1104,7 +1104,7 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
           { title: "Menu Economy RPG", description: "Mancing, Nambang, Combat & Skills", id: "btn_rpg" },
           { title: "Menu Komik & Tracking", description: "Cari, baca & lacak komik terbaru", id: "btn_komik" },
           { title: "Menu Downloader", description: "Download TikTok, IG, YT, dll", id: "btn_downloader" },
-          { title: "Game & Fun", description: "Kuis, Tebak Angka, Cek Khodam, Jodoh, dll", id: "btn_game" },
+          { title: "Info Developer", description: "Kontak & info developer bot", id: "btn_dev" },
           { title: "Spotify Music", description: "Download lagu dari Spotify", id: "btn_spotify" },
           { title: "Voice Changer", description: "Ubah suara VN jadi lucu", id: "btn_voice" },
           { title: "Menu OSINT & Track", description: "Lacak nomor & informasi", id: "btn_osint" },
@@ -1196,9 +1196,9 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       }
 
       case "7":
-      case "btn_game":
+      case "btn_dev":
       case "menu_7": {
-        const txt = getHelpText(ownerCheck, adminCheck, "game");
+        const txt = getHelpText(ownerCheck, adminCheck, "dev");
         const buttons = [
           { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
         ];
@@ -1206,8 +1206,8 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
         break;
       }
 
-      case "btn_dev": {
-        const txt = getHelpText(ownerCheck, adminCheck, "dev");
+      case "btn_game": {
+        const txt = getHelpText(ownerCheck, adminCheck, "game");
         const buttons = [
           { name: "quick_reply", params: { display_text: "↩️ Menu Utama", id: "menu" } }
         ];
@@ -2504,17 +2504,17 @@ salah satu command di atas.`;
   }
 
   if (kategori === "dev") {
-  const devLinks = config.devContact.map(n => `┃ ➯ https://wa.me/${n}`).join('\n');
-  return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮
+    return `╭━━• [ 💻 *INFO DEVELOPER* ] •━━╮
 ┃ 
 ┣━━ [ 🌐 WEBSITE ]
 ┃ ➯ https://jack-scanner.biz.id (Nunggu Confirmasi dari PANDI)
 ┃ ➯ https://fxcomunity.vercel.app/
 ┃ 
-┣━━ [ 📞 NOMOR DEVELOPER ]
-${devLinks}
+┣━━ [ 📞 KONTAK ]
+┃ ➯ No Dev: https://wa.me/62895404147521
+┃ ➯ No Bot: https://wa.me/6282211516086
 ╰━━━━━━━━━━━━━━━━━━━╯`;
-}
+  }
 
   return `🤖 *JackBOT*\n\nKetik !menu buat liat daftar isi bossku.`;
 }
