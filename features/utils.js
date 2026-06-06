@@ -160,10 +160,10 @@ module.exports = {
   simulateProgress: async (sock, groupId, msg, textPrefix) => {
     const buildBar = (p) => {
       const totalBlocks = 10;
-      const filledBlocks = Math.floor(p / 10);
+      const filledBlocks = Math.round(p / 10);
       const emptyBlocks = totalBlocks - filledBlocks;
       const filledStr = "⬜".repeat(filledBlocks);
-      const emptyStr = "▒".repeat(emptyBlocks);
+      const emptyStr = "⬛".repeat(emptyBlocks);
       return `[${filledStr}${emptyStr}] ${p}%`;
     };
 

@@ -25,6 +25,93 @@ async function resolveDomainViaDoH(domain) {
   }
 }
 
+async function ytdlpAudio(sock, msg, args, typeName) {
+  const groupId = msg.key.remoteJid;
+  const link = args[0];
+  if (!link) {
+    return sock.sendMessage(groupId, { text: `❌ Masukkan link ${typeName}-nya bos!` }, { quoted: msg });
+  }
+
+  await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } });
+  const progress = await utils.simulateProgress(sock, groupId, msg, `⏳ Memproses audio ${typeName}...`);
+  let tempOut = null;
+
+  try {
+    const { spawn } = require('child_process');
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs');
+    const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+    const ytdlpBin = os.platform() === 'win32' ? '.\\yt-dlp.exe' : 'yt-dlp';
+    
+    // Ambil info judul
+    const infoStdout = await new Promise((resolve, reject) => {
+      const proc = spawn(ytdlpBin, ['-j', '--no-warnings', link]);
+      let data = '';
+      proc.stdout.on('data', (chunk) => data += chunk);
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (code === 0) resolve(data);
+        else reject(new Error(`yt-dlp exited with code ${code}`));
+      });
+    });
+    const info = JSON.parse(infoStdout);
+    const title = info.title || `${typeName} Audio`;
+    
+    tempOut = path.join(__dirname, '..', `temp_${typeName.toLowerCase()}_${Date.now()}.mp3`);
+    
+    await new Promise((resolve, reject) => {
+      const proc = spawn(ytdlpBin, [
+        '--no-warnings',
+        '-f', 'bestaudio/best',
+        '-x',
+        '--audio-format', 'mp3',
+        '--ffmpeg-location', ffmpegPath,
+        '-o', tempOut,
+        link
+      ]);
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`yt-dlp download exited with code ${code}`));
+      });
+    });
+
+    if (!fs.existsSync(tempOut)) {
+      throw new Error("File output MP3 tidak ditemukan");
+    }
+
+    const fileStats = fs.statSync(tempOut);
+    const fileSize = fileStats.size;
+    const customCaption = `╭━━• [ 📥 *${typeName.toUpperCase()} AUDIO* ] •━━╮\n┃\n┃ 🎬 *Judul:* ${title}\n┃ 📁 *Ukuran:* ${Math.round(fileSize/1024/1024)}MB\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    if (fileSize > 50 * 1024 * 1024) {
+      await progress.stop(false);
+      fs.unlinkSync(tempOut);
+      return sock.sendMessage(groupId, { text: `❌ Audio terlalu besar (${Math.round(fileSize/1024/1024)}MB). Maksimal 50MB!` }, { quoted: msg });
+    }
+
+    await progress.stop(true);
+    await sock.sendMessage(groupId, { 
+      document: fs.readFileSync(tempOut), 
+      mimetype: 'audio/mpeg',
+      fileName: `${title}.mp3`,
+      caption: customCaption 
+    }, { quoted: msg });
+
+    fs.unlinkSync(tempOut);
+    await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+  } catch (error) {
+    await progress.stop(false);
+    console.log(`${typeName} Audio Error:`, error.message || error);
+    await sock.sendMessage(groupId, { text: `❌ Gagal bos download audio dari ${typeName}.` }, { quoted: msg });
+    const fs = require('fs');
+    if (tempOut && fs.existsSync(tempOut)) {
+      try { fs.unlinkSync(tempOut); } catch (e) {}
+    }
+  }
+}
+
 module.exports = {
   youtube: async (sock, msg, args) => { 
     const groupId = msg.key.remoteJid;
@@ -620,5 +707,136 @@ module.exports = {
     }
     
     return true;
+  },
+
+  ytaudio: async (sock, msg, args) => {
+    await ytdlpAudio(sock, msg, args, "YouTube");
+  },
+
+  tiktokAudio: async (sock, msg, args) => {
+    const groupId = msg.key.remoteJid;
+    const link = args[0];
+    if (!link || !link.includes('tiktok.com')) {
+      return sock.sendMessage(groupId, { text: "❌ Mana link TikTok-nya bos? Contoh:\n!ttmp3 https://vt.tiktok.com/xxxx/" }, { quoted: msg });
+    }
+
+    await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } });
+    const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses audio TikTok...");
+
+    try {
+      const { data } = await axios.post('https://www.tikwm.com/api/', { url: link });
+      if (data.code === 0 && data.data) {
+        const videoData = data.data;
+        const title = videoData.title || "TikTok Audio";
+        const author = videoData.author?.nickname || "Unknown";
+        const audioUrl = videoData.music; // TikWM audio URL (MP3)
+        
+        if (!audioUrl) {
+          throw new Error("Audio URL tidak ditemukan di TikWM API");
+        }
+
+        const customCaption = `╭━━• [ 📥 *TIKTOK AUDIO* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+        await progress.stop(true);
+        await sock.sendMessage(groupId, { 
+          document: { url: audioUrl }, 
+          mimetype: 'audio/mpeg',
+          fileName: `${title}.mp3`,
+          caption: customCaption 
+        }, { quoted: msg });
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+      } else {
+        await progress.stop(false);
+        await sock.sendMessage(groupId, { text: "❌ Gagal bos download audio TikTok. Pastiin link publik!" }, { quoted: msg });
+      }
+    } catch (error) {
+      await progress.stop(false);
+      console.log("TikTok Audio Error:", error.message || error);
+      await sock.sendMessage(groupId, { text: "❌ Ada error njir saat memproses audio TikTok." }, { quoted: msg });
+    }
+  },
+
+  instagramAudio: async (sock, msg, args) => {
+    const groupId = msg.key.remoteJid;
+    const link = args[0];
+    if (!link || !link.includes('instagram.com')) {
+      return sock.sendMessage(groupId, { text: "❌ Mana link Instagram-nya bos? Contoh:\n!igmp3 https://www.instagram.com/reel/xxxx" }, { quoted: msg });
+    }
+
+    await sock.sendMessage(groupId, { react: { text: "⏳", key: msg.key } });
+    const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses audio Instagram...");
+    let tempIn = null;
+    let tempOut = null;
+
+    try {
+      const { igdl } = require('btch-downloader');
+      const data = await igdl(link);
+      
+      if (data && data.status && data.result && data.result.length > 0) {
+        const validMedia = data.result.find(item => item.url && item.url.trim() !== '');
+        if (!validMedia) throw new Error("Video tidak ditemukan");
+        
+        const mediaUrl = validMedia.url;
+        
+        const path = require('path');
+        const fs = require('fs');
+        tempIn = path.join(__dirname, '..', `temp_ig_in_${Date.now()}.mp4`);
+        tempOut = path.join(__dirname, '..', `temp_ig_out_${Date.now()}.mp3`);
+        
+        // Download video file
+        const axios = require('axios');
+        const fileRes = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
+        fs.writeFileSync(tempIn, Buffer.from(fileRes.data));
+        
+        // Jalankan ffmpeg untuk convert ke mp3
+        const ffmpeg = require('fluent-ffmpeg');
+        const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+        ffmpeg.setFfmpegPath(ffmpegPath);
+        
+        await new Promise((resolve, reject) => {
+          ffmpeg(tempIn)
+            .outputOptions('-vn', '-acodec', 'libmp3lame')
+            .on('end', resolve)
+            .on('error', reject)
+            .save(tempOut);
+        });
+
+        const customCaption = `╭━━• [ 📥 *INSTAGRAM AUDIO* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+        await progress.stop(true);
+        await sock.sendMessage(groupId, { 
+          document: fs.readFileSync(tempOut), 
+          mimetype: 'audio/mpeg',
+          fileName: `ig_audio_${Date.now()}.mp3`,
+          caption: customCaption 
+        }, { quoted: msg });
+
+        fs.unlinkSync(tempIn);
+        fs.unlinkSync(tempOut);
+        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
+      } else {
+        await progress.stop(false);
+        await sock.sendMessage(groupId, { text: "❌ Konten Instagram tidak ditemukan." }, { quoted: msg });
+      }
+    } catch (error) {
+      await progress.stop(false);
+      console.log("IG Audio Error:", error.message || error);
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos mendownload audio dari Instagram." }, { quoted: msg });
+      const fs = require('fs');
+      if (tempIn && fs.existsSync(tempIn)) {
+        try { fs.unlinkSync(tempIn); } catch (e) {}
+      }
+      if (tempOut && fs.existsSync(tempOut)) {
+        try { fs.unlinkSync(tempOut); } catch (e) {}
+      }
+    }
+  },
+
+  fbAudio: async (sock, msg, args) => {
+    await ytdlpAudio(sock, msg, args, "Facebook");
+  },
+
+  twAudio: async (sock, msg, args) => {
+    await ytdlpAudio(sock, msg, args, "Twitter/X");
   }
 };

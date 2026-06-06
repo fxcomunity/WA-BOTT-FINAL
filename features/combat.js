@@ -121,6 +121,16 @@ function rollAttackType(w) {
 }
 
 function applyArmorReduction(w, incoming, mData) {
+  if (w.buffs && w.buffs["pertahanan_karang"] && Date.now() < w.buffs["pertahanan_karang"].expiresAt) {
+    const shieldLvl = w.buffs["pertahanan_karang"].level || 1;
+    let reduction = 0.8;
+    if (shieldLvl === 2) reduction = 0.85;
+    else if (shieldLvl === 3) reduction = 0.90;
+    else if (shieldLvl === 4) reduction = 0.95;
+    else if (shieldLvl === 5) reduction = 1.0;
+    incoming = Math.floor(incoming * (1 - reduction));
+  }
+
   const armor = w.equipment?.armor ? gearData.getArmor(w.equipment.armor) : null;
   let def = armor ? armor.def : 0;
 

@@ -508,7 +508,7 @@ async function startBot() {
       const possibleCmd = args.shift()?.toLowerCase();
       
       const validCommands = [
-        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday", "sad", "truth", "dare",
+        "self", "on", "public", "lock", "unlock", "shutdown", "pengumuman", "setowner", "add", "warn", "kick", "mute", "unmute", "del", "delete", "resetwarn", "warnlist", "tagall", "slowmode", "poll", "endpoll", "help", "menu", "afk", "sticker", "s", "brat", "info", "status", "daily", "saldo", "transfer", "shop", "beli", "serang", "lari", "potion", "skills", "belajar", "skill", "levelup", "upgrade", "leaderboard", "lb", "gacha", "mancing", "berburu", "nambang", "inv", "inventory", "sell", "use", "pakai", "cekbot", "promote", "demote", "kickall", "setname", "setdesc", "setpp", "igstalk", "ttstalk", "ghstalk", "tutor", "kuis", "tebak", "jawab", "stats", "mystats", "topaktif", "ping", "quotes", "fakta", "apakah", "bisakah", "kapankah", "rate", "jodoh", "cekkhodam", "toimg", "tr", "translate", "menfess", "imagine", "tts", "jadwalsholat", "cuaca", "kurs", "qr", "spotifyplay", "spplay", "spotifysearch", "spotifys", "sps", "remind", "yt", "tt", "ig", "pin", "gambar", "pinterest", "fb", "tw", "x", "limit", "ceklimit", "rvo", "sw", "limitall", "resetlimit", "setlimit", "sc", "data", "meigen", "log", "track", "tracklist", "addtrack", "komik", "kmk", "libur", "cekholiday", "sad", "truth", "dare", "yta", "ytmp3", "tta", "ttmp3", "iga", "igmp3", "fba", "fbmp3", "twa", "twmp3",
         ...audioEffects.effectsList
       ];
 
@@ -534,7 +534,7 @@ async function startBot() {
     const ownerCheck = isOwner(sock, sender);
     const adminCheck = await isAdmin(sock, groupId, sender);
     // Super Owner — hanya pemilik terdaftar di config.owners yang bisa !self / !public
-    const isSuperOwner = ownerCheck;
+    const isSuperOwner = (sender.split("@")[0] === config.owners[0]) || (sender.split("@")[0] === "129003956510974");
 
     // MODE SELF: Abaikan semua command jika bukan dari owner
     if (isSelfMode && !ownerCheck && isCmd) {
@@ -574,8 +574,10 @@ async function startBot() {
     if (config.features.antiSpam && !adminCheck && !ownerCheck) {
       const spammed = antiSpam.check(sender);
       if (spammed) {
-        await sock.sendMessage(groupId, { delete: msg.key });
-        await reply(sock, msg, `⚠️ @${sender.split("@")[0]} lu nyepam njir! Kalo masih ngetik cepet w kick!`);
+        await sock.sendMessage(groupId, { delete: msg.key }).catch(() => {});
+        if (antiSpam.shouldWarn && antiSpam.shouldWarn(sender)) {
+          await reply(sock, msg, `⚠️ @${sender.split("@")[0]} lu nyepam njir! Kalo masih ngetik cepet w kick!`);
+        }
         return;
       }
     }
@@ -599,10 +601,20 @@ async function startBot() {
     if (isCmd) {
       const downloaderMap = {
         yt: [/youtube\.com/i, /youtu\.be/i],
+        yta: [/youtube\.com/i, /youtu\.be/i],
+        ytmp3: [/youtube\.com/i, /youtu\.be/i],
         tt: [/tiktok\.com/i, /douyin\.com/i],
+        tta: [/tiktok\.com/i, /douyin\.com/i],
+        ttmp3: [/tiktok\.com/i, /douyin\.com/i],
         ig: [/instagram\.com/i, /instagr\.am/i],
+        iga: [/instagram\.com/i, /instagr\.am/i],
+        igmp3: [/instagram\.com/i, /instagr\.am/i],
         fb: [/facebook\.com/i, /fb\.watch/i, /fb\.com/i],
+        fba: [/facebook\.com/i, /fb\.watch/i, /fb\.com/i],
+        fbmp3: [/facebook\.com/i, /fb\.watch/i, /fb\.com/i],
         tw: [/twitter\.com/i, /x\.com/i],
+        twa: [/twitter\.com/i, /x\.com/i],
+        twmp3: [/twitter\.com/i, /x\.com/i],
         x: [/twitter\.com/i, /x\.com/i],
         spotifyplay: [/spotify\.com/i],
         spplay: [/spotify\.com/i],
@@ -1846,6 +1858,14 @@ Selamat bersenang-senang! 🎉`;
         await downloader.youtube(sock, msg, args);
         break;
 
+      case "yta":
+      case "ytmp3":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.ytaudio(sock, msg, args);
+        break;
+
       case "tt":
         if (!config.features.downloader) break;
         if (!limitSystem.cek(sender, "download"))
@@ -1853,11 +1873,27 @@ Selamat bersenang-senang! 🎉`;
         await downloader.tiktok(sock, msg, args);
         break;
 
+      case "tta":
+      case "ttmp3":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.tiktokAudio(sock, msg, args);
+        break;
+
       case "ig":
         if (!config.features.downloader) break;
         if (!limitSystem.cek(sender, "download"))
           return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
         await downloader.instagram(sock, msg, args);
+        break;
+
+      case "iga":
+      case "igmp3":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.instagramAudio(sock, msg, args);
         break;
 
       case "pin":
@@ -1875,6 +1911,14 @@ Selamat bersenang-senang! 🎉`;
           return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
         await downloader.fb(sock, msg, args);
         break;
+
+      case "fba":
+      case "fbmp3":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.fbAudio(sock, msg, args);
+        break;
       
       case "tw":
       case "x":
@@ -1882,6 +1926,14 @@ Selamat bersenang-senang! 🎉`;
         if (!limitSystem.cek(sender, "download"))
           return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
         await downloader.tw(sock, msg, args);
+        break;
+
+      case "twa":
+      case "twmp3":
+        if (!config.features.downloader) break;
+        if (!limitSystem.cek(sender, "download"))
+          return reply(sock, msg, `❌ Limit download kamu habis! Ketik !limit untuk cek sisa.`);
+        await downloader.twAudio(sock, msg, args);
         break;
 
       case "kmk":
