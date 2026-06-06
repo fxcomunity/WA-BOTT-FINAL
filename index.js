@@ -1952,7 +1952,7 @@ Selamat bersenang-senang! 🎉`;
               id: msg.message.extendedTextMessage.contextInfo.stanzaId,
               ...(isGroup || isStatus ? { participant: quotedParticipant } : {})
             },
-            message: quotedMsg
+            message: tempMsg
           };
           
           const buffer = await downloadMediaMessage(
