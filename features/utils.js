@@ -162,7 +162,7 @@ module.exports = {
       const totalBlocks = 10;
       const filledBlocks = Math.floor(p / 10);
       const emptyBlocks = totalBlocks - filledBlocks;
-      const filledStr = "█".repeat(filledBlocks);
+      const filledStr = "⬜".repeat(filledBlocks);
       const emptyStr = "▒".repeat(emptyBlocks);
       return `[${filledStr}${emptyStr}] ${p}%`;
     };
@@ -188,7 +188,7 @@ module.exports = {
     return {
       stop: async (success = true) => {
         stopped = true;
-        let text = success ? `✅ *Selesai!*\n[██████████] 100%` : `❌ *Gagal bos!*\n[🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥] ERROR`;
+        let text = success ? `✅ *Selesai!*\n[🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩] 100%` : `❌ *Gagal bos!*\n[🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥] ERROR`;
         try {
           await sock.sendMessage(groupId, { text: `${textPrefix}\n\n${text}`, edit: sentMsg.key });
         } catch (e) {}
