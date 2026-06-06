@@ -2468,19 +2468,33 @@ function getHelpText(isOwner = false, isAdmin = false, kategori = "all") {
   if (kategori === "downloader") {
     return `*✦ ──『 📥 TUKANG SEDOT 』── ✦*
 
-┌──❖ *D O W N L O A D E R*
+┌──❖ *V I D E O  D O W N L O A D E R*
 │ ⚡ *Auto-Downloader*
 │    ↳ Kirim link TikTok/IG, otomatis sedot!
-│ ⚡ *!yt* [link] [resolusi]
-│    ↳ Colong video/audio YouTube
+│ ⚡ *!yt* [link]
+│    ↳ Colong video YouTube
 │ ⚡ *!tt* [link]
 │    ↳ Sedot TikTok (Tanpa Watermark)
 │ ⚡ *!ig* [link]
-│    ↳ Sedot konten IG
+│    ↳ Sedot konten IG (Reels/Post)
 │ ⚡ *!fb* [link]
-│    ↳ Sedot video FB
+│    ↳ Sedot video Facebook
 │ ⚡ *!tw / !x* [link]
 │    ↳ Sedot video Twitter/X
+│
+├──❖ *A U D I O  D O W N L O A D E R*
+│ ⚡ *!yta / !ytmp3* [link]
+│    ↳ Sedot audio (MP3) YouTube
+│ ⚡ *!tta / !ttmp3* [link]
+│    ↳ Sedot audio (MP3) TikTok
+│ ⚡ *!iga / !igmp3* [link]
+│    ↳ Sedot audio (MP3) Instagram
+│ ⚡ *!fba / !fbmp3* [link]
+│    ↳ Sedot audio (MP3) Facebook
+│ ⚡ *!twa / !twmp3* [link]
+│    ↳ Sedot audio (MP3) Twitter/X
+│
+├──❖ *O T H E R S*
 │ ⚡ *!kmk* [link]
 │    ↳ Download chapter komik jadi PDF (Komikcast/Shinigami)
 │ ⚡ *!pin* [kata kunci]
