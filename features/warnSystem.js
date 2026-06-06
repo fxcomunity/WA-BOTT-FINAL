@@ -5,8 +5,8 @@ const { sql } = require('../database/db');
 
 module.exports = {
   async warn(sock, msg, groupId, sender, args) {
-    const target = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-    if (!target) return sock.sendMessage(groupId, { text: "❌ Tag dulu orangnya bego! Contoh: !warn @user alasan" });
+    const target = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
+    if (!target) return sock.sendMessage(groupId, { text: "❌ Tag dulu orangnya bego! Contoh: !warn @user alasan atau reply pesan target dengan !warn" }, { quoted: msg });
 
     let rows = await sql`SELECT "warnCount" FROM warns WHERE id = ${target}`;
     let count = rows[0]?.warnCount || 0;

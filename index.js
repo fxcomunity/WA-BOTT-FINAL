@@ -858,8 +858,8 @@ async function startBot() {
 
       case "kick":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        const kickTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-        if (!kickTarget) return reply(sock, msg, "❌ Tag siapa yang mau dikick! Contoh: !kick @user alasan");
+        const kickTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
+        if (!kickTarget) return reply(sock, msg, "❌ Tag siapa yang mau dikick! Contoh: !kick @user alasan atau reply pesan target dengan !kick");
         
         const alasanKick = args.slice(1).join(" ") || "Melanggar peraturan grup";
         const dKick = new Date();
@@ -879,8 +879,8 @@ async function startBot() {
 
       case "mute":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        const muteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-        if (!muteTarget) return reply(sock, msg, "❌ Tag siapa yang mau dimute! Contoh: !mute @user 10");
+        const muteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
+        if (!muteTarget) return reply(sock, msg, "❌ Tag siapa yang mau dimute! Contoh: !mute @user 10 atau reply pesan target dengan !mute");
         
         const muteDur = parseInt(args[1]) || config.muteDuration;
         antiSpam.mute(muteTarget, muteDur);
@@ -900,10 +900,12 @@ async function startBot() {
 
       case "unmute":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        const unmuteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        const unmuteTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
         if (unmuteTarget) {
           antiSpam.unmute(unmuteTarget);
           await reply(sock, msg, `🔊 ${unmuteTarget.split("@")[0]} di-unmute.`);
+        } else {
+          await reply(sock, msg, "❌ Tag siapa yang mau diunmute atau reply pesan target dengan !unmute");
         }
         break;
 
@@ -938,11 +940,12 @@ async function startBot() {
 
       case "resetwarn":
         if (!adminCheck && !ownerCheck) return reply(sock, msg, "❌ Lu bukan mentri grup cuy, diem aja!");
-        const resetTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        const resetTarget = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
         if (resetTarget) {
-
           await warnSystem.resetWarn(resetTarget);
           await reply(sock, msg, `✅ Warn ${resetTarget.split("@")[0]} direset.`);
+        } else {
+          await reply(sock, msg, "❌ Tag siapa yang mau direset warnnya atau reply pesan target dengan !resetwarn");
         }
         break;
 
@@ -1567,16 +1570,16 @@ _Ketik perintah di atas untuk membuka kategori menu secara langsung jika tombol 
       case "promote":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
         if (!ownerCheck) return reply(sock, msg, "⚠️ Fitur ini dibatasi cuma untuk Owner bot!");
-        const targetPromote = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + "@s.whatsapp.net";
-        if (!targetPromote) return reply(sock, msg, "⚠️ Tag member yang ingin dinaikkan pangkatnya!");
+        const targetPromote = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant || (args[0] ? args[0].replace(/[^0-9]/g, "") + "@s.whatsapp.net" : null);
+        if (!targetPromote || targetPromote === "@s.whatsapp.net") return reply(sock, msg, "⚠️ Tag member atau reply pesan target yang ingin dinaikkan pangkatnya!");
         await admin.promote(sock, msg, groupId, targetPromote);
         break;
 
       case "demote":
         if (!isGroup) return reply(sock, msg, "❌ Fitur ini cuma untuk Grup.");
         if (!ownerCheck) return reply(sock, msg, "⚠️ Fitur ini dibatasi cuma untuk Owner bot!");
-        const targetDemote = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + "@s.whatsapp.net";
-        if (!targetDemote) return reply(sock, msg, "⚠️ Tag admin yang ingin diturunkan pangkatnya!");
+        const targetDemote = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant || (args[0] ? args[0].replace(/[^0-9]/g, "") + "@s.whatsapp.net" : null);
+        if (!targetDemote || targetDemote === "@s.whatsapp.net") return reply(sock, msg, "⚠️ Tag admin atau reply pesan target yang ingin diturunkan pangkatnya!");
         await admin.demote(sock, msg, groupId, targetDemote);
         break;
 
@@ -1795,7 +1798,7 @@ Selamat bersenang-senang! 🎉`;
 
       case "imagine":
         if (!limitSystem.cek(sender, "download")) return reply(sock, msg, "❌ Limit harian kamu habis! Minta owner buat nambah.");
-        await utils.generateImage(sock, msg, args.join(" "));
+        await fun.imagine(sock, msg, args.join(" "));
         break;
 
       case "tts":

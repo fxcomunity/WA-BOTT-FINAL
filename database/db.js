@@ -266,6 +266,27 @@ function runLocalQuery(strings, values) {
     saveLocalDb();
     return [];
   }
+  // 14. UPDATE warns
+  if (queryText.startsWith('UPDATE warns')) {
+    const id = values[values.length - 1];
+    localData.warns[id] = {
+      id: id,
+      warnCount: values[0]
+    };
+    saveLocalDb();
+    return [];
+  }
+
+  // 15. UPDATE link_strikes
+  if (queryText.startsWith('UPDATE link_strikes')) {
+    const id = values[values.length - 1];
+    localData.link_strikes[id] = {
+      id: id,
+      strikeCount: values[0]
+    };
+    saveLocalDb();
+    return [];
+  }
 
   return [];
 }
