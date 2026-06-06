@@ -722,8 +722,23 @@ module.exports = {
       return combat.triggerEncounter(sock, msg, sender, w);
     }
 
+    // 1. Penggalian Mistis Buff (Cek & Konsumsi sebelum fail chance)
+    let penggalianText = "";
+    let ignoreFail = false;
+    let penggalianBonus = 0;
+    if (w.buffs["penggalian_mistis"] && now < w.buffs["penggalian_mistis"].expiresAt) {
+      const penggalianLvl = w.buffs["penggalian_mistis"].level || 1;
+      if (penggalianLvl === 2) penggalianBonus = 1;
+      else if (penggalianLvl === 3) penggalianBonus = 2;
+      else if (penggalianLvl === 4) { penggalianBonus = 3; ignoreFail = true; }
+      else if (penggalianLvl === 5) { penggalianBonus = 5; ignoreFail = true; }
+      
+      penggalianText = `\n🔮 *PENGGALIAN MISTIS (Lv.${penggalianLvl}):* Memperoleh bonus +${penggalianBonus} item dari penggalian mistis!`;
+      delete w.buffs["penggalian_mistis"];
+    }
+
     const gacha = Math.random();
-    if (gacha < 0.15) {
+    if (!ignoreFail && gacha < 0.15) {
       saveWallet(sender, w);
       return sock.sendMessage(msg.key.remoteJid, { text: "⛏️ Apes bet, pickaxe lu nyangkut di batu keras! Zonk kaga dapet apa-apa." }, { quoted: msg });
     }
@@ -733,7 +748,12 @@ module.exports = {
     const isTelekinesis = w.enchants["pickaxe_telekinesis"];
     const isSilkTouch = w.enchants["pickaxe_silk_touch"];
     const rpgData = require('./rpgData');
-    const result = itemsData.rollItem('mining', w.pickaxeLevel, isFortune);
+
+    let hasLampuKristal = null;
+    if (w.buffs["lampu_kristal_abadi"] && now < w.buffs["lampu_kristal_abadi"].expiresAt) {
+      hasLampuKristal = w.buffs["lampu_kristal_abadi"].level || 1;
+    }
+    const result = itemsData.rollItem('mining', w.pickaxeLevel, isFortune, hasLampuKristal);
     let item = result.item;
     const tier = result.tierData;
 
@@ -753,6 +773,59 @@ module.exports = {
       sledgehammerText = `\n🔨 *SLEDGEHAMMER:* Hantaman batu lu dapet double (*2x*) item!`;
     }
 
+    // Terapkan bonus Penggalian Mistis ke itemAmount
+    if (penggalianBonus > 0) {
+      itemAmount += penggalianBonus;
+    }
+
+    // 2. Levitas Batu Buff
+    let levitasText = "";
+    if (w.buffs["levitas_batu"] && now < w.buffs["levitas_batu"].expiresAt) {
+      const levLvl = w.buffs["levitas_batu"].level || 1;
+      let levBonus = 2;
+      if (levLvl === 2) levBonus = 3;
+      else if (levLvl === 3) levBonus = 4;
+      else if (levLvl === 4) levBonus = 5;
+      else if (levLvl === 5) levBonus = 8;
+
+      itemAmount += levBonus;
+      
+      if (levLvl === 5 && Math.random() < 0.20) {
+        itemAmount *= 2;
+        levitasText = `\n🪶 *LEVITAS BATU (Lv.5):* Tambahan +${levBonus} item, plus hoki DOUBLE hasil!`;
+      } else {
+        levitasText = `\n🪶 *LEVITAS BATU (Lv.${levLvl}):* Mengambangkan bebatuan, hasil nambang +${levBonus} item!`;
+      }
+    }
+
+    // 3. Panggilan Golem Kecil Buff
+    let golemText = "";
+    if (w.buffs["panggilan_golem"] && now < w.buffs["panggilan_golem"].expiresAt) {
+      const golemLvl = w.buffs["panggilan_golem"].level || 1;
+      let golemMult = 1.5;
+      if (golemLvl === 2) golemMult = 1.6;
+      else if (golemLvl === 3) golemMult = 1.75;
+      else if (golemLvl === 4) golemMult = 2.0;
+      else if (golemLvl === 5) golemMult = 2.5;
+
+      itemAmount = Math.ceil(itemAmount * golemMult);
+      golemText = `\n🤖 *GOLEM KECIL (Lv.${golemLvl}):* Menggandakan hasil tambang sebanyak ${golemMult}x lipat!`;
+    }
+
+    // 4. Animasi Tambang Buff
+    let animasiText = "";
+    if (w.buffs["animasi_tambang"] && now < w.buffs["animasi_tambang"].expiresAt) {
+      const animLvl = w.buffs["animasi_tambang"].level || 1;
+      let animMult = 3;
+      if (animLvl === 2) animMult = 4;
+      else if (animLvl === 3) animMult = 5;
+      else if (animLvl === 4) animMult = 6;
+      else if (animLvl === 5) animMult = 8;
+
+      itemAmount = Math.ceil(itemAmount * animMult);
+      animasiText = `\n🤖 *ANIMASI TAMBANG (Lv.${animLvl}):* Golem raksasa melipatgandakan hasil tambang sebanyak ${animMult}x!`;
+    }
+
     let telekinesisText = "";
     if (isTelekinesis) {
       const sellPrice = item.price * itemAmount;
@@ -764,7 +837,13 @@ module.exports = {
     
     // Check Artifact Drop (Only if they actually got ore)
     let artifactText = "";
-    if (Math.random() < 0.20) { // 20% chance to drop artifact instead of/with ore
+    let artifactChance = 0.20;
+    if (hasLampuKristal) {
+      if (hasLampuKristal === 3) artifactChance += 0.05;
+      else if (hasLampuKristal === 4) artifactChance += 0.10;
+      else if (hasLampuKristal === 5) artifactChance += 0.15;
+    }
+    if (Math.random() < artifactChance) {
       const artifact = rpgData.rollArtifact();
       w.inventory[artifact.id] = (w.inventory[artifact.id] || 0) + 1;
       artifactText = `\n🎁 *HOKI SEUMUR IDUP!*\nLu nemu rongsokan dewa: *${artifact.name}* (${rpgData.artifactTiers[artifact.tier].name})`;
@@ -790,7 +869,7 @@ module.exports = {
     levelUp(w);
     saveWallet(sender, w);
 
-    const text = `⛏️ Mulung kelar bos pake *${namaPickaxe}*!\n\n💎 *${item.name}*\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin\n🎲 Peluang: ${result.chanceString}${sledgehammerText}${telekinesisText}${silkTouchText}${artifactText}${enchantText}\n\n_(Durabilitas: ${w.pickaxeDurability}/${w.maxPickaxeDurability})_`;
+    const text = `⛏️ Mulung kelar bos pake *${namaPickaxe}*!\n\n💎 *${item.name}* (${itemAmount}x)\n📊 Tipe: ${tier.icon} ${tier.name}\n💰 Harga: ${item.price} koin (Total: ${item.price * itemAmount} koin)\n🎲 Peluang: ${result.chanceString}${sledgehammerText}${penggalianText}${levitasText}${golemText}${animasiText}${telekinesisText}${silkTouchText}${artifactText}${enchantText}\n\n_(Durabilitas: ${w.pickaxeDurability}/${w.maxPickaxeDurability})_`;
     
     // Notif jika Epic ke atas
     if (item.tier >= 4) {

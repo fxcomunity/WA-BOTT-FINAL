@@ -27,6 +27,8 @@ module.exports = {
   
   applyEffect: async (sock, msg, effectName) => {
     const groupId = msg.key.remoteJid;
+    let tmpIn = null;
+    let tmpOut = null;
     
     try {
       const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
@@ -48,8 +50,8 @@ module.exports = {
       }
 
       const timestamp = Date.now();
-      const tmpIn = path.join(__dirname, `../tmp_audio_in_${timestamp}.ogg`);
-      const tmpOut = path.join(__dirname, `../tmp_audio_out_${timestamp}.mp3`);
+      tmpIn = path.join(__dirname, `../tmp_audio_in_${timestamp}.ogg`);
+      tmpOut = path.join(__dirname, `../tmp_audio_out_${timestamp}.mp3`);
       
       fs.writeFileSync(tmpIn, buffer);
 
@@ -59,8 +61,8 @@ module.exports = {
         .on('error', async (err) => {
           console.error(`Error ffmpeg ${effectName}:`, err);
           await sock.sendMessage(groupId, { text: "❌ Gagal bos memproses audio. File mungkin rusak atau format tidak didukung." }, { quoted: msg });
-          try { fs.unlinkSync(tmpIn); } catch(e){}
-          try { fs.unlinkSync(tmpOut); } catch(e){}
+          try { if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn); } catch(e){}
+          try { if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut); } catch(e){}
         })
         .on('end', async () => {
           const outBuffer = fs.readFileSync(tmpOut);
@@ -74,8 +76,8 @@ module.exports = {
           
           // Cleanup
           try { 
-            fs.unlinkSync(tmpIn); 
-            fs.unlinkSync(tmpOut); 
+            if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn); 
+            if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut); 
           } catch(e){}
         })
         .outputOptions(filterArgs)
@@ -84,6 +86,8 @@ module.exports = {
     } catch (err) {
       console.error(`audioEffects ${effectName} error:`, err);
       await sock.sendMessage(groupId, { text: `❌ Ada error njir saat memproses audio: ${err.message}\n\n${err.stack}` }, { quoted: msg });
+      try { if (tmpIn && fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn); } catch(e){}
+      try { if (tmpOut && fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut); } catch(e){}
     }
   }
 };

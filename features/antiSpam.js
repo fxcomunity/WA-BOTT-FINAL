@@ -4,6 +4,7 @@ const msgCount = {};     // { sender: { count, lastReset } }
 const mutedUsers = {};   // { sender: unmuteAt }
 const slowMode = { active: false, delay: 30 };
 const lastMsg = {};      // { sender: timestamp } untuk slow mode
+const lastWarning = {};  // { sender: timestamp } untuk cooldown peringatan spam
 
 const FLOOD_WINDOW = 10 * 1000; // 10 detik
 
@@ -56,5 +57,14 @@ module.exports = {
 
   disableSlowMode() {
     slowMode.active = false;
+  },
+
+  shouldWarn(sender) {
+    const now = Date.now();
+    if (!lastWarning[sender] || now - lastWarning[sender] > 5000) { // 5 detik cooldown
+      lastWarning[sender] = now;
+      return true;
+    }
+    return false;
   },
 };

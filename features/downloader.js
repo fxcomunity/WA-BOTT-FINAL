@@ -196,52 +196,105 @@ module.exports = {
     const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses video TikTok...");
 
     try {
-      const { data } = await axios.post('https://www.tikwm.com/api/', { url: link });
-      
-      if (data.code === 0 && data.data) {
-        const videoData = data.data;
-        const title = videoData.title || "TikTok Video";
-        const author = videoData.author?.nickname || "Unknown";
+      let videoData = null;
+      let isSlideshow = false;
+      let images = [];
+      let videoUrl = null;
+      let title = "TikTok Video";
+      let author = "Unknown";
 
-        // Cek jika link berupa slideshow/gambar
-        if (videoData.images && videoData.images.length > 0) {
-          await progress.stop(true);
-          
-          const questionText = `⚠️ *[ TIKTOK DOWNLOADER ]* ⚠️\n\n` +
-            `Link TikTok ini dideteksi berisi *Slideshow/Gambar* (bukan video mentah biasa).\n\n` +
-            `Silakan pilih salah satu opsi format unduhan:\n` +
-            `*A.* Gambar (Kirim semua foto asli secara terpisah)\n` +
-            `*B.* Video (Kirim dalam bentuk video slideshow)\n\n` +
-            `_Balas pesan ini dengan mengetik *A* atau *B*._`;
-            
-          const sentMsg = await sock.sendMessage(groupId, { text: questionText }, { quoted: msg });
-          console.log(`[TIKTOK] Menyimpan sesi download untuk JID: ${sender} dengan ID Pesan: ${sentMsg.key.id}`);
-
-          pendingTikTokDownloads.set(sentMsg.key.id, {
-            videoData,
-            link,
-            groupId,
-            sender,
-            quotedMsg: msg,
-            timestamp: Date.now()
-          });
-          return;
+      // 1. Coba TikWM
+      try {
+        const { data } = await axios.post('https://www.tikwm.com/api/', { url: link });
+        if (data && data.code === 0 && data.data) {
+          const d = data.data;
+          title = d.title || "TikTok Video";
+          author = d.author?.nickname || "Unknown";
+          if (d.images && d.images.length > 0) {
+            isSlideshow = true;
+            images = d.images;
+            videoData = d; // Simpan untuk slideshow session
+          } else {
+            videoUrl = d.play;
+          }
         }
-
-        const videoUrl = videoData.play;
-        const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 📁 *Tipe File:* Video\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-        await progress.stop(true);
-        await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: caption }, { quoted: msg });
-        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
-      } else {
-        await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gagal bos download video. Pastiin link publik!" }, { quoted: msg });
+      } catch (e) {
+        console.log("TikTok TikWM Error:", e.message);
       }
+
+      // 2. Fallback ke Tiklydown
+      if (!videoUrl && !isSlideshow) {
+        try {
+          const tiklyRes = await axios.get(`https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const d = tiklyRes.data;
+          if (d && (d.video || d.images)) {
+            title = d.title || "TikTok Video";
+            author = d.author?.nickname || "Unknown";
+            if (d.images && d.images.length > 0) {
+              isSlideshow = true;
+              images = d.images.map(img => img.url || img);
+              videoData = { title, author, images }; // Buat objek serupa TikWM untuk session
+            } else {
+              videoUrl = d.video.noWatermark || d.video.watermark;
+            }
+          }
+        } catch (e) {
+          console.log("TikTok Fallback Tiklydown Error:", e.message);
+        }
+      }
+
+      // 3. Fallback ke btch-downloader (ttdl)
+      if (!videoUrl && !isSlideshow) {
+        try {
+          const { ttdl } = require('btch-downloader');
+          const d = await ttdl(link);
+          if (d && d.status && d.result) {
+            videoUrl = d.result.video || d.result.video_watermark;
+            title = d.result.title || "TikTok Video";
+          }
+        } catch (e) {
+          console.log("TikTok Fallback Btch-Downloader Error:", e.message);
+        }
+      }
+
+      if (!videoUrl && !isSlideshow) {
+        throw new Error("Semua API TikTok Downloader gagal mendapatkan data");
+      }
+
+      // Cek jika link berupa slideshow/gambar
+      if (isSlideshow) {
+        await progress.stop(true);
+        
+        const questionText = `⚠️ *[ TIKTOK DOWNLOADER ]* ⚠️\n\n` +
+          `Link TikTok ini dideteksi berisi *Slideshow/Gambar* (bukan video mentah biasa).\n\n` +
+          `Silakan pilih salah satu opsi format unduhan:\n` +
+          `*A.* Gambar (Kirim semua foto asli secara terpisah)\n` +
+          `*B.* Video (Kirim dalam bentuk video slideshow)\n\n` +
+          `_Balas pesan ini dengan mengetik *A* atau *B*._`;
+          
+        const sentMsg = await sock.sendMessage(groupId, { text: questionText }, { quoted: msg });
+        console.log(`[TIKTOK] Menyimpan sesi download untuk JID: ${sender} dengan ID Pesan: ${sentMsg.key.id}`);
+
+        pendingTikTokDownloads.set(sentMsg.key.id, {
+          videoData,
+          link,
+          groupId,
+          sender,
+          quotedMsg: msg,
+          timestamp: Date.now()
+        });
+        return;
+      }
+
+      const caption = `╭━━• [ 🎵 *TIKTOK DOWNLOADER* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 📁 *Tipe File:* Video\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *No Watermark!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+      await progress.stop(true);
+      await sock.sendMessage(groupId, { video: { url: videoUrl }, caption: caption }, { quoted: msg });
+      await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
     } catch (error) {
       await progress.stop(false);
-      console.log("TikTok Error:", error);
-      await sock.sendMessage(groupId, { text: "❌ Ada error njir pada server downloader." }, { quoted: msg });
+      console.log("TikTok Error:", error.message || error);
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos download video TikTok. Pastiin link publik!" }, { quoted: msg });
     }
   },
   
@@ -257,49 +310,82 @@ module.exports = {
 
     try {
       const { igdl } = require('btch-downloader');
-      const data = await igdl(link);
-      
+      let data = await igdl(link).catch(() => null);
+      let mediaUrl = null;
+
       if (data && data.status && data.result && data.result.length > 0) {
-        // Ambil HANYA 1 MEDIA yang URL-nya valid
         const validMedia = data.result.find(item => item.url && item.url.trim() !== '');
-        
-        if (!validMedia) {
-          throw new Error("API mengembalikan array kosong atau URL tidak valid");
+        if (validMedia) {
+          mediaUrl = validMedia.url;
         }
-        
-        const mediaUrl = validMedia.url;
-        const isImage = mediaUrl.includes('.jpg') || mediaUrl.includes('.jpeg') || mediaUrl.includes('.webp') || mediaUrl.includes('.png');
-        
-        // Verifikasi apakah URL ini BUKAN HTML/Captcha dari server scraper
+      }
+
+      // Fallback 1: RyzenDesu API
+      if (!mediaUrl) {
         try {
           const axios = require('axios');
-          const headRes = await axios.head(mediaUrl);
-          const contentType = headRes.headers['content-type'] || '';
-          if (contentType.includes('text/html')) {
-             throw new Error("URL berisi halaman HTML/Captcha, bukan file media asli");
+          const ryzenRes = await axios.get(`https://api.ryzendesu.vip/api/downloader/igdl?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const ryzenData = ryzenRes.data;
+          if (ryzenData && ryzenData.status) {
+            const urls = ryzenData.data || ryzenData.result;
+            if (Array.isArray(urls) && urls.length > 0) {
+              mediaUrl = urls[0].url || urls[0];
+            } else if (urls && typeof urls === 'object') {
+              mediaUrl = urls.url || urls[0]?.url;
+            } else if (typeof urls === 'string') {
+              mediaUrl = urls;
+            }
           }
         } catch (e) {
-          if (e.message.includes('HTML')) throw e; // Lanjutkan error HTML
-          // Abaikan error head lain (misal 405 Method Not Allowed)
+          console.log("IG Fallback RyzenDesu Error:", e.message);
         }
-
-        await progress.stop(true);
-        if (isImage) {
-          await sock.sendMessage(groupId, { 
-            image: { url: mediaUrl }, 
-            caption: devCaption 
-          }, { quoted: msg });
-        } else {
-          await sock.sendMessage(groupId, { 
-            video: { url: mediaUrl }, 
-            caption: devCaption 
-          }, { quoted: msg });
-        }
-        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
-      } else {
-        await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gagal bos download postingan Instagram. (Video/Foto tidak ketemu)" }, { quoted: msg });
       }
+
+      // Fallback 2: Widipe API
+      if (!mediaUrl) {
+        try {
+          const axios = require('axios');
+          const widipeRes = await axios.get(`https://widipe.com/download/igdl?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const widipeData = widipeRes.data;
+          if (widipeData && widipeData.result && widipeData.result.length > 0) {
+            mediaUrl = widipeData.result[0].url || widipeData.result[0];
+          }
+        } catch (e) {
+          console.log("IG Fallback Widipe Error:", e.message);
+        }
+      }
+
+      if (!mediaUrl) {
+        throw new Error("Semua API Instagram Downloader mengembalikan data kosong atau gagal dihubungi");
+      }
+
+      const isImage = mediaUrl.includes('.jpg') || mediaUrl.includes('.jpeg') || mediaUrl.includes('.webp') || mediaUrl.includes('.png');
+      
+      // Verifikasi apakah URL ini BUKAN HTML/Captcha dari server scraper
+      try {
+        const axios = require('axios');
+        const headRes = await axios.head(mediaUrl);
+        const contentType = headRes.headers['content-type'] || '';
+        if (contentType.includes('text/html')) {
+           throw new Error("URL berisi halaman HTML/Captcha, bukan file media asli");
+        }
+      } catch (e) {
+        if (e.message.includes('HTML')) throw e; // Lanjutkan error HTML
+      }
+
+      await progress.stop(true);
+      if (isImage) {
+        await sock.sendMessage(groupId, { 
+          image: { url: mediaUrl }, 
+          caption: devCaption 
+        }, { quoted: msg });
+      } else {
+        await sock.sendMessage(groupId, { 
+          video: { url: mediaUrl }, 
+          caption: devCaption 
+        }, { quoted: msg });
+      }
+      await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
     } catch (error) {
       await progress.stop(false);
       console.log("IG Error:", error.message || error);
@@ -724,35 +810,70 @@ module.exports = {
     const progress = await utils.simulateProgress(sock, groupId, msg, "⏳ Memproses audio TikTok...");
 
     try {
-      const { data } = await axios.post('https://www.tikwm.com/api/', { url: link });
-      if (data.code === 0 && data.data) {
-        const videoData = data.data;
-        const title = videoData.title || "TikTok Audio";
-        const author = videoData.author?.nickname || "Unknown";
-        const audioUrl = videoData.music; // TikWM audio URL (MP3)
-        
-        if (!audioUrl) {
-          throw new Error("Audio URL tidak ditemukan di TikWM API");
+      let audioUrl = null;
+      let title = "TikTok Audio";
+      let author = "Unknown";
+
+      // 1. Coba TikWM
+      try {
+        const { data } = await axios.post('https://www.tikwm.com/api/', { url: link });
+        if (data && data.code === 0 && data.data) {
+          const videoData = data.data;
+          title = videoData.title || "TikTok Audio";
+          author = videoData.author?.nickname || "Unknown";
+          audioUrl = videoData.music;
         }
-
-        const customCaption = `╭━━• [ 📥 *TIKTOK AUDIO* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-        await progress.stop(true);
-        await sock.sendMessage(groupId, { 
-          document: { url: audioUrl }, 
-          mimetype: 'audio/mpeg',
-          fileName: `${title}.mp3`,
-          caption: customCaption 
-        }, { quoted: msg });
-        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
-      } else {
-        await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Gagal bos download audio TikTok. Pastiin link publik!" }, { quoted: msg });
+      } catch (e) {
+        console.log("TikTok Audio TikWM Error:", e.message);
       }
+
+      // 2. Fallback ke Tiklydown
+      if (!audioUrl) {
+        try {
+          const tiklyRes = await axios.get(`https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const d = tiklyRes.data;
+          if (d && d.music) {
+            title = d.title || "TikTok Audio";
+            author = d.author?.nickname || "Unknown";
+            audioUrl = d.music.play_url || d.music.playUrl;
+          }
+        } catch (e) {
+          console.log("TikTok Audio Fallback Tiklydown Error:", e.message);
+        }
+      }
+
+      // 3. Fallback ke btch-downloader (ttdl)
+      if (!audioUrl) {
+        try {
+          const { ttdl } = require('btch-downloader');
+          const d = await ttdl(link);
+          if (d && d.status && d.result) {
+            audioUrl = d.result.audio;
+            title = d.result.title || "TikTok Audio";
+          }
+        } catch (e) {
+          console.log("TikTok Audio Fallback Btch-Downloader Error:", e.message);
+        }
+      }
+
+      if (!audioUrl) {
+        throw new Error("Semua API TikTok Downloader gagal mendapatkan audio");
+      }
+
+      const customCaption = `╭━━• [ 📥 *TIKTOK AUDIO* ] •━━╮\n┃\n┃ 👤 *Kreator:* ${author}\n┃ 📝 *Deskripsi:* ${title}\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+      await progress.stop(true);
+      await sock.sendMessage(groupId, { 
+        document: { url: audioUrl }, 
+        mimetype: 'audio/mpeg',
+        fileName: `${title}.mp3`,
+        caption: customCaption 
+      }, { quoted: msg });
+      await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
     } catch (error) {
       await progress.stop(false);
       console.log("TikTok Audio Error:", error.message || error);
-      await sock.sendMessage(groupId, { text: "❌ Ada error njir saat memproses audio TikTok." }, { quoted: msg });
+      await sock.sendMessage(groupId, { text: "❌ Gagal bos mendownload audio TikTok. Pastiin link publik!" }, { quoted: msg });
     }
   },
 
@@ -770,54 +891,91 @@ module.exports = {
 
     try {
       const { igdl } = require('btch-downloader');
-      const data = await igdl(link);
-      
+      let data = await igdl(link).catch(() => null);
+      let mediaUrl = null;
+
       if (data && data.status && data.result && data.result.length > 0) {
         const validMedia = data.result.find(item => item.url && item.url.trim() !== '');
-        if (!validMedia) throw new Error("Video tidak ditemukan");
-        
-        const mediaUrl = validMedia.url;
-        
-        const path = require('path');
-        const fs = require('fs');
-        tempIn = path.join(__dirname, '..', `temp_ig_in_${Date.now()}.mp4`);
-        tempOut = path.join(__dirname, '..', `temp_ig_out_${Date.now()}.mp3`);
-        
-        // Download video file
-        const axios = require('axios');
-        const fileRes = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
-        fs.writeFileSync(tempIn, Buffer.from(fileRes.data));
-        
-        // Jalankan ffmpeg untuk convert ke mp3
-        const ffmpeg = require('fluent-ffmpeg');
-        const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-        ffmpeg.setFfmpegPath(ffmpegPath);
-        
-        await new Promise((resolve, reject) => {
-          ffmpeg(tempIn)
-            .outputOptions('-vn', '-acodec', 'libmp3lame')
-            .on('end', resolve)
-            .on('error', reject)
-            .save(tempOut);
-        });
-
-        const customCaption = `╭━━• [ 📥 *INSTAGRAM AUDIO* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-        await progress.stop(true);
-        await sock.sendMessage(groupId, { 
-          document: fs.readFileSync(tempOut), 
-          mimetype: 'audio/mpeg',
-          fileName: `ig_audio_${Date.now()}.mp3`,
-          caption: customCaption 
-        }, { quoted: msg });
-
-        fs.unlinkSync(tempIn);
-        fs.unlinkSync(tempOut);
-        await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
-      } else {
-        await progress.stop(false);
-        await sock.sendMessage(groupId, { text: "❌ Konten Instagram tidak ditemukan." }, { quoted: msg });
+        if (validMedia) {
+          mediaUrl = validMedia.url;
+        }
       }
+
+      // Fallback 1: RyzenDesu API
+      if (!mediaUrl) {
+        try {
+          const axios = require('axios');
+          const ryzenRes = await axios.get(`https://api.ryzendesu.vip/api/downloader/igdl?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const ryzenData = ryzenRes.data;
+          if (ryzenData && ryzenData.status) {
+            const urls = ryzenData.data || ryzenData.result;
+            if (Array.isArray(urls) && urls.length > 0) {
+              mediaUrl = urls[0].url || urls[0];
+            } else if (urls && typeof urls === 'object') {
+              mediaUrl = urls.url || urls[0]?.url;
+            } else if (typeof urls === 'string') {
+              mediaUrl = urls;
+            }
+          }
+        } catch (e) {
+          console.log("IG Audio Fallback RyzenDesu Error:", e.message);
+        }
+      }
+
+      // Fallback 2: Widipe API
+      if (!mediaUrl) {
+        try {
+          const axios = require('axios');
+          const widipeRes = await axios.get(`https://widipe.com/download/igdl?url=${encodeURIComponent(link)}`, { timeout: 8000 });
+          const widipeData = widipeRes.data;
+          if (widipeData && widipeData.result && widipeData.result.length > 0) {
+            mediaUrl = widipeData.result[0].url || widipeData.result[0];
+          }
+        } catch (e) {
+          console.log("IG Audio Fallback Widipe Error:", e.message);
+        }
+      }
+
+      if (!mediaUrl) {
+        throw new Error("Semua API Instagram Downloader mengembalikan data kosong atau gagal dihubungi");
+      }
+
+      const path = require('path');
+      const fs = require('fs');
+      tempIn = path.join(__dirname, '..', `temp_ig_in_${Date.now()}.mp4`);
+      tempOut = path.join(__dirname, '..', `temp_ig_out_${Date.now()}.mp3`);
+      
+      // Download video file
+      const axios = require('axios');
+      const fileRes = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
+      fs.writeFileSync(tempIn, Buffer.from(fileRes.data));
+      
+      // Jalankan ffmpeg untuk convert ke mp3
+      const ffmpeg = require('fluent-ffmpeg');
+      const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+      ffmpeg.setFfmpegPath(ffmpegPath);
+      
+      await new Promise((resolve, reject) => {
+        ffmpeg(tempIn)
+          .outputOptions('-vn', '-acodec', 'libmp3lame')
+          .on('end', resolve)
+          .on('error', reject)
+          .save(tempOut);
+      });
+
+      const customCaption = `╭━━• [ 📥 *INSTAGRAM AUDIO* ] •━━╮\n┃\n┃ 👤 *Developer:* 陈嘉杰 | Val\n┃ ✅ *Sukses diunduh!*\n┃\n╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+      await progress.stop(true);
+      await sock.sendMessage(groupId, { 
+        document: fs.readFileSync(tempOut), 
+        mimetype: 'audio/mpeg',
+        fileName: `ig_audio_${Date.now()}.mp3`,
+        caption: customCaption 
+      }, { quoted: msg });
+
+      fs.unlinkSync(tempIn);
+      fs.unlinkSync(tempOut);
+      await sock.sendMessage(groupId, { react: { text: "✅", key: msg.key } });
     } catch (error) {
       await progress.stop(false);
       console.log("IG Audio Error:", error.message || error);
