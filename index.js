@@ -1903,12 +1903,24 @@ Selamat bersenang-senang! 🎉`;
           
           await reply(sock, msg, "🔓 Membuka pesan rahasia...");
           
-          const quotedParticipant = jidNormalizedUser(msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid);
+          const isGroup = msg.key.remoteJid.endsWith("@g.us");
+          const isStatus = msg.key.remoteJid === "status@broadcast";
+          
+          let rawBotId = sock.user.id;
+          if (rawBotId.includes(':')) rawBotId = rawBotId.split(':')[0] + '@s.whatsapp.net';
+          else if (!rawBotId.includes('@')) rawBotId = rawBotId + '@s.whatsapp.net';
+          const botId = rawBotId;
+          
+          const rawParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || (msg.message?.extendedTextMessage?.contextInfo?.fromMe ? botId : msg.key.remoteJid);
+          const quotedParticipant = rawParticipant ? jidNormalizedUser(rawParticipant) : botId;
+          const fromMe = quotedParticipant === botId;
+
           const fakeMsg = {
             key: {
               remoteJid: msg.key.remoteJid,
+              fromMe: fromMe,
               id: msg.message.extendedTextMessage.contextInfo.stanzaId,
-              participant: quotedParticipant
+              ...(isGroup || isStatus ? { participant: quotedParticipant } : {})
             },
             message: quotedMsg
           };
@@ -1964,12 +1976,24 @@ Selamat bersenang-senang! 🎉`;
           const caption = isImage?.caption || isVideo?.caption || isText?.text || "";
           
           if (isImage || isVideo) {
-            const quotedParticipant = jidNormalizedUser(msg.message?.extendedTextMessage?.contextInfo?.participant || msg.key.participant || msg.key.remoteJid);
+            const isGroup = msg.key.remoteJid.endsWith("@g.us");
+            const isStatus = msg.key.remoteJid === "status@broadcast";
+            
+            let rawBotId = sock.user.id;
+            if (rawBotId.includes(':')) rawBotId = rawBotId.split(':')[0] + '@s.whatsapp.net';
+            else if (!rawBotId.includes('@')) rawBotId = rawBotId + '@s.whatsapp.net';
+            const botId = rawBotId;
+            
+            const rawParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant || (msg.message?.extendedTextMessage?.contextInfo?.fromMe ? botId : msg.key.remoteJid);
+            const quotedParticipant = rawParticipant ? jidNormalizedUser(rawParticipant) : botId;
+            const fromMe = quotedParticipant === botId;
+
             const fakeMsg = {
               key: {
                 remoteJid: msg.key.remoteJid,
+                fromMe: fromMe,
                 id: msg.message.extendedTextMessage.contextInfo.stanzaId,
-                participant: quotedParticipant
+                ...(isGroup || isStatus ? { participant: quotedParticipant } : {})
               },
               message: tempMsg
             };
